@@ -83,7 +83,7 @@ export default function Deposit() {
                 </div>
                 <div>
                   <Label htmlFor="amount">{t('deposit.amount')}</Label>
-                  <Input id="amount" type="number" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} className="h-12" />
+                  <Input id="amount" type="text" inputMode="decimal" pattern="[0-9.]*" value={amount} onChange={e => setAmount(e.target.value)} className="h-12" />
                 </div>
                 <div>
                   <Label htmlFor="userNumber">{t('deposit.userNumber')}</Label>
