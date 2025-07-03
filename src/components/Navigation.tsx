@@ -30,14 +30,14 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2 rtl:space-x-reverse cursor-default select-none">
+          <Link to="/" className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer select-none">
             <img
               src={theme === 'light' ? '/Light_mode.png' : '/Dark_mode.png'}
               alt="Cash Logo"
               className="w-28 h-auto"
               style={{ maxHeight: '40px' }}
             />
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           {!isHome && isLoggedIn && !isAdmin && (
