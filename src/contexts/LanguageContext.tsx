@@ -183,10 +183,12 @@ const translations = {
     
     // Registration
     'register.title': 'إنشاء حساب جديد',
+    'register.displayName': 'اسم العرض',
     'register.firstName': 'الاسم الأول',
     'register.lastName': 'اسم العائلة',
     'register.email': 'البريد الإلكتروني',
     'register.phone': 'رقم الهاتف',
+    'register.password': 'كلمة المرور',
     'register.referralCode': 'كود الإحالة (اختياري)',
     'register.idFront': 'صورة الهوية - الوجه الأمامي',
     'register.idBack': 'صورة الهوية - الوجه الخلفي',
@@ -414,10 +416,12 @@ const translations = {
     
     // Registration
     'register.title': 'Create New Account',
+    'register.displayName': 'Display Name',
     'register.firstName': 'First Name',
     'register.lastName': 'Last Name',
     'register.email': 'Email',
     'register.phone': 'Phone Number',
+    'register.password': 'Password',
     'register.referralCode': 'Referral Code (optional)',
     'register.idFront': 'ID Photo - Front',
     'register.idBack': 'ID Photo - Back',

@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/utils';
 
 export default function Login() {
   const { t } = useLanguage();
@@ -23,7 +24,7 @@ export default function Login() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -35,7 +36,7 @@ export default function Login() {
       return;
     }
 
-    // Mock authentication
+    // Admin login (mock)
     if (formData.isAdmin && formData.email === 'admin@cash.com' && formData.password === 'admin123') {
       toast({
         title: t('common.success'),
@@ -44,6 +45,19 @@ export default function Login() {
       localStorage.setItem('cash-logged-in', 'true');
       navigate('/admin');
     } else if (!formData.isAdmin) {
+      // Supabase Auth login
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      if (error) {
+        toast({
+          title: t('common.error'),
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
         title: t('common.success'),
         description: t('login.success'),

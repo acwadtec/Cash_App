@@ -6,17 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 export default function Register() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    displayName: '',
     email: '',
-    phone: '',
-    referralCode: '',
-    idFront: null as File | null,
-    idBack: null as File | null,
+    password: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,15 +23,9 @@ export default function Register() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'idFront' | 'idBack') => {
-    const file = e.target.files?.[0] || null;
-    setFormData(prev => ({ ...prev, [field]: file }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+    if (!formData.displayName || !formData.email || !formData.password) {
       toast({
         title: t('common.error'),
         description: t('register.required'),
@@ -40,11 +33,29 @@ export default function Register() {
       });
       return;
     }
-
+    // Supabase sign up
+    const { error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          displayName: formData.displayName,
+        },
+      },
+    });
+    if (error) {
+      toast({
+        title: t('common.error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
     toast({
       title: t('common.success'),
       description: t('register.success'),
     });
+    navigate('/login');
   };
 
   return (
@@ -58,31 +69,17 @@ export default function Register() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">{t('register.firstName')}</Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">{t('register.lastName')}</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                    className="h-12"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="displayName">{t('register.displayName') || 'Display Name'}</Label>
+                <Input
+                  id="displayName"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  required
+                  className="h-12"
+                />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="email">{t('register.email')}</Label>
                 <Input
@@ -95,59 +92,22 @@ export default function Register() {
                   className="h-12"
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="phone">{t('register.phone')}</Label>
+                <Label htmlFor="password">{t('register.password') || t('login.password') || 'Password'}</Label>
                 <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
                   onChange={handleInputChange}
                   required
                   className="h-12"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="referralCode">{t('register.referralCode')}</Label>
-                <Input
-                  id="referralCode"
-                  name="referralCode"
-                  value={formData.referralCode}
-                  onChange={handleInputChange}
-                  className="h-12"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="idFront">{t('register.idFront')}</Label>
-                  <Input
-                    id="idFront"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'idFront')}
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="idBack">{t('register.idBack')}</Label>
-                  <Input
-                    id="idBack"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'idBack')}
-                    className="h-12"
-                  />
-                </div>
-              </div>
-
               <Button type="submit" className="w-full h-12 text-lg shadow-glow">
                 {t('register.submit')}
               </Button>
             </form>
-
             <div className="mt-6 text-center">
               <p className="text-muted-foreground">
                 {t('register.hasAccount')}{' '}
