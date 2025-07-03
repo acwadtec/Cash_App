@@ -16,6 +16,7 @@ export function Navigation() {
     { href: '/offers', label: t('nav.offers') },
     { href: '/profile', label: t('nav.profile') },
     { href: '/transactions', label: t('nav.transactions') },
+    { href: '/deposit', label: t('nav.deposit') },
     { href: '/withdrawal', label: t('nav.withdrawal') },
   ];
 

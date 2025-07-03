@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +42,54 @@ export default function AdminDashboard() {
     { id: 2, user: 'فاطمة أحمد', amount: 150, type: 'bonus', method: 'wallet', date: '2024-07-02' },
     { id: 3, user: 'محمد علي', amount: 300, type: 'team', method: 'crypto', date: '2024-07-03' },
   ];
+
+  // For demo/mock only. In production, this should be handled by the backend.
+  const [depositNumbers, setDepositNumbers] = useState(() => JSON.parse(localStorage.getItem('depositNumbers') || '[]'));
+  const [newNumber, setNewNumber] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  // For demo/mock only. In production, this should be handled by the backend.
+  const [depositRequests, setDepositRequests] = useState(() => JSON.parse(localStorage.getItem('depositRequests') || '[]'));
+
+  const saveNumbers = (numbers: string[]) => {
+    setDepositNumbers(numbers);
+    // For demo/mock only. In production, this should be handled by the backend.
+    localStorage.setItem('depositNumbers', JSON.stringify(numbers));
+  };
+
+  const handleAddNumber = () => {
+    if (!newNumber || depositNumbers.length >= 10) return;
+    saveNumbers([...depositNumbers, newNumber]);
+    setNewNumber('');
+  };
+  const handleUpdateNumber = () => {
+    if (editingIndex === null || !newNumber) return;
+    const updated = [...depositNumbers];
+    updated[editingIndex] = newNumber;
+    saveNumbers(updated);
+    setEditingIndex(null);
+    setNewNumber('');
+  };
+  const handleRemoveNumber = (idx: number) => {
+    const updated = depositNumbers.filter((_, i) => i !== idx);
+    saveNumbers(updated);
+  };
+  const startEdit = (idx: number) => {
+    setEditingIndex(idx);
+    setNewNumber(depositNumbers[idx]);
+  };
+
+  const handleApproveDeposit = (id: number) => {
+    const updated = depositRequests.map((req: any) => req.id === id ? { ...req, status: 'approved' } : req);
+    setDepositRequests(updated);
+    // For demo/mock only. In production, this should be handled by the backend.
+    localStorage.setItem('depositRequests', JSON.stringify(updated));
+  };
+  const handleRejectDeposit = (id: number) => {
+    const updated = depositRequests.map((req: any) => req.id === id ? { ...req, status: 'rejected' } : req);
+    setDepositRequests(updated);
+    // For demo/mock only. In production, this should be handled by the backend.
+    localStorage.setItem('depositRequests', JSON.stringify(updated));
+  };
 
   const handleSendNotification = () => {
     if (!notificationData.title || !notificationData.message) {
@@ -129,12 +176,13 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
               <TabsTrigger value="transactions">{t('admin.transactions')}</TabsTrigger>
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
+              <TabsTrigger value="deposits">{t('admin.deposit.requests')}</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -349,6 +397,88 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Deposits Tab */}
+            <TabsContent value="deposits">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-1/3 w-full">
+                  <Card className="shadow-card mb-8">
+                    <CardHeader>
+                      <CardTitle>{t('admin.deposit.numbers')}</CardTitle>
+                      <p className="text-muted-foreground text-sm">{t('admin.deposit.max')}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col gap-2 mb-4">
+                        {depositNumbers.map((num: string, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Input value={editingIndex === idx ? newNumber : num} readOnly={editingIndex !== idx} onChange={e => setNewNumber(e.target.value)} className="w-48" />
+                            {editingIndex === idx ? (
+                              <Button size="sm" onClick={handleUpdateNumber}>{t('admin.deposit.update')}</Button>
+                            ) : (
+                              <Button size="sm" onClick={() => startEdit(idx)}>{t('common.edit')}</Button>
+                            )}
+                            <Button size="sm" variant="destructive" onClick={() => handleRemoveNumber(idx)}>{t('admin.deposit.remove')}</Button>
+                          </div>
+                        ))}
+                      </div>
+                      {depositNumbers.length < 10 && (
+                        <div className="flex gap-2">
+                          <Input value={newNumber} onChange={e => setNewNumber(e.target.value)} placeholder={t('admin.deposit.add')} className="w-48" />
+                          <Button size="sm" onClick={handleAddNumber}>{t('admin.deposit.add')}</Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="md:w-2/3 w-full">
+                  <Card className="shadow-card">
+                    <CardHeader>
+                      <CardTitle>{t('admin.deposit.requests')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr>
+                            <th>{t('admin.deposit.userNumber')}</th>
+                            <th>{t('admin.deposit.amount')}</th>
+                            <th>{t('admin.deposit.targetNumber')}</th>
+                            <th>{t('admin.deposit.screenshot')}</th>
+                            <th>{t('admin.deposit.status')}</th>
+                            <th>{t('admin.deposit.actions')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {depositRequests.map((req: any) => (
+                            <tr key={req.id}>
+                              <td>{req.userNumber}</td>
+                              <td>${req.amount}</td>
+                              <td>{req.targetNumber}</td>
+                              <td>{req.screenshot && <a href={req.screenshot} target="_blank" rel="noopener noreferrer">{t('admin.deposit.screenshot')}</a>}</td>
+                              <td>
+                                <Badge className={
+                                  req.status === 'approved' ? 'bg-success' :
+                                  req.status === 'rejected' ? 'bg-destructive' : 'bg-warning'
+                                }>
+                                  {t(`deposit.status.${req.status}`)}
+                                </Badge>
+                              </td>
+                              <td>
+                                {req.status === 'pending' && (
+                                  <>
+                                    <Button size="sm" className="bg-success mr-2" onClick={() => handleApproveDeposit(req.id)}>{t('admin.deposit.approve')}</Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleRejectDeposit(req.id)}>{t('admin.deposit.reject')}</Button>
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
