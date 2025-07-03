@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CASH Design System - Arabic/English Support */
+
+@layer base {
+  :root {
+    /* Light Mode - Cash Green Theme */
+    --background: 0 0% 98%;
+    --foreground: 210 11% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 11% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 11% 15%;
+
+    /* Cash Brand Green */
+    --primary: 150 80% 35%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 150 70% 45%;
+    --primary-light: 150 60% 90%;
+
+    --secondary: 150 30% 96%;
+    --secondary-foreground: 150 80% 25%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 10% 50%;
+
+    --accent: 150 50% 92%;
+    --accent-foreground: 150 80% 30%;
+
+    --success: 140 70% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 90% 60%;
+    --warning-foreground: 0 0% 10%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 94%;
+    --ring: 150 80% 35%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Mode - Green with dark backgrounds */
+    --background: 210 11% 8%;
+    --foreground: 150 15% 95%;
+
+    --card: 210 11% 12%;
+    --card-foreground: 150 15% 95%;
+
+    --popover: 210 11% 10%;
+    --popover-foreground: 150 15% 95%;
+
+    --primary: 150 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 150 80% 55%;
+    --primary-light: 150 40% 20%;
+
+    --secondary: 150 20% 15%;
+    --secondary-foreground: 150 60% 85%;
+
+    --muted: 210 15% 15%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 150 30% 18%;
+    --accent-foreground: 150 70% 80%;
+
+    --success: 140 60% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 85% 65%;
+    --warning-foreground: 0 0% 10%;
+
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 20%;
+    --input: 210 15% 18%;
+    --ring: 150 70% 45%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-arabic;
+  }
+
+  /* RTL Support for Arabic */
+  [dir="rtl"] {
+    direction: rtl;
+  }
+
+  [dir="ltr"] {
+    direction: ltr;
+  }
+
+  /* Arabic Typography */
+  .font-arabic {
+    font-family: 'Cairo', 'Inter', sans-serif;
+  }
+
+  .font-english {
+    font-family: 'Inter', 'Cairo', sans-serif;
+  }
+
+  /* Custom gradients and effects */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+  }
+
+  .gradient-card {
+    background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--accent)));
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.15);
+  }
+
+  .shadow-card {
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.08);
+  }
+
+  /* Cash brand animations */
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Glass effect */
+  .glass {
+    backdrop-filter: blur(12px);
+    background: hsl(var(--card) / 0.7);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+}

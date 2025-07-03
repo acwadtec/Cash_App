@@ -1,0 +1,443 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+type Language = 'ar' | 'en';
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  isRTL: boolean;
+  t: (key: string) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+// Translation object
+const translations = {
+  ar: {
+    // Navigation
+    'nav.home': 'الرئيسية',
+    'nav.offers': 'العروض',
+    'nav.profile': 'الملف الشخصي',
+    'nav.transactions': 'المعاملات',
+    'nav.withdrawal': 'السحب',
+    'nav.login': 'تسجيل الدخول',
+    'nav.admin': 'لوحة الإدارة',
+    'nav.logout': 'تسجيل الخروج',
+    
+    // Login Page
+    'login.title': 'تسجيل الدخول',
+    'login.subtitle': 'ادخل إلى حسابك للوصول لجميع الميزات',
+    'login.email': 'البريد الإلكتروني',
+    'login.password': 'كلمة المرور',
+    'login.rememberMe': 'تذكرني',
+    'login.forgotPassword': 'نسيت كلمة المرور؟',
+    'login.submit': 'تسجيل الدخول',
+    'login.noAccount': 'ليس لديك حساب؟',
+    'login.createAccount': 'إنشاء حساب',
+    'login.adminLogin': 'دخول المدير',
+    'login.userLogin': 'دخول المستخدم',
+    'login.success': 'تم تسجيل الدخول بنجاح',
+    'login.error': 'خطأ في البريد الإلكتروني أو كلمة المرور',
+    
+    // Admin Dashboard
+    'admin.title': 'لوحة الإدارة',
+    'admin.overview': 'نظرة عامة',
+    'admin.users': 'المستخدمون',
+    'admin.offers': 'إدارة العروض',
+    'admin.withdrawals': 'طلبات السحب',
+    'admin.transactions': 'سجل المعاملات',
+    'admin.notifications': 'الإشعارات',
+    'admin.stats.totalUsers': 'إجمالي المستخدمين',
+    'admin.stats.pendingVerifications': 'التحققات المعلقة',
+    'admin.stats.activeOffers': 'العروض النشطة',
+    'admin.stats.pendingWithdrawals': 'السحوبات المعلقة',
+    'admin.users.name': 'الاسم',
+    'admin.users.email': 'البريد الإلكتروني',
+    'admin.users.phone': 'الهاتف',
+    'admin.users.status': 'الحالة',
+    'admin.users.verified': 'محقق',
+    'admin.users.pending': 'معلق',
+    'admin.users.actions': 'الإجراءات',
+    'admin.users.verify': 'تحقق',
+    'admin.users.block': 'حظر',
+    'admin.users.view': 'عرض',
+    'admin.offers.create': 'إنشاء عرض جديد',
+    'admin.offers.title': 'عنوان العرض',
+    'admin.offers.type': 'نوع العرض',
+    'admin.offers.reward': 'المكافأة',
+    'admin.offers.deadline': 'تاريخ الانتهاء',
+    'admin.offers.edit': 'تعديل',
+    'admin.offers.delete': 'حذف',
+    'admin.withdrawals.user': 'المستخدم',
+    'admin.withdrawals.amount': 'المبلغ',
+    'admin.withdrawals.type': 'النوع',
+    'admin.withdrawals.method': 'الطريقة',
+    'admin.withdrawals.date': 'التاريخ',
+    'admin.withdrawals.approve': 'موافقة',
+    'admin.withdrawals.reject': 'رفض',
+    'admin.notifications.send': 'إرسال إشعار',
+    'admin.notifications.title': 'عنوان الإشعار',
+    'admin.notifications.message': 'الرسالة',
+    'admin.notifications.sendToAll': 'إرسال للجميع',
+    'admin.export.users': 'تصدير المستخدمين',
+    'admin.export.transactions': 'تصدير المعاملات',
+    
+    // Home Page
+    'home.title': 'مرحباً بك في كاش',
+    'home.subtitle': 'منصة التداول الذكية لإدارة أرباحك بأمان',
+    'home.cta': 'ابدأ الآن',
+    'home.login': 'تسجيل الدخول',
+    'home.cta2.title': 'ابدأ رحلتك مع كاش اليوم',
+    'home.cta2.subtitle': 'انضم إلى آلاف المستخدمين الذين يثقون بمنصة كاش لإدارة أرباحهم',
+    'home.cta2.button': 'إنشاء حساب مجاني',
+    
+    // Features
+    'features.secure': 'آمن ومضمون',
+    'features.secure.desc': 'نحن نستخدم أحدث تقنيات الأمان لحماية أموالك',
+    'features.fast': 'سريع وموثوق',
+    'features.fast.desc': 'معاملات سريعة ونظام موثوق لإدارة أرباحك',
+    'features.support': 'دعم 24/7',
+    'features.support.desc': 'فريق الدعم متوفر طوال الوقت لمساعدتك',
+    
+    // Offers Page
+    'offers.title': 'العروض المتاحة',
+    'offers.subtitle': 'اكتشف العروض المتاحة واحصل على مكافآت إضافية',
+    'offers.trading': 'تداول',
+    'offers.referral': 'إحالة',
+    'offers.premium': 'متقدم',
+    'offers.deadline': 'تاريخ الانتهاء:',
+    'offers.minAmount': 'الحد الأدنى:',
+    'offers.join': 'الانضمام للعرض',
+    'offers.notification.title': 'لا تفوت العروض الجديدة!',
+    'offers.notification.subtitle': 'اشترك في الإشعارات للحصول على آخر العروض والمكافآت',
+    'offers.notification.button': 'اشترك في الإشعارات',
+    
+    // Profile Page
+    'profile.totalEarnings': 'إجمالي الأرباح',
+    'profile.teamEarnings': 'أرباح الفريق',
+    'profile.capital': 'رأس المال',
+    'profile.personalEarnings': 'الأرباح الشخصية',
+    'profile.bonuses': 'المكافآت',
+    'profile.recentActivity': 'النشاط الأخير',
+    'profile.accountStatus': 'حالة الحساب',
+    'profile.emailVerification': 'التحقق من البريد الإلكتروني',
+    'profile.phoneVerification': 'التحقق من الهاتف',
+    'profile.identityVerification': 'التحقق من الهوية',
+    'profile.accountLevel': 'مستوى الحساب',
+    'profile.withdrawalStatus': 'حالة السحب',
+    'profile.withdrawalEligible': 'حسابك مؤهل لجميع عمليات السحب',
+    'profile.verified': 'تم التحقق',
+    'profile.pending': 'في انتظار التحقق',
+    'profile.completed': 'مكتمل',
+    'profile.advanced': 'متقدم',
+    'profile.memberSince': 'عضو منذ:',
+    
+    // Transactions Page
+    'transactions.title': 'سجل المعاملات',
+    'transactions.subtitle': 'تتبع جميع معاملاتك المالية',
+    'transactions.search': 'البحث في المعاملات...',
+    'transactions.all': 'جميع المعاملات',
+    'transactions.withdrawal': 'سحب',
+    'transactions.deposit': 'إيداع',
+    'transactions.bonus': 'مكافأة',
+    'transactions.earning': 'أرباح',
+    'transactions.completed': 'مكتمل',
+    'transactions.pending': 'قيد المعالجة',
+    'transactions.rejected': 'مرفوض',
+    'transactions.id': 'معرف المعاملة:',
+    'transactions.noResults': 'لا توجد معاملات مطابقة',
+    'transactions.summary': 'ملخص المعاملات',
+    'transactions.totalIncome': 'إجمالي الإيرادات',
+    'transactions.totalWithdrawals': 'إجمالي السحوبات',
+    'transactions.pendingCount': 'معاملات قيد المعالجة',
+    
+    // Withdrawal Page
+    'withdrawal.title': 'طلب سحب',
+    'withdrawal.subtitle': 'اطلب سحب أرباحك بأمان وسهولة',
+    'withdrawal.newRequest': 'طلب سحب جديد',
+    'withdrawal.type': 'نوع السحب',
+    'withdrawal.amount': 'المبلغ',
+    'withdrawal.method': 'طريقة السحب',
+    'withdrawal.accountDetails': 'تفاصيل الحساب',
+    'withdrawal.maxAmount': 'الحد الأقصى:',
+    'withdrawal.selectType': 'اختر نوع السحب',
+    'withdrawal.selectMethod': 'اختر طريقة السحب',
+    'withdrawal.accountPlaceholder': 'رقم الحساب أو عنوان المحفظة',
+    'withdrawal.submit': 'تقديم طلب السحب',
+    'withdrawal.warning': 'سيتم مراجعة طلب السحب خلال 24-48 ساعة. تأكد من صحة تفاصيل الحساب.',
+    'withdrawal.balances': 'الأرصدة المتاحة',
+    'withdrawal.verificationStatus': 'حالة التحقق',
+    'withdrawal.eligible': 'حسابك مؤهل لجميع عمليات السحب',
+    'withdrawal.verificationRequired': 'التحقق مطلوب',
+    'withdrawal.verificationMessage': 'يجب إكمال التحقق من الهوية قبل تقديم طلبات السحب',
+    'withdrawal.completeVerification': 'إكمال التحقق',
+    'withdrawal.bank': 'التحويل البنكي',
+    'withdrawal.wallet': 'المحفظة الإلكترونية',
+    'withdrawal.crypto': 'العملة المشفرة',
+    'withdrawal.error.verification': 'خطأ في التحقق',
+    'withdrawal.error.verificationMessage': 'يجب إكمال التحقق من الهوية قبل طلب السحب',
+    'withdrawal.error.amount': 'خطأ في المبلغ',
+    'withdrawal.error.amountMessage': 'المبلغ المطلوب أكبر من الرصيد المتاح',
+    'withdrawal.success.message': 'تم إرسال طلب السحب بنجاح وسيتم مراجعته قريباً',
+    
+    // Registration
+    'register.title': 'إنشاء حساب جديد',
+    'register.firstName': 'الاسم الأول',
+    'register.lastName': 'اسم العائلة',
+    'register.email': 'البريد الإلكتروني',
+    'register.phone': 'رقم الهاتف',
+    'register.referralCode': 'كود الإحالة (اختياري)',
+    'register.idFront': 'صورة الهوية - الوجه الأمامي',
+    'register.idBack': 'صورة الهوية - الوجه الخلفي',
+    'register.submit': 'إنشاء الحساب',
+    'register.hasAccount': 'هل لديك حساب بالفعل؟',
+    'register.login': 'تسجيل الدخول',
+    'register.required': 'جميع الحقول مطلوبة',
+    'register.success': 'تم إرسال طلب التسجيل بنجاح',
+    
+    // Common
+    'common.loading': 'جاري التحميل...',
+    'common.error': 'حدث خطأ',
+    'common.success': 'تم بنجاح',
+    'common.cancel': 'إلغاء',
+    'common.save': 'حفظ',
+    'common.edit': 'تعديل',
+    'common.delete': 'حذف',
+    'common.view': 'عرض',
+    
+    // Theme
+    'theme.light': 'الوضع الفاتح',
+    'theme.dark': 'الوضع الداكن',
+    'language.switch': 'English',
+  },
+  en: {
+    // Navigation
+    'nav.home': 'Home',
+    'nav.offers': 'Offers',
+    'nav.profile': 'Profile',
+    'nav.transactions': 'Transactions',
+    'nav.withdrawal': 'Withdrawal',
+    'nav.login': 'Login',
+    'nav.admin': 'Admin Dashboard',
+    'nav.logout': 'Logout',
+    
+    // Login Page
+    'login.title': 'Login',
+    'login.subtitle': 'Sign in to your account to access all features',
+    'login.email': 'Email',
+    'login.password': 'Password',
+    'login.rememberMe': 'Remember me',
+    'login.forgotPassword': 'Forgot password?',
+    'login.submit': 'Sign In',
+    'login.noAccount': "Don't have an account?",
+    'login.createAccount': 'Create account',
+    'login.adminLogin': 'Admin Login',
+    'login.userLogin': 'User Login',
+    'login.success': 'Login successful',
+    'login.error': 'Invalid email or password',
+    
+    // Admin Dashboard
+    'admin.title': 'Admin Dashboard',
+    'admin.overview': 'Overview',
+    'admin.users': 'Users',
+    'admin.offers': 'Manage Offers',
+    'admin.withdrawals': 'Withdrawal Requests',
+    'admin.transactions': 'Transaction Logs',
+    'admin.notifications': 'Notifications',
+    'admin.stats.totalUsers': 'Total Users',
+    'admin.stats.pendingVerifications': 'Pending Verifications',
+    'admin.stats.activeOffers': 'Active Offers',
+    'admin.stats.pendingWithdrawals': 'Pending Withdrawals',
+    'admin.users.name': 'Name',
+    'admin.users.email': 'Email',
+    'admin.users.phone': 'Phone',
+    'admin.users.status': 'Status',
+    'admin.users.verified': 'Verified',
+    'admin.users.pending': 'Pending',
+    'admin.users.actions': 'Actions',
+    'admin.users.verify': 'Verify',
+    'admin.users.block': 'Block',
+    'admin.users.view': 'View',
+    'admin.offers.create': 'Create New Offer',
+    'admin.offers.title': 'Offer Title',
+    'admin.offers.type': 'Offer Type',
+    'admin.offers.reward': 'Reward',
+    'admin.offers.deadline': 'Deadline',
+    'admin.offers.edit': 'Edit',
+    'admin.offers.delete': 'Delete',
+    'admin.withdrawals.user': 'User',
+    'admin.withdrawals.amount': 'Amount',
+    'admin.withdrawals.type': 'Type',
+    'admin.withdrawals.method': 'Method',
+    'admin.withdrawals.date': 'Date',
+    'admin.withdrawals.approve': 'Approve',
+    'admin.withdrawals.reject': 'Reject',
+    'admin.notifications.send': 'Send Notification',
+    'admin.notifications.title': 'Notification Title',
+    'admin.notifications.message': 'Message',
+    'admin.notifications.sendToAll': 'Send to All',
+    'admin.export.users': 'Export Users',
+    'admin.export.transactions': 'Export Transactions',
+    
+    // Home Page
+    'home.title': 'Welcome to Cash',
+    'home.subtitle': 'Smart trading platform to manage your earnings securely',
+    'home.cta': 'Get Started',
+    'home.login': 'Login',
+    'home.cta2.title': 'Start Your Journey with Cash Today',
+    'home.cta2.subtitle': 'Join thousands of users who trust Cash platform to manage their earnings',
+    'home.cta2.button': 'Create Free Account',
+    
+    // Features
+    'features.secure': 'Secure & Safe',
+    'features.secure.desc': 'We use the latest security technologies to protect your funds',
+    'features.fast': 'Fast & Reliable',
+    'features.fast.desc': 'Quick transactions and reliable system for managing your earnings',
+    'features.support': '24/7 Support',
+    'features.support.desc': 'Our support team is available around the clock to help you',
+    
+    // Offers Page
+    'offers.title': 'Available Offers',
+    'offers.subtitle': 'Discover available offers and get additional rewards',
+    'offers.trading': 'Trading',
+    'offers.referral': 'Referral',
+    'offers.premium': 'Premium',
+    'offers.deadline': 'Deadline:',
+    'offers.minAmount': 'Minimum:',
+    'offers.join': 'Join Offer',
+    'offers.notification.title': "Don't Miss New Offers!",
+    'offers.notification.subtitle': 'Subscribe to notifications to get the latest offers and rewards',
+    'offers.notification.button': 'Subscribe to Notifications',
+    
+    // Profile Page
+    'profile.totalEarnings': 'Total Earnings',
+    'profile.teamEarnings': 'Team Earnings',
+    'profile.capital': 'Capital',
+    'profile.personalEarnings': 'Personal Earnings',
+    'profile.bonuses': 'Bonuses',
+    'profile.recentActivity': 'Recent Activity',
+    'profile.accountStatus': 'Account Status',
+    'profile.emailVerification': 'Email Verification',
+    'profile.phoneVerification': 'Phone Verification',
+    'profile.identityVerification': 'Identity Verification',
+    'profile.accountLevel': 'Account Level',
+    'profile.withdrawalStatus': 'Withdrawal Status',
+    'profile.withdrawalEligible': 'Your account is eligible for all withdrawals',
+    'profile.verified': 'Verified',
+    'profile.pending': 'Pending Verification',
+    'profile.completed': 'Completed',
+    'profile.advanced': 'Advanced',
+    'profile.memberSince': 'Member since:',
+    
+    // Transactions Page
+    'transactions.title': 'Transaction History',
+    'transactions.subtitle': 'Track all your financial transactions',
+    'transactions.search': 'Search transactions...',
+    'transactions.all': 'All Transactions',
+    'transactions.withdrawal': 'Withdrawal',
+    'transactions.deposit': 'Deposit',
+    'transactions.bonus': 'Bonus',
+    'transactions.earning': 'Earning',
+    'transactions.completed': 'Completed',
+    'transactions.pending': 'Pending',
+    'transactions.rejected': 'Rejected',
+    'transactions.id': 'Transaction ID:',
+    'transactions.noResults': 'No matching transactions',
+    'transactions.summary': 'Transaction Summary',
+    'transactions.totalIncome': 'Total Income',
+    'transactions.totalWithdrawals': 'Total Withdrawals',
+    'transactions.pendingCount': 'Pending Transactions',
+    
+    // Withdrawal Page
+    'withdrawal.title': 'Withdrawal Request',
+    'withdrawal.subtitle': 'Request withdrawal of your earnings safely and easily',
+    'withdrawal.newRequest': 'New Withdrawal Request',
+    'withdrawal.type': 'Withdrawal Type',
+    'withdrawal.amount': 'Amount',
+    'withdrawal.method': 'Withdrawal Method',
+    'withdrawal.accountDetails': 'Account Details',
+    'withdrawal.maxAmount': 'Maximum:',
+    'withdrawal.selectType': 'Select withdrawal type',
+    'withdrawal.selectMethod': 'Select withdrawal method',
+    'withdrawal.accountPlaceholder': 'Account number or wallet address',
+    'withdrawal.submit': 'Submit Withdrawal Request',
+    'withdrawal.warning': 'Withdrawal request will be reviewed within 24-48 hours. Make sure account details are correct.',
+    'withdrawal.balances': 'Available Balances',
+    'withdrawal.verificationStatus': 'Verification Status',
+    'withdrawal.eligible': 'Your account is eligible for all withdrawals',
+    'withdrawal.verificationRequired': 'Verification Required',
+    'withdrawal.verificationMessage': 'Identity verification must be completed before submitting withdrawal requests',
+    'withdrawal.completeVerification': 'Complete Verification',
+    'withdrawal.bank': 'Bank Transfer',
+    'withdrawal.wallet': 'Digital Wallet',
+    'withdrawal.crypto': 'Cryptocurrency',
+    'withdrawal.error.verification': 'Verification Error',
+    'withdrawal.error.verificationMessage': 'Identity verification must be completed before requesting withdrawal',
+    'withdrawal.error.amount': 'Amount Error',
+    'withdrawal.error.amountMessage': 'Requested amount is greater than available balance',
+    'withdrawal.success.message': 'Withdrawal request submitted successfully and will be reviewed soon',
+    
+    // Registration
+    'register.title': 'Create New Account',
+    'register.firstName': 'First Name',
+    'register.lastName': 'Last Name',
+    'register.email': 'Email',
+    'register.phone': 'Phone Number',
+    'register.referralCode': 'Referral Code (optional)',
+    'register.idFront': 'ID Photo - Front',
+    'register.idBack': 'ID Photo - Back',
+    'register.submit': 'Create Account',
+    'register.hasAccount': 'Already have an account?',
+    'register.login': 'Login',
+    'register.required': 'All fields are required',
+    'register.success': 'Registration request submitted successfully',
+    
+    // Common
+    'common.loading': 'Loading...',
+    'common.error': 'An error occurred',
+    'common.success': 'Success',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.edit': 'Edit',
+    'common.delete': 'Delete',
+    'common.view': 'View',
+    
+    // Theme
+    'theme.light': 'Light Mode',
+    'theme.dark': 'Dark Mode',
+    'language.switch': 'العربية',
+  }
+};
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguage] = useState<Language>('ar'); // Default to Arabic
+  const isRTL = language === 'ar';
+
+  const t = (key: string): string => {
+    return translations[language][key as keyof typeof translations[typeof language]] || key;
+  };
+
+  useEffect(() => {
+    // Apply direction to document
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+    
+    // Apply font class based on language
+    document.body.className = document.body.className.replace(/font-(arabic|english)/, '');
+    document.body.classList.add(language === 'ar' ? 'font-arabic' : 'font-english');
+  }, [language, isRTL]);
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, isRTL, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
