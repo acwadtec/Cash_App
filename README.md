@@ -1,73 +1,66 @@
-# Welcome to your Lovable project
+# Cash App (Frontend Demo)
 
-## Project info
+A modern React + Vite + TypeScript web app for managing user deposits, withdrawals, and admin operations. This project is a **frontend-only mock/demo** and does not include a backend or real authentication.
 
-**URL**: https://lovable.dev/projects/522eaabd-2586-4814-bf25-ae0413b6313f
+## Features
 
-## How can I edit this code?
+### User Panel
+- Register, login, and view profile (mocked)
+- Deposit Money: 
+  - See a randomly selected official deposit number (set by admin)
+  - Enter deposit amount, your mobile number, and upload a transfer screenshot
+  - Submit deposit requests (status: pending/approved/rejected)
+- View deposit request status/history
+- Withdraw money (mocked)
 
-There are several ways of editing your application.
+### Admin Panel
+- Manage up to 10 official deposit numbers (add, edit, remove)
+- View and process deposit requests (approve/reject, see details)
+- Manage users, offers, withdrawals, and notifications (mocked)
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/522eaabd-2586-4814-bf25-ae0413b6313f) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
+## Tech Stack
+- React 18 + Vite
 - TypeScript
-- React
-- shadcn-ui
 - Tailwind CSS
+- LocalStorage for mock/demo data (no backend)
 
-## How can I deploy this project?
+## Limitations
+- **No real backend:** All data is stored in browser localStorage for demo purposes only.
+- **No real authentication:** User/admin flows are simulated.
+- **No real balance updates:** All business logic (like updating balances) should be handled by a backend in production.
+- **File uploads:** Screenshots are stored as base64 in localStorage (for demo only).
 
-Simply open [Lovable](https://lovable.dev/projects/522eaabd-2586-4814-bf25-ae0413b6313f) and click on Share -> Publish.
+## Getting Started
 
-## Can I connect a custom domain to my Lovable project?
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Run the app:**
+   ```bash
+   npm run dev
+   ```
+3. **Open in browser:**
+   Visit [http://localhost:5173](http://localhost:5173)
 
-Yes, you can!
+## Project Structure
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- `src/pages/Deposit.tsx` — User deposit form and logic
+- `src/pages/AdminDashboard.tsx` — Admin panel for managing deposit numbers and requests
+- `src/components/Navigation.tsx` — Main navigation
+- `src/contexts/LanguageContext.tsx` — i18n and translations
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## How Deposits Work (Demo)
+- Admin adds up to 10 official deposit numbers
+- User sees a random number, fills the deposit form, and uploads a screenshot
+- Admin reviews requests and approves/rejects (status only, no real balance update)
+- All data is stored in localStorage for demo
+
+## Production Notes
+- Replace all localStorage logic with real API calls
+- Move all business logic (balances, approvals, etc.) to the backend
+- Add real authentication and security
+
+---
+
+**This project is for demo/prototyping only. Do not use as-is in production.**
