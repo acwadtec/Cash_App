@@ -16,7 +16,6 @@ export default function Login() {
     email: '',
     password: '',
     rememberMe: false,
-    isAdmin: false,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,40 +35,42 @@ export default function Login() {
       return;
     }
 
-    // Admin login (mock)
-    if (formData.isAdmin && formData.email === 'admin@cash.com' && formData.password === 'admin123') {
-      toast({
-        title: t('common.success'),
-        description: t('login.success'),
-      });
-      localStorage.setItem('cash-logged-in', 'true');
-      navigate('/admin');
-    } else if (!formData.isAdmin) {
-      // Supabase Auth login
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-      if (error) {
-        toast({
-          title: t('common.error'),
-          description: error.message,
-          variant: 'destructive',
-        });
-        return;
-      }
-      toast({
-        title: t('common.success'),
-        description: t('login.success'),
-      });
-      localStorage.setItem('cash-logged-in', 'true');
-      navigate('/profile');
-    } else {
+    // Supabase Auth login
+    const { error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+    if (error) {
       toast({
         title: t('common.error'),
-        description: t('login.error'),
+        description: error.message,
         variant: 'destructive',
       });
+      return;
+    }
+    // Fetch user_info to check role
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    let role = 'user';
+    if (user) {
+      const { data: userInfo } = await supabase
+        .from('user_info')
+        .select('role')
+        .eq('user_uid', user.id)
+        .single();
+      if (userInfo && userInfo.role === 'admin') {
+        role = 'admin';
+      }
+    }
+    toast({
+      title: t('common.success'),
+      description: t('login.success'),
+    });
+    localStorage.setItem('cash-logged-in', 'true');
+    if (role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/profile');
     }
   };
 
@@ -87,29 +88,6 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="flex justify-center mb-6">
-                <div className="flex rounded-lg bg-accent p-1">
-                  <Button
-                    type="button"
-                    variant={!formData.isAdmin ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, isAdmin: false }))}
-                    className="px-6"
-                  >
-                    {t('login.userLogin')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={formData.isAdmin ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, isAdmin: true }))}
-                    className="px-6"
-                  >
-                    {t('login.adminLogin')}
-                  </Button>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="email">{t('login.email')}</Label>
                 <Input
@@ -167,12 +145,6 @@ export default function Login() {
                 </a>
               </p>
             </div>
-
-            {formData.isAdmin && (
-              <div className="mt-4 p-3 bg-accent rounded-lg text-center text-sm text-muted-foreground">
-                Demo: admin@cash.com / admin123
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

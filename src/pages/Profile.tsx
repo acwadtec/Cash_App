@@ -88,6 +88,7 @@ export default function Profile() {
           wallet: data.wallet,
           id_front_url: idFrontUrl,
           id_back_url: idBackUrl,
+          role: 'user',
         },
       ]);
       if (error) throw error;

@@ -113,6 +113,27 @@ export default function AdminDashboard() {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    // Check if user is admin
+    const checkAdmin = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        const { data: userInfo } = await supabase
+          .from('user_info')
+          .select('role')
+          .eq('user_uid', user.id)
+          .single();
+        if (!userInfo || userInfo.role !== 'admin') {
+          navigate('/profile');
+        }
+      } else {
+        navigate('/login');
+      }
+    };
+    checkAdmin();
+  }, [navigate]);
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
