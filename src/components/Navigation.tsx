@@ -24,6 +24,7 @@ export function Navigation() {
   const isHome = location.pathname === '/';
   const isLoggedIn = Boolean(localStorage.getItem('cash-logged-in'));
   const isAdmin = location.pathname.startsWith('/admin');
+  const isManageOffers = location.pathname.startsWith('/manage-offers');
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
@@ -40,7 +41,7 @@ export function Navigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          {!isHome && isLoggedIn && !isAdmin && (
+          {!isHome && isLoggedIn && !isAdmin && !isManageOffers && (
             <div className="hidden md:flex items-center space-x-1 rtl:space-x-reverse">
               {navItems.map((item) => (
                 <Link
@@ -124,7 +125,7 @@ export function Navigation() {
         </div>
 
         {/* Mobile Navigation */}
-        {!isHome && isLoggedIn && !isAdmin && isMobileMenuOpen && (
+        {!isHome && isLoggedIn && !isAdmin && isMobileMenuOpen && !isManageOffers && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col space-y-2">
               {navItems.map((item) => (

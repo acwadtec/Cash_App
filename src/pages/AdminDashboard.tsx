@@ -24,6 +24,11 @@ export default function AdminDashboard() {
   const [loadingOffers, setLoadingOffers] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userCount, setUserCount] = useState(0);
+  const [pendingVerifications, setPendingVerifications] = useState(0);
+  const [activeOffers, setActiveOffers] = useState(0);
 
   // Mock data
   const stats = {
@@ -83,6 +88,14 @@ export default function AdminDashboard() {
     </Card>
   );
 
+  const fetchActiveOffers = async () => {
+    const { count } = await supabase
+      .from('offers')
+      .select('*', { count: 'exact', head: true })
+      .eq('active', true);
+    setActiveOffers(count || 0);
+  };
+
   useEffect(() => {
     const fetchOffers = async () => {
       setLoadingOffers(true);
@@ -94,14 +107,38 @@ export default function AdminDashboard() {
         setOffers(data || []);
       }
       setLoadingOffers(false);
+      fetchActiveOffers();
     };
     fetchOffers();
   }, []);
 
   useEffect(() => {
+    const fetchUserCount = async () => {
+      const { count } = await supabase
+        .from('user_info')
+        .select('*', { count: 'exact', head: true })
+        .neq('role', 'admin');
+      setUserCount(count || 0);
+    };
+    fetchUserCount();
+  }, []);
+
+  useEffect(() => {
+    const fetchPendingVerifications = async () => {
+      const { count } = await supabase
+        .from('user_info')
+        .select('*', { count: 'exact', head: true })
+        .eq('verified', false)
+        .neq('role', 'admin');
+      setPendingVerifications(count || 0);
+    };
+    fetchPendingVerifications();
+  }, []);
+
+  useEffect(() => {
     const fetchUsers = async () => {
       setLoadingUsers(true);
-      const { data, error } = await supabase.from('users').select('*');
+      const { data, error } = await supabase.from('user_info').select('*').neq('role', 'admin');
       if (error) {
         console.error('Error fetching users:', error);
         setUsers([]);
@@ -109,6 +146,9 @@ export default function AdminDashboard() {
         setUsers(data || []);
       }
       setLoadingUsers(false);
+      fetchUserCount();
+      fetchPendingVerifications();
+      fetchActiveOffers();
     };
     fetchUsers();
   }, []);
@@ -134,6 +174,44 @@ export default function AdminDashboard() {
     checkAdmin();
   }, [navigate]);
 
+  const handleView = (user) => {
+    setSelectedUser(user);
+    setShowUserModal(true);
+  };
+
+  const handleVerify = async (userId) => {
+    const { error } = await supabase
+      .from('user_info')
+      .update({ verified: true })
+      .eq('id', userId);
+    if (!error) {
+      // Refresh users list
+      const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
+      setUsers(data || []);
+      toast({ title: t('common.success'), description: 'User verified successfully' });
+      fetchUserCount();
+      fetchPendingVerifications();
+    } else {
+      toast({ title: t('common.error'), description: error.message });
+    }
+  };
+
+  const handleRemove = async (userId) => {
+    const { error } = await supabase
+      .from('user_info')
+      .delete()
+      .eq('id', userId);
+    if (!error) {
+      // Refresh users list and user count
+      const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
+      setUsers(data || []);
+      fetchUserCount();
+      toast({ title: t('common.success'), description: 'User removed successfully' });
+    } else {
+      toast({ title: t('common.error'), description: error.message });
+    }
+  };
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -149,19 +227,19 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard 
               title={t('admin.stats.totalUsers')} 
-              value={stats.totalUsers} 
+              value={userCount} 
               icon={Users} 
               color="text-blue-600" 
             />
             <StatCard 
               title={t('admin.stats.pendingVerifications')} 
-              value={stats.pendingVerifications} 
+              value={pendingVerifications} 
               icon={FileCheck} 
               color="text-orange-600" 
             />
             <StatCard 
               title={t('admin.stats.activeOffers')} 
-              value={stats.activeOffers} 
+              value={activeOffers} 
               icon={Gift} 
               color="text-green-600" 
             />
@@ -220,24 +298,27 @@ export default function AdminDashboard() {
                       ) : (
                         users.map((user) => (
                           <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
+                            <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell>{user.phone}</TableCell>
                             <TableCell>
-                              <Badge className={user.status === 'verified' ? 'bg-success' : 'bg-warning'}>
-                                {user.status === 'verified' ? 'Verified' : 'Pending'}
+                              <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
+                                {user.verified ? 'Verified' : 'Pending'}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               <div className="flex space-x-2">
-                                <Button size="sm" variant="outline">
+                                <Button size="sm" variant="outline" onClick={() => handleView(user)}>
                                   View
                                 </Button>
-                                {user.status === 'pending' && (
-                                  <Button size="sm" className="bg-success">
+                                {!user.verified && (
+                                  <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
                                     Verify
                                   </Button>
                                 )}
+                                <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
+                                  Remove
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -360,7 +441,7 @@ export default function AdminDashboard() {
                           value={notificationData.message}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
                           placeholder="نص الرسالة"
-                          className="w-full h-32 px-3 py-2 border border-input rounded-md resize-none"
+                          className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none"
                         />
                       </div>
                       <Button onClick={handleSendNotification} className="w-full">
@@ -383,6 +464,21 @@ export default function AdminDashboard() {
           </Tabs>
         </div>
       </div>
+      {showUserModal && selectedUser && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
+            <h2 className="text-xl font-bold mb-4">User Details</h2>
+            <div className="mb-2">Name: {selectedUser.first_name} {selectedUser.last_name}</div>
+            <div className="mb-2">Email: {selectedUser.email}</div>
+            <div className="mb-2">Phone: {selectedUser.phone}</div>
+            <div className="mb-2">Wallet: {selectedUser.wallet}</div>
+            <div className="mb-2">Verified: {selectedUser.verified ? 'Yes' : 'No'}</div>
+            <button className="mt-4 px-4 py-2 bg-primary text-white rounded" onClick={() => setShowUserModal(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

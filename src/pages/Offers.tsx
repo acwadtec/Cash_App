@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface Offer {
   id: string;
@@ -22,9 +23,16 @@ export default function Offers() {
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true);
-      const res = await fetch('http://localhost:4000/api/offers');
-      const data = await res.json();
-      setOffers(data);
+      // Fetch only active offers from Supabase
+      const { data, error } = await supabase
+        .from('offers')
+        .select('*')
+        .eq('active', true);
+      if (error) {
+        setOffers([]);
+      } else {
+        setOffers(data || []);
+      }
       setLoading(false);
     };
     fetchOffers();

@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/dialog';
 import OffersTable from '@/components/OffersTable';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 interface Offer {
   id: string;
@@ -24,6 +25,7 @@ export default function ManageOffers() {
   const [showDialog, setShowDialog] = useState(false);
   const [editOffer, setEditOffer] = useState<Offer | null>(null);
   const [form, setForm] = useState({ title: '', description: '', amount: '', deadline: '' });
+  const navigate = useNavigate();
 
   // Fetch offers from Supabase
   const fetchOffers = async () => {
@@ -103,6 +105,7 @@ export default function ManageOffers() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Manage Offers</h1>
           <div className="flex gap-2">
+            <Button onClick={() => navigate('/admin')} variant="success">Save</Button>
             <Button onClick={() => openDialog()}>Create Offer</Button>
             <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0}>
               Delete All
