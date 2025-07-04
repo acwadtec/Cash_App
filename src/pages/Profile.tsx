@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +17,7 @@ export default function Profile() {
   const [hasUserInfo, setHasUserInfo] = useState(false);
   const [loadingUserInfo, setLoadingUserInfo] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -28,6 +28,7 @@ export default function Profile() {
         return;
       }
       const user = userData.user;
+      setUser(user);
       const { data, error } = await supabase
         .from('user_info')
         .select('*')
@@ -44,42 +45,6 @@ export default function Profile() {
     checkUserInfo();
   }, []);
 
-  // Mock user data
-  const userData = {
-    name: t('language.switch') === 'English' ? 'أحمد محمد' : 'Ahmed Mohammed',
-    email: 'ahmed@example.com',
-    phone: '+966501234567',
-    verified: true,
-    joinDate: '2024-01-15',
-    stats: {
-      teamEarnings: 2450.50,
-      capital: 5000.00,
-      personalEarnings: 1230.75,
-      bonuses: 890.25,
-      totalEarnings: 9571.50,
-    },
-    recentActivity: [
-      { 
-        type: 'bonus', 
-        amount: 50, 
-        date: '2024-07-01', 
-        description: t('language.switch') === 'English' ? 'مكافأة إحالة صديق' : 'Friend referral bonus'
-      },
-      { 
-        type: 'earning', 
-        amount: 120, 
-        date: '2024-06-30', 
-        description: t('language.switch') === 'English' ? 'أرباح شخصية' : 'Personal earnings'
-      },
-      { 
-        type: 'team', 
-        amount: 200, 
-        date: '2024-06-28', 
-        description: t('language.switch') === 'English' ? 'أرباح الفريق' : 'Team earnings'
-      },
-    ]
-  };
-
   const StatCard = ({ title, value, color = 'text-primary' }: { title: string; value: number; color?: string }) => (
     <Card className="text-center shadow-card">
       <CardContent className="pt-6">
@@ -91,15 +56,12 @@ export default function Profile() {
     </Card>
   );
 
-  // New form submit handler
   const onSubmit = async (data: any) => {
     setUploading(true);
     try {
-      // Get current user from Supabase Auth
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) throw new Error('لم يتم العثور على المستخدم');
       const user = userData.user;
-      // Upload ID photos to Supabase Storage in a folder named by user UID
       const idFrontFile = data.idFront[0];
       const idBackFile = data.idBack[0];
       let idFrontUrl = '';
@@ -116,7 +78,6 @@ export default function Profile() {
         if (backError) throw backError;
         idBackUrl = supabase.storage.from('id-photos').getPublicUrl(backData.path).data.publicUrl;
       }
-      // Save user info to Supabase table
       const { error } = await supabase.from('user_info').insert([
         {
           user_uid: user.id,
@@ -149,24 +110,35 @@ export default function Profile() {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <Avatar className="w-24 h-24">
                   <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                    {userData.name.split(' ').map(n => n[0]).join('')}
+                    {user ? (
+                      user.user_metadata?.username
+                        ? user.user_metadata.username.split(' ').map((n: string) => n[0]).join('')
+                        : user.email
+                          ? user.email[0].toUpperCase()
+                          : user.id.slice(0, 2).toUpperCase()
+                    ) : ''}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 text-center md:text-right">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                      <h1 className="text-3xl font-bold mb-2">{userData.name}</h1>
-                      <p className="text-muted-foreground mb-2">{userData.email}</p>
-                      <p className="text-muted-foreground">{userData.phone}</p>
+                      <h1 className="text-3xl font-bold mb-2">
+                        {userInfo?.displayName ||
+                         user?.user_metadata?.displayName ||
+                         user?.user_metadata?.username ||
+                         user?.email}
+                      </h1>
+                      <p className="text-muted-foreground mb-2">{user?.email}</p>
+                      <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
                     </div>
                     
                     <div className="flex flex-col items-center md:items-end gap-2">
-                      <Badge className={userData.verified ? 'bg-success' : 'bg-warning'}>
-                        {userData.verified ? t('profile.verified') : t('profile.pending')}
+                      <Badge className={userInfo?.verified ? 'bg-success' : 'bg-warning'}>
+                        {userInfo?.verified ? t('profile.verified') : t('profile.pending')}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        {t('profile.memberSince')} {userData.joinDate}
+                        {t('profile.memberSince')} {userInfo?.joinDate || ''}
                       </span>
                     </div>
                   </div>
@@ -177,60 +149,62 @@ export default function Profile() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <StatCard title={t('profile.totalEarnings')} value={userData.stats.totalEarnings} color="text-success" />
-            <StatCard title={t('profile.teamEarnings')} value={userData.stats.teamEarnings} />
-            <StatCard title={t('profile.capital')} value={userData.stats.capital} />
-            <StatCard title={t('profile.personalEarnings')} value={userData.stats.personalEarnings} />
-            <StatCard title={t('profile.bonuses')} value={userData.stats.bonuses} />
+            <StatCard title={t('profile.totalEarnings')} value={userInfo?.stats?.totalEarnings || 0} color="text-success" />
+            <StatCard title={t('profile.teamEarnings')} value={userInfo?.stats?.teamEarnings || 0} />
+            <StatCard title={t('profile.capital')} value={userInfo?.stats?.capital || 0} />
+            <StatCard title={t('profile.personalEarnings')} value={userInfo?.stats?.personalEarnings || 0} />
+            <StatCard title={t('profile.bonuses')} value={userInfo?.stats?.bonuses || 0} />
           </div>
 
           {/* New User Info Form */}
           {!loadingUserInfo && !hasUserInfo && (
             <Card className="mt-8 shadow-glow">
               <CardHeader>
-                <CardTitle>تحديث بيانات الحساب</CardTitle>
+                <CardTitle>{t('profile.updateAccountInfo') || 'تحديث بيانات الحساب'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label>الاسم الأول</label>
-                      <Input type="text" {...form.register('firstName', { required: true })} />
+                      <label>{t('profile.firstName') || 'الاسم الأول'}</label>
+                      <Input type="text" placeholder={t('profile.firstNamePlaceholder') || ''} {...form.register('firstName', { required: true })} />
                     </div>
                     <div>
-                      <label>اسم العائلة</label>
-                      <Input type="text" {...form.register('lastName', { required: true })} />
+                      <label>{t('profile.lastName') || 'اسم العائلة'}</label>
+                      <Input type="text" placeholder={t('profile.lastNamePlaceholder') || ''} {...form.register('lastName', { required: true })} />
                     </div>
                   </div>
                   <div>
-                    <label>رقم الهاتف</label>
-                    <Input type="text" {...form.register('phone', { required: true })} />
+                    <label>{t('profile.phone') || 'رقم الهاتف'}</label>
+                    <Input type="text" placeholder={t('profile.phonePlaceholder') || ''} {...form.register('phone', { required: true })} />
                   </div>
                   <div>
-                    <label>المحفظة الإلكترونية</label>
+                    <label>{t('profile.wallet') || 'المحفظة الإلكترونية'}</label>
                     <Select {...form.register('wallet', { required: true })} onValueChange={val => form.setValue('wallet', val)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر المحفظة" />
+                        <SelectValue placeholder={t('profile.selectWallet') || 'اختر المحفظة'} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="vodafone cash">فودافون كاش</SelectItem>
-                        <SelectItem value="orange cash">أورنج كاش</SelectItem>
-                        <SelectItem value="we pay">وي باي</SelectItem>
-                        <SelectItem value="etisalate cash">اتصالات كاش</SelectItem>
+                        <SelectItem value="vodafone cash">{t('profile.walletVodafone') || 'فودافون كاش'}</SelectItem>
+                        <SelectItem value="orange cash">{t('profile.walletOrange') || 'أورنج كاش'}</SelectItem>
+                        <SelectItem value="we pay">{t('profile.walletWePay') || 'وي باي'}</SelectItem>
+                        <SelectItem value="etisalate cash">{t('profile.walletEtisalat') || 'اتصالات كاش'}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label>صورة الهوية - الوجه الأمامي</label>
+                      <label>{t('profile.idFront') || 'صورة الهوية - الوجه الأمامي'}</label>
                       <Input type="file" accept="image/*" {...form.register('idFront', { required: true })} />
                     </div>
                     <div>
-                      <label>صورة الهوية - الوجه الخلفي</label>
+                      <label>{t('profile.idBack') || 'صورة الهوية - الوجه الخلفي'}</label>
                       <Input type="file" accept="image/*" {...form.register('idBack', { required: true })} />
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={uploading}>{uploading ? 'جاري الحفظ...' : 'حفظ البيانات'}</Button>
+                  <Button type="submit" className="w-full" disabled={uploading}>
+                    {uploading ? t('profile.saving') || 'جاري الحفظ...' : t('profile.save') || 'حفظ البيانات'}
+                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -263,7 +237,7 @@ export default function Profile() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {userData.recentActivity.map((activity, index) => (
+                  {userInfo?.recentActivity?.map((activity, index) => (
                     <div key={index} className="flex justify-between items-center p-4 rounded-lg bg-accent/20">
                       <div>
                         <p className="font-medium">{activity.description}</p>
