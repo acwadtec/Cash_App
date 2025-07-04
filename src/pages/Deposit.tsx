@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 // Mock admin numbers (should be replaced by context or prop in real app)
 const getAdminNumbers = () => {
@@ -18,14 +19,36 @@ export default function Deposit() {
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [history, setHistory] = useState([]);
 
   // Pick a random admin number on mount
-  useState(() => {
-    const numbers = getAdminNumbers();
-    if (numbers.length > 0) {
-      setSelectedNumber(numbers[Math.floor(Math.random() * numbers.length)]);
-    }
-  });
+  useEffect(() => {
+    const fetchNumbers = async () => {
+      const { data } = await supabase.from('deposit_numbers').select('number');
+      if (data && data.length > 0) {
+        const numbers = data.map((n) => n.number);
+        setSelectedNumber(numbers[Math.floor(Math.random() * numbers.length)]);
+      }
+    };
+    fetchNumbers();
+  }, []);
+
+  // Fetch deposit history
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        const { data } = await supabase
+          .from('deposit_requests')
+          .select('*')
+          .eq('user_uid', user.id)
+          .order('created_at', { ascending: false });
+        setHistory(data || []);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,34 +59,59 @@ export default function Deposit() {
     setScreenshot(file || null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !userNumber || !screenshot || !selectedNumber) {
       toast({ title: t('common.error'), description: t('deposit.error.required'), variant: 'destructive' });
       return;
     }
+    if (!['image/jpeg', 'image/png'].includes(screenshot.type)) {
+      toast({ title: t('common.error'), description: t('deposit.error.imageType'), variant: 'destructive' });
+      return;
+    }
     setSubmitting(true);
-    // Mock: Save to localStorage as pending deposit
-    const deposits = JSON.parse(localStorage.getItem('depositRequests') || '[]');
-    const reader = new FileReader();
-    reader.onload = () => {
-      deposits.push({
-        id: Date.now(),
-        amount,
-        userNumber,
-        targetNumber: selectedNumber,
-        screenshot: reader.result,
-        status: 'pending',
-        date: new Date().toISOString(),
-      });
-      localStorage.setItem('depositRequests', JSON.stringify(deposits));
+    // Upload screenshot to Supabase Storage
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    let screenshotUrl = '';
+    if (user) {
+      const filePath = `deposits/${user.id}/${Date.now()}-${screenshot.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from('deposit-screenshots').upload(filePath, screenshot);
+      if (uploadError) {
+        toast({ title: t('common.error'), description: uploadError.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+      screenshotUrl = supabase.storage.from('deposit-screenshots').getPublicUrl(uploadData.path).data.publicUrl;
+      // Insert deposit request
+      const { error } = await supabase.from('deposit_requests').insert([
+        {
+          user_uid: user.id,
+          user_number: userNumber,
+          target_number: selectedNumber,
+          amount: Number(amount),
+          screenshot_url: screenshotUrl,
+          status: 'pending',
+        },
+      ]);
+      if (error) {
+        toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
       setAmount('');
       setUserNumber('');
       setScreenshot(null);
       toast({ title: t('common.success'), description: t('deposit.success') });
-      setSubmitting(false);
-    };
-    reader.readAsDataURL(screenshot);
+      // Refresh history
+      const { data } = await supabase
+        .from('deposit_requests')
+        .select('*')
+        .eq('user_uid', user.id)
+        .order('created_at', { ascending: false });
+      setHistory(data || []);
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -101,6 +149,32 @@ export default function Deposit() {
           </Card>
         </div>
       </div>
+      {/* Below the form, show deposit history */}
+      {history.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">{t('deposit.history') || 'Deposit History'}</h2>
+          <div className="space-y-4">
+            {history.map((item) => (
+              <Card key={item.id} className="shadow-card">
+                <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div><b>{t('deposit.amount') || 'Amount'}:</b> {item.amount}</div>
+                    <div><b>{t('deposit.userNumber') || 'Your Number'}:</b> {item.user_number}</div>
+                    <div><b>{t('deposit.targetNumber') || 'Target Number'}:</b> {item.target_number}</div>
+                    <div><b>{t('deposit.status') || 'Status'}:</b> {item.status}</div>
+                    <div><b>{t('deposit.date') || 'Date'}:</b> {item.created_at?.slice(0, 10)}</div>
+                  </div>
+                  <div>
+                    <a href={item.screenshot_url} target="_blank" rel="noopener noreferrer">
+                      <img src={item.screenshot_url} alt="screenshot" className="w-32 h-32 object-cover rounded" />
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

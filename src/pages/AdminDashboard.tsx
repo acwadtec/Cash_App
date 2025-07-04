@@ -29,6 +29,11 @@ export default function AdminDashboard() {
   const [userCount, setUserCount] = useState(0);
   const [pendingVerifications, setPendingVerifications] = useState(0);
   const [activeOffers, setActiveOffers] = useState(0);
+  const [depositNumbers, setDepositNumbers] = useState([]);
+  const [newNumber, setNewNumber] = useState('');
+  const [depositRequests, setDepositRequests] = useState([]);
+  const [loadingDepositNumbers, setLoadingDepositNumbers] = useState(false);
+  const [loadingDepositRequests, setLoadingDepositRequests] = useState(false);
 
   // Mock data
   const stats = {
@@ -212,6 +217,65 @@ export default function AdminDashboard() {
     }
   };
 
+  // Fetch deposit numbers
+  const fetchDepositNumbers = async () => {
+    setLoadingDepositNumbers(true);
+    const { data } = await supabase.from('deposit_numbers').select('*').order('created_at', { ascending: true });
+    setDepositNumbers(data || []);
+    setLoadingDepositNumbers(false);
+  };
+  // Fetch deposit requests
+  const fetchDepositRequests = async () => {
+    setLoadingDepositRequests(true);
+    const { data } = await supabase.from('deposit_requests').select('*').order('created_at', { ascending: false });
+    setDepositRequests(data || []);
+    setLoadingDepositRequests(false);
+  };
+  useEffect(() => {
+    fetchDepositNumbers();
+    fetchDepositRequests();
+  }, []);
+
+  // Add deposit number
+  const handleAddNumber = async () => {
+    if (!newNumber) return;
+    if (depositNumbers.length >= 10) {
+      toast({ title: t('common.error'), description: t('deposit.error.maxNumbers'), variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase.from('deposit_numbers').insert([{ number: newNumber }]);
+    if (!error) {
+      setNewNumber('');
+      fetchDepositNumbers();
+    }
+  };
+  // Remove deposit number
+  const handleRemoveNumber = async (id) => {
+    await supabase.from('deposit_numbers').delete().eq('id', id);
+    fetchDepositNumbers();
+  };
+  // Update deposit number
+  const handleUpdateNumber = async (id, number) => {
+    await supabase.from('deposit_numbers').update({ number }).eq('id', id);
+    fetchDepositNumbers();
+  };
+  // Approve deposit request
+  const handleApproveDeposit = async (request) => {
+    // Update request status
+    await supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', request.id);
+    // Update user balance
+    const { data: userInfo } = await supabase.from('user_info').select('balance').eq('user_uid', request.user_uid).single();
+    const newBalance = (userInfo?.balance || 0) + Number(request.amount);
+    await supabase.from('user_info').update({ balance: newBalance }).eq('user_uid', request.user_uid);
+    fetchDepositRequests();
+    toast({ title: t('common.success'), description: t('deposit.success') });
+  };
+  // Reject deposit request
+  const handleRejectDeposit = async (id) => {
+    await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id);
+    fetchDepositRequests();
+  };
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -253,12 +317,14 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
               <TabsTrigger value="transactions">{t('admin.transactions')}</TabsTrigger>
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
+              <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
+              <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -458,6 +524,79 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Deposit Numbers Tab */}
+            <TabsContent value="depositNumbers">
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle>{t('deposit.numbers') || 'Deposit Numbers'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4 flex gap-2">
+                    <Input value={newNumber} onChange={e => setNewNumber(e.target.value)} placeholder={t('deposit.userNumber') || 'Mobile Number'} />
+                    <Button onClick={handleAddNumber} disabled={depositNumbers.length >= 10}>{t('common.save') || 'Add'}</Button>
+                  </div>
+                  {loadingDepositNumbers ? (
+                    <div>Loading...</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {depositNumbers.map((num) => (
+                        <li key={num.id} className="flex items-center gap-2">
+                          <Input value={num.number} onChange={e => handleUpdateNumber(num.id, e.target.value)} />
+                          <Button variant="destructive" onClick={() => handleRemoveNumber(num.id)}>{t('common.delete') || 'Remove'}</Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Deposit Requests Tab */}
+            <TabsContent value="depositRequests">
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle>{t('deposit.requests') || 'Deposit Requests'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingDepositRequests ? (
+                    <div>Loading...</div>
+                  ) : (
+                    <Table>
+                      <thead>
+                        <tr>
+                          <th>{t('deposit.amount') || 'Amount'}</th>
+                          <th>{t('deposit.userNumber') || 'User Number'}</th>
+                          <th>{t('deposit.targetNumber') || 'Target Number'}</th>
+                          <th>{t('deposit.screenshot') || 'Screenshot'}</th>
+                          <th>{t('deposit.status') || 'Status'}</th>
+                          <th>{t('deposit.actions') || 'Actions'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {depositRequests.map((req) => (
+                          <tr key={req.id}>
+                            <td>{req.amount}</td>
+                            <td>{req.user_number}</td>
+                            <td>{req.target_number}</td>
+                            <td><a href={req.screenshot_url} target="_blank" rel="noopener noreferrer">{t('deposit.view') || 'View'}</a></td>
+                            <td>{req.status}</td>
+                            <td>
+                              {req.status === 'pending' && (
+                                <>
+                                  <Button size="sm" className="bg-success mr-2" onClick={() => handleApproveDeposit(req)}>{t('common.save') || 'Approve'}</Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleRejectDeposit(req.id)}>{t('common.delete') || 'Reject'}</Button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
