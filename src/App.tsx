@@ -14,6 +14,7 @@ import Offers from "./pages/Offers";
 import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import Withdrawal from "./pages/Withdrawal";
+import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 import ManageOffers from './pages/ManageOffers';
 
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="profile" element={<Profile />} />
                 <Route path="transactions" element={<Transactions />} />
                 <Route path="withdrawal" element={<Withdrawal />} />
+                <Route path="help" element={<HelpCenter />} />
                 <Route path="manage-offers" element={<ManageOffers />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
