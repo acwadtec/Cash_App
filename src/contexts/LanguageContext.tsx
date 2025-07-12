@@ -256,13 +256,6 @@ const translations = {
     'deposit.approve': 'موافقة',
     'deposit.reject': 'رفض',
     'deposit.user': 'المستخدم',
-    'deposit.targetNumber': 'رقم الإيداع الرسمي',
-    'deposit.userNumber': 'رقم المستخدم',
-    'deposit.amount': 'المبلغ',
-    'deposit.success': 'تم إرسال طلب الإيداع بنجاح وسيتم مراجعته قريباً',
-    'deposit.error.maxNumbers': 'لا يمكن إضافة أكثر من 10 أرقام إيداع',
-    'deposit.error.required': 'جميع الحقول مطلوبة',
-    'deposit.error.imageType': 'يجب أن تكون الصورة من نوع jpg أو png',
   },
   en: {
     // Navigation
@@ -507,13 +500,6 @@ const translations = {
     'deposit.approve': 'Approve',
     'deposit.reject': 'Reject',
     'deposit.user': 'User',
-    'deposit.targetNumber': 'Target Number',
-    'deposit.userNumber': 'User Number',
-    'deposit.amount': 'Amount',
-    'deposit.success': 'Deposit request sent successfully and will be reviewed soon',
-    'deposit.error.maxNumbers': 'Cannot add more than 10 deposit numbers',
-    'deposit.error.required': 'All fields are required',
-    'deposit.error.imageType': 'Screenshot must be a jpg or png image',
   }
 };
 
