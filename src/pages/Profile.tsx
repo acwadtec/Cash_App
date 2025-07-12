@@ -18,19 +18,9 @@ export default function Profile() {
   const [hasUserInfo, setHasUserInfo] = useState(false);
   const [loadingUserInfo, setLoadingUserInfo] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const [user, setUser] = useState<any>(null);
-=======
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [userUid, setUserUid] = useState<string | null>(null);
->>>>>>> Stashed changes
-=======
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [modalImageUrl, setModalImageUrl] = useState('');
-  const [userUid, setUserUid] = useState<string | null>(null);
->>>>>>> Stashed changes
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -41,15 +31,7 @@ export default function Profile() {
         return;
       }
       const user = userData.user;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      setUser(user);
-=======
       setUserUid(user.id);
->>>>>>> Stashed changes
-=======
-      setUserUid(user.id);
->>>>>>> Stashed changes
       const { data, error } = await supabase
         .from('user_info')
         .select('*')
@@ -66,11 +48,6 @@ export default function Profile() {
     checkUserInfo();
   }, []);
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
   // Helper to get image URL from storage path
   const getImageUrl = (type: 'front' | 'back') => {
     if (!userUid) return '';
@@ -126,7 +103,6 @@ export default function Profile() {
     ]
   };
 
->>>>>>> Stashed changes
   const StatCard = ({ title, value, color = 'text-primary' }: { title: string; value: number; color?: string }) => (
     <Card className="text-center shadow-card">
       <CardContent className="pt-6">
@@ -193,12 +169,12 @@ export default function Profile() {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <Avatar className="w-24 h-24">
                   <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                    {user ? (
-                      user.user_metadata?.username
-                        ? user.user_metadata.username.split(' ').map((n: string) => n[0]).join('')
-                        : user.email
-                          ? user.email[0].toUpperCase()
-                          : user.id.slice(0, 2).toUpperCase()
+                    {userInfo ? (
+                      userInfo.first_name
+                        ? userInfo.first_name.split(' ').map((n: string) => n[0]).join('')
+                        : userInfo.email
+                          ? userInfo.email[0].toUpperCase()
+                          : userInfo.user_uid?.slice(0, 2).toUpperCase()
                     ) : ''}
                   </AvatarFallback>
                 </Avatar>
@@ -207,12 +183,11 @@ export default function Profile() {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                       <h1 className="text-3xl font-bold mb-2">
-                        {userInfo?.displayName ||
-                         user?.user_metadata?.displayName ||
-                         user?.user_metadata?.username ||
-                         user?.email}
+                        {userInfo?.first_name && userInfo?.last_name 
+                          ? `${userInfo.first_name} ${userInfo.last_name}`
+                          : userInfo?.email || 'User'}
                       </h1>
-                      <p className="text-muted-foreground mb-2">{user?.email}</p>
+                      <p className="text-muted-foreground mb-2">{userInfo?.email}</p>
                       <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
                     </div>
                     
