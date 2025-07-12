@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -17,7 +18,13 @@ export default function Profile() {
   const [hasUserInfo, setHasUserInfo] = useState(false);
   const [loadingUserInfo, setLoadingUserInfo] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+<<<<<<< Updated upstream
   const [user, setUser] = useState<any>(null);
+=======
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [userUid, setUserUid] = useState<string | null>(null);
+>>>>>>> Stashed changes
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -28,7 +35,11 @@ export default function Profile() {
         return;
       }
       const user = userData.user;
+<<<<<<< Updated upstream
       setUser(user);
+=======
+      setUserUid(user.id);
+>>>>>>> Stashed changes
       const { data, error } = await supabase
         .from('user_info')
         .select('*')
@@ -45,6 +56,64 @@ export default function Profile() {
     checkUserInfo();
   }, []);
 
+<<<<<<< Updated upstream
+=======
+  // Helper to get image URL from storage path
+  const getImageUrl = (type: 'front' | 'back') => {
+    if (!userUid) return '';
+    const fileName = type === 'front' ? 'front' : 'back';
+    // Find the file name from the DB url if available, fallback to latest
+    let dbUrl = type === 'front' ? userInfo?.id_front_url : userInfo?.id_back_url;
+    let file = '';
+    if (dbUrl) {
+      // Try to extract the file name from the URL
+      const match = dbUrl.match(/\/([^\/]+)$/);
+      if (match) file = match[1];
+    }
+    // If not found, fallback to wildcard (will not work unless you list files)
+    if (!file) return dbUrl || '';
+    // Compose the path
+    const path = `${userUid}/${file}`;
+    return supabase.storage.from('id-photos').getPublicUrl(path).data.publicUrl;
+  };
+
+  // Mock user data
+  const userData = {
+    name: t('language.switch') === 'English' ? 'أحمد محمد' : 'Ahmed Mohammed',
+    email: 'ahmed@example.com',
+    phone: '+966501234567',
+    verified: true,
+    joinDate: '2024-01-15',
+    stats: {
+      teamEarnings: 2450.50,
+      capital: 5000.00,
+      personalEarnings: 1230.75,
+      bonuses: 890.25,
+      totalEarnings: 9571.50,
+    },
+    recentActivity: [
+      { 
+        type: 'bonus', 
+        amount: 50, 
+        date: '2024-07-01', 
+        description: t('language.switch') === 'English' ? 'مكافأة إحالة صديق' : 'Friend referral bonus'
+      },
+      { 
+        type: 'earning', 
+        amount: 120, 
+        date: '2024-06-30', 
+        description: t('language.switch') === 'English' ? 'أرباح شخصية' : 'Personal earnings'
+      },
+      { 
+        type: 'team', 
+        amount: 200, 
+        date: '2024-06-28', 
+        description: t('language.switch') === 'English' ? 'أرباح الفريق' : 'Team earnings'
+      },
+    ]
+  };
+
+>>>>>>> Stashed changes
   const StatCard = ({ title, value, color = 'text-primary' }: { title: string; value: number; color?: string }) => (
     <Card className="text-center shadow-card">
       <CardContent className="pt-6">
@@ -223,12 +292,25 @@ export default function Profile() {
                   <div>اسم العائلة: {userInfo.last_name}</div>
                   <div>رقم الهاتف: {userInfo.phone}</div>
                   <div>المحفظة الإلكترونية: {userInfo.wallet}</div>
-                  <div>صورة الهوية - الوجه الأمامي: <a href={userInfo.id_front_url} target="_blank" rel="noopener noreferrer">عرض</a></div>
-                  <div>صورة الهوية - الوجه الخلفي: <a href={userInfo.id_back_url} target="_blank" rel="noopener noreferrer">عرض</a></div>
+                  <div>
+                    صورة الهوية - الوجه الأمامي: 
+                    <button type="button" className="text-primary underline" onClick={() => { setModalImageUrl(getImageUrl('front')); setShowImageModal(true); }}>عرض</button>
+                  </div>
+                  <div>
+                    صورة الهوية - الوجه الخلفي: 
+                    <button type="button" className="text-primary underline" onClick={() => { setModalImageUrl(getImageUrl('back')); setShowImageModal(true); }}>عرض</button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
+
+          {/* Image Modal */}
+          <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+            <DialogContent>
+              <img src={modalImageUrl} alt="ID Photo" className="max-w-full max-h-[80vh] mx-auto" />
+            </DialogContent>
+          </Dialog>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Recent Activity */}
