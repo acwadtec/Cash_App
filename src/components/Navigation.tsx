@@ -18,6 +18,7 @@ export function Navigation() {
     { href: '/transactions', label: t('nav.transactions') },
     { href: '/deposit', label: t('nav.deposit') },
     { href: '/withdrawal', label: t('nav.withdrawal') },
+    { href: '/help', label: t('nav.help') },
   ];
 
   const isActive = (href: string) => location.pathname === href;

@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
+import { AdminChat } from '@/components/AdminChat';
 import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboard() {
@@ -325,6 +326,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
+              <TabsTrigger value="chat">{t('admin.chat')}</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -599,6 +601,11 @@ export default function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Chat Tab */}
+            <TabsContent value="chat">
+              <AdminChat />
             </TabsContent>
           </Tabs>
         </div>
