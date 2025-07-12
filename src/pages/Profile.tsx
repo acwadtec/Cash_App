@@ -19,7 +19,13 @@ export default function Profile() {
   const [loadingUserInfo, setLoadingUserInfo] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const [user, setUser] = useState<any>(null);
+=======
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [userUid, setUserUid] = useState<string | null>(null);
+>>>>>>> Stashed changes
 =======
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState('');
@@ -36,7 +42,11 @@ export default function Profile() {
       }
       const user = userData.user;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       setUser(user);
+=======
+      setUserUid(user.id);
+>>>>>>> Stashed changes
 =======
       setUserUid(user.id);
 >>>>>>> Stashed changes
@@ -57,7 +67,10 @@ export default function Profile() {
   }, []);
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   // Helper to get image URL from storage path
   const getImageUrl = (type: 'front' | 'back') => {
     if (!userUid) return '';
