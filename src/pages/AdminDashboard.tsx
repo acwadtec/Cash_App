@@ -74,6 +74,8 @@ export default function AdminDashboard() {
   });
   const [editingId, setEditingId] = useState(null);
   const fileInputRef = useRef(null);
+  const [offerUserCounts, setOfferUserCounts] = useState({});
+  const [offerProfits, setOfferProfits] = useState({});
 
   // Mock data
   const stats = {
@@ -497,6 +499,42 @@ export default function AdminDashboard() {
     setCurrentPage(1);
   }, [userSearchTerm, userStatusFilter, userDateFilter]);
 
+  // Fetch number of users joined per offer
+  const fetchOfferUserCounts = async (offersList) => {
+    if (!offersList || offersList.length === 0) return;
+    const offerIds = offersList.map((o) => o.id);
+    const { data, error } = await supabase
+      .from('offer_joins')
+      .select('offer_id, count:user_id')
+      .in('offer_id', offerIds)
+      .group('offer_id');
+    if (error) {
+      setOfferUserCounts({});
+      setOfferProfits({});
+      return;
+    }
+    // Map offer_id to count
+    const counts = {};
+    const profits = {};
+    data.forEach((row) => {
+      counts[row.offer_id] = row.count;
+      // Find the offer
+      const offer = offersList.find((o) => o.id === row.offer_id);
+      if (offer) {
+        // Profit = users * (monthly_profit - cost)
+        profits[row.offer_id] = row.count * ((offer.monthly_profit || 0) - (offer.cost || 0));
+      }
+    });
+    setOfferUserCounts(counts);
+    setOfferProfits(profits);
+  };
+
+  useEffect(() => {
+    if (offers.length > 0) {
+      fetchOfferUserCounts(offers);
+    }
+  }, [offers]);
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -727,7 +765,16 @@ export default function AdminDashboard() {
                   {loadingOffers ? (
                     <div>Loading...</div>
                   ) : (
-                    <OffersTable offers={offers} showActions={false} />
+                    <OffersTable 
+                      offers={offers} 
+                      showActions={false}
+                      renderExtra={(offer) => (
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span><b>Users:</b> {offerUserCounts[offer.id] || 0}</span>
+                          <span><b>Profit/Loss:</b> ${offerProfits[offer.id] !== undefined ? offerProfits[offer.id].toLocaleString() : '0'}</span>
+                        </div>
+                      )}
+                    />
                   )}
                 </CardContent>
               </Card>
