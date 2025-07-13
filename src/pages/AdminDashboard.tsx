@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 // Custom Components
 import OffersTable from '@/components/OffersTable';
+import { AdminChat } from '@/components/AdminChat';
 
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -618,21 +619,21 @@ export default function AdminDashboard() {
     fetchOffers();
   }, []);
 
-  const fetchUserCount = async () => {
-    const { count } = await supabase
-      .from('user_info')
-      .select('*', { count: 'exact', head: true })
-      .neq('role', 'admin');
-    setUserCount(count || 0);
-  };
-  const fetchPendingVerifications = async () => {
-    const { count } = await supabase
-      .from('user_info')
-      .select('*', { count: 'exact', head: true })
-      .eq('verified', false)
-      .neq('role', 'admin');
-    setPendingVerifications(count || 0);
-  };
+    const fetchUserCount = async () => {
+      const { count } = await supabase
+        .from('user_info')
+        .select('*', { count: 'exact', head: true })
+        .neq('role', 'admin');
+      setUserCount(count || 0);
+    };
+    const fetchPendingVerifications = async () => {
+      const { count } = await supabase
+        .from('user_info')
+        .select('*', { count: 'exact', head: true })
+        .eq('verified', false)
+        .neq('role', 'admin');
+      setPendingVerifications(count || 0);
+    };
 
   useEffect(() => {
     fetchUserCount();
@@ -1213,7 +1214,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="referrals">{t('admin.referrals')}</TabsTrigger>
@@ -1223,6 +1224,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
+              <TabsTrigger value="adminChat">{t('admin.supportChat') || 'Support Chat'}</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -1232,9 +1234,9 @@ export default function AdminDashboard() {
                   <CardTitle>{t('admin.users')}</CardTitle>
                   <div className="flex gap-2">
                     <Button onClick={() => handleExport(t('admin.users'))} variant="outline">
-                      <Download className="h-4 w-4 mr-2" />
-                      {t('admin.export.users')}
-                    </Button>
+                    <Download className="h-4 w-4 mr-2" />
+                    {t('admin.export.users')}
+                  </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1412,20 +1414,20 @@ export default function AdminDashboard() {
                     Object.entries(groupedWithdrawals).map(([day, list]) => (
                       <div key={day} className="mb-8">
                         <h3 className="font-semibold mb-2">{day}</h3>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('admin.withdrawals.user')}</TableHead>
                               <TableHead>{t('profile.phone')}</TableHead>
                               <TableHead>{t('profile.wallet')}</TableHead>
-                              <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                        <TableHead>{t('admin.withdrawals.amount')}</TableHead>
                               <TableHead>{t('offers.title')}</TableHead>
                               <TableHead>{t('admin.withdrawals.status')}</TableHead>
-                              <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                              <TableHead>{t('admin.users.actions')}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
+                        <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                        <TableHead>{t('admin.users.actions')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                             {list.map(w => (
                               <TableRow key={w.id}>
                                 <TableCell>{w.user_name}</TableCell>
@@ -1435,7 +1437,7 @@ export default function AdminDashboard() {
                                 <TableCell>{w.package_id}</TableCell>
                                 <TableCell>{w.status}</TableCell>
                                 <TableCell>{w.created_at.split('T')[0]}</TableCell>
-                                <TableCell>
+                          <TableCell>
                                   {w.status === 'pending' && (
                                     <>
                                       <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
@@ -1445,11 +1447,11 @@ export default function AdminDashboard() {
                                   {w.status === 'paid' && w.proof_image_url && (
                                     <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
                                   )}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                       </div>
                     ))
                   )}
@@ -1522,9 +1524,9 @@ export default function AdminDashboard() {
                   <CardTitle>{t('admin.transactions')}</CardTitle>
                   <div className="flex gap-2">
                     <Button onClick={() => handleExport(t('admin.transactions'))} variant="outline">
-                      <Download className="h-4 w-4 mr-2" />
-                      {t('admin.export.transactions')}
-                    </Button>
+                    <Download className="h-4 w-4 mr-2" />
+                    {t('admin.export.transactions')}
+                  </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1626,8 +1628,8 @@ export default function AdminDashboard() {
                           <span className="mr-2">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
                           <span className="mr-2">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
                           {notificationData.scheduledAt && <span>{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
-                        </div>
                       </div>
+                    </div>
                     </div>
                   </div>
                   <div className="mt-8">
@@ -1873,6 +1875,21 @@ export default function AdminDashboard() {
                       <p className="text-sm text-muted-foreground">{t('admin.activeReferrers')}</p>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Admin Chat Tab */}
+            <TabsContent value="adminChat">
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                    {t('admin.supportChat') || 'Support Chat'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdminChat />
                 </CardContent>
               </Card>
             </TabsContent>

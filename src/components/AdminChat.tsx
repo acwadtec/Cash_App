@@ -113,6 +113,27 @@ export function AdminChat() {
     return () => clearInterval(interval);
   }, [selectedConversationId]);
 
+  // Mark all user messages as read in the selected conversation
+  const markMessagesAsRead = async (conversationId: string) => {
+    if (!conversationId) return;
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .eq('sender', 'user')
+      .eq('is_read', false);
+    // Optionally, refresh conversations/messages
+    fetchConversations();
+    fetchMessages();
+  };
+
+  useEffect(() => {
+    if (selectedConversationId) {
+      markMessagesAsRead(selectedConversationId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConversationId]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversationId) return;
     const { error } = await supabase.from('messages').insert([
