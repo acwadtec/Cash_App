@@ -12,15 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle, Search, Filter, BarChart3, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
-=======
 import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy } from 'lucide-react';
->>>>>>> Stashed changes
-=======
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy } from 'lucide-react';
->>>>>>> Stashed changes
 import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
@@ -84,15 +76,6 @@ export default function AdminDashboard() {
   const fileInputRef = useRef(null);
   const [offerUserCounts, setOfferUserCounts] = useState({});
   const [offerProfits, setOfferProfits] = useState({});
-
-  // Add referral system state
-  const [referralSettings, setReferralSettings] = useState({
-    level1Points: 100,
-    level2Points: 50,
-    level3Points: 25
-  });
-  const [topReferrers, setTopReferrers] = useState([]);
-  const [loadingReferrers, setLoadingReferrers] = useState(false);
 
   // Add referral system state
   const [referralSettings, setReferralSettings] = useState({
@@ -274,13 +257,7 @@ export default function AdminDashboard() {
         setUsers(data || []);
       }
       setLoadingUsers(false);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
       fetchActiveOffers();
->>>>>>> Stashed changes
     };
     fetchUsers();
   }, []);
@@ -400,8 +377,6 @@ export default function AdminDashboard() {
     fetchDepositRequests();
   };
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   const fetchNotifications = async () => {
     setLoadingNotifications(true);
     const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
@@ -567,9 +542,6 @@ export default function AdminDashboard() {
     }
   }, [offers]);
 
-=======
-=======
->>>>>>> Stashed changes
   // Fetch top referrers
   const fetchTopReferrers = async () => {
     setLoadingReferrers(true);
@@ -630,10 +602,6 @@ export default function AdminDashboard() {
     fetchTopReferrers();
   }, []);
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -687,15 +655,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            <TabsList className="grid w-full grid-cols-9">
-=======
             <TabsList className="grid w-full grid-cols-8">
->>>>>>> Stashed changes
-=======
-            <TabsList className="grid w-full grid-cols-8">
->>>>>>> Stashed changes
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
@@ -704,15 +664,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-              <TabsTrigger value="chat">{t('admin.chat')}</TabsTrigger>
-=======
               <TabsTrigger value="referrals">Referrals</TabsTrigger>
->>>>>>> Stashed changes
-=======
-              <TabsTrigger value="referrals">Referrals</TabsTrigger>
->>>>>>> Stashed changes
             </TabsList>
 
             {/* Users Tab */}
@@ -1273,14 +1225,6 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            {/* Chat Tab */}
-            <TabsContent value="chat">
-              <AdminChat />
-=======
-=======
->>>>>>> Stashed changes
             {/* Referrals Tab */}
             <TabsContent value="referrals">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1395,10 +1339,6 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
             </TabsContent>
           </Tabs>
         </div>
