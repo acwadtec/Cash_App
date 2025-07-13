@@ -18,8 +18,6 @@ import Deposit from "./pages/Deposit";
 import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 import ManageOffers from './pages/ManageOffers';
-import { SpeedInsights } from '@vercel/speed-insights/react';
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,7 +27,6 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <SpeedInsights />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Layout />}>
