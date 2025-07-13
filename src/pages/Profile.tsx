@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import ReferralCode from '@/components/ReferralCode';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -166,6 +167,13 @@ export default function Profile() {
         },
       ]);
       if (error) throw error;
+
+      // Process referral if pending
+      const pendingReferralCode = localStorage.getItem('pendingReferralCode');
+      if (pendingReferralCode) {
+        await processReferral(user.id, pendingReferralCode);
+        localStorage.removeItem('pendingReferralCode');
+      }
       toast({ title: t('common.success'), description: 'تم حفظ البيانات بنجاح' });
       form.reset();
     } catch (err: any) {
@@ -334,6 +342,13 @@ export default function Profile() {
             </DialogContent>
           </Dialog>
 
+          {/* Referral Code Section */}
+          {userUid && (
+            <div className="mb-8">
+              <ReferralCode userUid={userUid} isVerified={userInfo?.verified || false} />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Recent Activity */}
             <Card className="shadow-card">
@@ -397,4 +412,88 @@ export default function Profile() {
       </div>
     </div>
   );
+}
+
+async function processReferral(newUserId: string, referralCode: string) {
+  console.log('processReferral called', newUserId, referralCode);
+  try {
+    // Get referrer info
+    const { data: referrerData, error: referrerError } = await supabase
+      .from('user_info')
+      .select('user_uid, referral_count, total_referral_points, email')
+      .eq('referral_code', referralCode)
+      .single();
+    console.log('referrerData', referrerData, referrerError);
+    if (referrerError || !referrerData) {
+      console.error('Error getting referrer data:', referrerError);
+      toast({ title: 'Referral Error', description: 'Referrer not found or error', variant: 'destructive' });
+      return;
+    }
+
+    // Get referral settings
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('referral_settings')
+      .select('level1_points')
+      .eq('id', 1)
+      .single();
+    console.log('settingsData', settingsData, settingsError);
+    if (settingsError || !settingsData) {
+      console.error('Error getting referral settings:', settingsError);
+      toast({ title: 'Referral Error', description: 'Settings not found or error', variant: 'destructive' });
+      return;
+    }
+
+    const pointsToAward = settingsData.level1_points || 100;
+
+    // Update referrer's stats
+    const newReferralCount = (referrerData.referral_count || 0) + 1;
+    const newTotalPoints = (referrerData.total_referral_points || 0) + pointsToAward;
+    const { error: updateError } = await supabase
+      .from('user_info')
+      .update({
+        referral_count: newReferralCount,
+        total_referral_points: newTotalPoints
+      })
+      .eq('user_uid', referrerData.user_uid);
+    console.log('updateError', updateError);
+    if (updateError) {
+      console.error('Error updating referrer stats:', updateError);
+      toast({ title: 'Referral Error', description: 'Failed to update referrer stats', variant: 'destructive' });
+      return;
+    }
+
+    // Record the referral
+    const { error: insertError } = await supabase
+      .from('referrals')
+      .insert([{
+        referrer_uid: referrerData.user_uid,
+        referred_uid: newUserId,
+        level: 1,
+        points_earned: pointsToAward,
+        referral_code: referralCode
+      }]);
+    console.log('insertError', insertError);
+    if (insertError) {
+      console.error('Error inserting referral record:', insertError);
+      toast({ title: 'Referral Error', description: 'Failed to record referral', variant: 'destructive' });
+      return;
+    }
+
+    // Update new user's referred_by field
+    const { error: updateNewUserError } = await supabase
+      .from('user_info')
+      .update({ referred_by: referralCode })
+      .eq('user_uid', newUserId);
+    console.log('updateNewUserError', updateNewUserError);
+    if (updateNewUserError) {
+      console.error('Error updating new user referred_by:', updateNewUserError);
+      toast({ title: 'Referral Error', description: 'Failed to update new user', variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Referral Success', description: `Referral processed for ${referrerData.email}` });
+  } catch (error) {
+    console.error('Error processing referral:', error);
+    toast({ title: 'Referral Error', description: 'Unexpected error', variant: 'destructive' });
+  }
 }

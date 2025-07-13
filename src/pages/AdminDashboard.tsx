@@ -6,14 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
 import { supabase } from '@/lib/supabase';
-import { format } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { useRef } from 'react';
 
 export default function AdminDashboard() {
@@ -47,8 +52,39 @@ export default function AdminDashboard() {
   const [depositRequests, setDepositRequests] = useState([]);
   const [loadingDepositNumbers, setLoadingDepositNumbers] = useState(false);
   const [loadingDepositRequests, setLoadingDepositRequests] = useState(false);
+  
+  // New state for enhanced features
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userDateFilter, setUserDateFilter] = useState<Date | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Advanced stats state
+  const [monthlyDeposits, setMonthlyDeposits] = useState(0);
+  const [weeklyNewUsers, setWeeklyNewUsers] = useState(0);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
+  const [averageTransactionValue, setAverageTransactionValue] = useState(0);
+  
+  // Analytics data
+  const [analyticsData, setAnalyticsData] = useState({
+    newUsersOverTime: [],
+    transactionTypes: [],
+    activityByHour: []
+  });
   const [editingId, setEditingId] = useState(null);
   const fileInputRef = useRef(null);
+  const [offerUserCounts, setOfferUserCounts] = useState({});
+  const [offerProfits, setOfferProfits] = useState({});
+
+  // Add referral system state
+  const [referralSettings, setReferralSettings] = useState({
+    level1Points: 100,
+    level2Points: 50,
+    level3Points: 25
+  });
+  const [topReferrers, setTopReferrers] = useState([]);
+  const [loadingReferrers, setLoadingReferrers] = useState(false);
 
   // Mock data
   const stats = {
@@ -138,10 +174,10 @@ export default function AdminDashboard() {
     fetchNotifications();
   };
 
-  const handleExport = (type: string) => {
+  const handleExport = (type: string, format?: string) => {
     toast({
       title: t('common.success'),
-      description: `تم تصدير ${type} بنجاح`,
+      description: `تم تصدير ${type} ${format ? `بصيغة ${format.toUpperCase()}` : ''} بنجاح`,
     });
   };
 
@@ -221,6 +257,7 @@ export default function AdminDashboard() {
         setUsers(data || []);
       }
       setLoadingUsers(false);
+      fetchActiveOffers();
     };
     fetchUsers();
   }, []);
@@ -261,8 +298,6 @@ export default function AdminDashboard() {
       const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
       setUsers(data || []);
       toast({ title: t('common.success'), description: 'User verified successfully' });
-      fetchUserCount();
-      fetchPendingVerifications();
     } else {
       toast({ title: t('common.error'), description: error.message });
     }
@@ -277,7 +312,6 @@ export default function AdminDashboard() {
       // Refresh users list and user count
       const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
       setUsers(data || []);
-      fetchUserCount();
       toast({ title: t('common.success'), description: 'User removed successfully' });
     } else {
       toast({ title: t('common.error'), description: error.message });
@@ -349,7 +383,224 @@ export default function AdminDashboard() {
     if (!error) setNotifications(data || []);
     setLoadingNotifications(false);
   };
-  useEffect(() => { fetchNotifications(); }, []);
+
+  // New functions for enhanced features
+  const fetchAdvancedStats = async () => {
+    // Fetch monthly deposits
+    const startOfCurrentMonth = startOfMonth(new Date());
+    const endOfCurrentMonth = endOfMonth(new Date());
+    const { data: deposits } = await supabase
+      .from('deposit_requests')
+      .select('amount')
+      .gte('created_at', startOfCurrentMonth.toISOString())
+      .lte('created_at', endOfCurrentMonth.toISOString())
+      .eq('status', 'approved');
+    
+    const totalMonthlyDeposits = deposits?.reduce((sum, deposit) => sum + Number(deposit.amount), 0) || 0;
+    setMonthlyDeposits(totalMonthlyDeposits);
+
+    // Fetch weekly new users
+    const startOfCurrentWeek = startOfWeek(new Date());
+    const endOfCurrentWeek = endOfWeek(new Date());
+    const { count: weeklyUsers } = await supabase
+      .from('user_info')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfCurrentWeek.toISOString())
+      .lte('created_at', endOfCurrentWeek.toISOString())
+      .neq('role', 'admin');
+    setWeeklyNewUsers(weeklyUsers || 0);
+
+    // Fetch pending withdrawals (using mock data for now)
+    setPendingWithdrawals(15);
+
+    // Calculate average transaction value
+    const { data: allDeposits } = await supabase
+      .from('deposit_requests')
+      .select('amount')
+      .eq('status', 'approved');
+    
+    if (allDeposits && allDeposits.length > 0) {
+      const totalAmount = allDeposits.reduce((sum, deposit) => sum + Number(deposit.amount), 0);
+      const average = totalAmount / allDeposits.length;
+      setAverageTransactionValue(average);
+    }
+  };
+
+  const fetchAnalyticsData = async () => {
+    // New users over time (last 30 days)
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const { data: usersOverTime } = await supabase
+      .from('user_info')
+      .select('created_at')
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .neq('role', 'admin')
+      .order('created_at', { ascending: true });
+
+    // Group by date
+    const usersByDate = {};
+    usersOverTime?.forEach(user => {
+      const date = format(new Date(user.created_at), 'yyyy-MM-dd');
+      usersByDate[date] = (usersByDate[date] || 0) + 1;
+    });
+
+    const newUsersOverTime = Object.entries(usersByDate).map(([date, count]) => ({
+      date,
+      count
+    }));
+
+    // Transaction types (deposit requests by status)
+    const { data: depositRequests } = await supabase
+      .from('deposit_requests')
+      .select('status, amount');
+
+    const transactionTypes = [
+      { type: 'approved', count: depositRequests?.filter(r => r.status === 'approved').length || 0 },
+      { type: 'pending', count: depositRequests?.filter(r => r.status === 'pending').length || 0 },
+      { type: 'rejected', count: depositRequests?.filter(r => r.status === 'rejected').length || 0 }
+    ];
+
+    // Activity by hour (mock data for now)
+    const activityByHour = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      activity: Math.floor(Math.random() * 50) + 10
+    }));
+
+    setAnalyticsData({
+      newUsersOverTime,
+      transactionTypes,
+      activityByHour
+    });
+  };
+
+  useEffect(() => { 
+    fetchNotifications(); 
+    fetchAdvancedStats();
+    fetchAnalyticsData();
+  }, []);
+
+  // Filtering and pagination logic
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = userSearchTerm === '' || 
+      user.first_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.phone?.includes(userSearchTerm);
+    
+    const matchesStatus = userStatusFilter === 'all' || 
+      (userStatusFilter === 'verified' && user.verified) ||
+      (userStatusFilter === 'pending' && !user.verified);
+    
+    const matchesDate = !userDateFilter || 
+      format(new Date(user.created_at), 'yyyy-MM-dd') === format(userDateFilter, 'yyyy-MM-dd');
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [userSearchTerm, userStatusFilter, userDateFilter]);
+
+  // Fetch number of users joined per offer
+  const fetchOfferUserCounts = async (offersList) => {
+    if (!offersList || offersList.length === 0) return;
+    const offerIds = offersList.map((o) => o.id);
+    const { data, error } = await supabase
+      .from('offer_joins')
+      .select('offer_id, count:user_id')
+      .in('offer_id', offerIds)
+      .group('offer_id');
+    if (error) {
+      setOfferUserCounts({});
+      setOfferProfits({});
+      return;
+    }
+    // Map offer_id to count
+    const counts = {};
+    const profits = {};
+    data.forEach((row) => {
+      counts[row.offer_id] = row.count;
+      // Find the offer
+      const offer = offersList.find((o) => o.id === row.offer_id);
+      if (offer) {
+        // Profit = users * (monthly_profit - cost)
+        profits[row.offer_id] = row.count * ((offer.monthly_profit || 0) - (offer.cost || 0));
+      }
+    });
+    setOfferUserCounts(counts);
+    setOfferProfits(profits);
+  };
+
+  useEffect(() => {
+    if (offers.length > 0) {
+      fetchOfferUserCounts(offers);
+    }
+  }, [offers]);
+
+  // Fetch top referrers
+  const fetchTopReferrers = async () => {
+    setLoadingReferrers(true);
+    const { data, error } = await supabase
+      .from('user_info')
+      .select('first_name, last_name, email, referral_count, total_referral_points')
+      .not('referral_count', 'is', null)
+      .order('total_referral_points', { ascending: false })
+      .limit(10);
+    
+    if (error) {
+      console.error('Error fetching top referrers:', error);
+      setTopReferrers([]);
+    } else {
+      setTopReferrers(data || []);
+    }
+    setLoadingReferrers(false);
+  };
+
+  // Update referral settings
+  const handleUpdateReferralSettings = async () => {
+    const { error } = await supabase
+      .from('referral_settings')
+      .upsert([{
+        id: 1, // Assuming single settings record
+        level1_points: referralSettings.level1Points,
+        level2_points: referralSettings.level2Points,
+        level3_points: referralSettings.level3Points,
+        updated_at: new Date().toISOString()
+      }]);
+    
+    if (error) {
+      toast({ title: t('common.error'), description: 'Failed to update referral settings', variant: 'destructive' });
+    } else {
+      toast({ title: t('common.success'), description: 'Referral settings updated successfully' });
+    }
+  };
+
+  // Load referral settings
+  const loadReferralSettings = async () => {
+    const { data, error } = await supabase
+      .from('referral_settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    
+    if (!error && data) {
+      setReferralSettings({
+        level1Points: data.level1_points || 100,
+        level2Points: data.level2_points || 50,
+        level3Points: data.level3_points || 25
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadReferralSettings();
+    fetchTopReferrers();
+  }, []);
 
   return (
     <div className="min-h-screen py-20">
@@ -363,7 +614,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
             <StatCard 
               title={t('admin.stats.totalUsers')} 
               value={userCount} 
@@ -383,24 +634,37 @@ export default function AdminDashboard() {
               color="text-green-600" 
             />
             <StatCard 
-              title={t('admin.stats.pendingWithdrawals')} 
-              value={stats.pendingWithdrawals} 
-              icon={DollarSign} 
-              color="text-red-600" 
+              title="إجمالي الإيداعات هذا الشهر" 
+              value={monthlyDeposits} 
+              icon={TrendingUp} 
+              color="text-purple-600" 
+            />
+            <StatCard 
+              title="المستخدمون الجدد هذا الأسبوع" 
+              value={weeklyNewUsers} 
+              icon={Users} 
+              color="text-indigo-600" 
+            />
+            <StatCard 
+              title="متوسط قيمة المعاملة" 
+              value={Math.round(averageTransactionValue)} 
+              icon={BarChart3} 
+              color="text-teal-600" 
             />
           </div>
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
               <TabsTrigger value="transactions">{t('admin.transactions')}</TabsTrigger>
+              <TabsTrigger value="analytics">التحليلات</TabsTrigger>
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
-              <TabsTrigger value="chat">{t('admin.chat')}</TabsTrigger>
+              <TabsTrigger value="referrals">Referrals</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -408,12 +672,62 @@ export default function AdminDashboard() {
               <Card className="shadow-card">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.users')}</CardTitle>
-                  <Button onClick={() => handleExport('المستخدمين')} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('admin.export.users')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExport('المستخدمين')} variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('admin.export.users')}
+                    </Button>
+                    <Button onClick={() => handleExport('المستخدمين', 'csv')} variant="outline">
+                      CSV
+                    </Button>
+                    <Button onClick={() => handleExport('المستخدمين', 'pdf')} variant="outline">
+                      PDF
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Search and Filters */}
+                  <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          placeholder="البحث بالاسم أو البريد الإلكتروني أو الهاتف..."
+                          value={userSearchTerm}
+                          onChange={(e) => setUserSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="حالة التحقق" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">جميع الحالات</SelectItem>
+                        <SelectItem value="verified">محقق</SelectItem>
+                        <SelectItem value="pending">معلق</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-48">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {userDateFilter ? format(userDateFilter, 'yyyy-MM-dd') : 'تاريخ التسجيل'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={userDateFilter}
+                          onSelect={setUserDateFilter}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Filtered Users Table */}
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -431,14 +745,14 @@ export default function AdminDashboard() {
                             Loading...
                           </TableCell>
                         </TableRow>
-                      ) : users.length === 0 ? (
+                      ) : filteredUsers.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
                             No users found
                           </TableCell>
                         </TableRow>
                       ) : (
-                        users.map((user) => (
+                        paginatedUsers.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
                             <TableCell>{user.email}</TableCell>
@@ -468,6 +782,39 @@ export default function AdminDashboard() {
                       )}
                     </TableBody>
                   </Table>
+
+                  {/* Pagination */}
+                  {filteredUsers.length > itemsPerPage && (
+                    <div className="mt-6">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                              className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: Math.ceil(filteredUsers.length / itemsPerPage) }, (_, i) => (
+                            <PaginationItem key={i + 1}>
+                              <PaginationLink
+                                onClick={() => setCurrentPage(i + 1)}
+                                isActive={currentPage === i + 1}
+                                className="cursor-pointer"
+                              >
+                                {i + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredUsers.length / itemsPerPage)))}
+                              className={currentPage === Math.ceil(filteredUsers.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -485,7 +832,16 @@ export default function AdminDashboard() {
                   {loadingOffers ? (
                     <div>Loading...</div>
                   ) : (
-                    <OffersTable offers={offers} showActions={false} />
+                    <OffersTable 
+                      offers={offers} 
+                      showActions={false}
+                      renderExtra={(offer) => (
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span><b>Users:</b> {offerUserCounts[offer.id] || 0}</span>
+                          <span><b>Profit/Loss:</b> ${offerProfits[offer.id] !== undefined ? offerProfits[offer.id].toLocaleString() : '0'}</span>
+                        </div>
+                      )}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -537,15 +893,115 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
+            {/* Analytics Tab */}
+            <TabsContent value="analytics">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* New Users Over Time Chart */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      المستخدمون الجدد عبر الزمن
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        {analyticsData.newUsersOverTime.length > 0 ? (
+                          <div className="space-y-2">
+                            {analyticsData.newUsersOverTime.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center">
+                                <span>{item.date}</span>
+                                <Badge variant="outline">{item.count} مستخدم</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>لا توجد بيانات متاحة</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Transaction Types Chart */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="h-5 w-5 mr-2" />
+                      أنواع المعاملات
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        {analyticsData.transactionTypes.length > 0 ? (
+                          <div className="space-y-2">
+                            {analyticsData.transactionTypes.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center">
+                                <span>{item.type === 'approved' ? 'مقبول' : item.type === 'pending' ? 'معلق' : 'مرفوض'}</span>
+                                <Badge variant="outline">{item.count} معاملة</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>لا توجد بيانات متاحة</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Activity by Hour Chart */}
+                <Card className="shadow-card lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      النشاط حسب الساعة
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        {analyticsData.activityByHour.length > 0 ? (
+                          <div className="grid grid-cols-6 gap-2 w-full">
+                            {analyticsData.activityByHour.map((item, index) => (
+                              <div key={index} className="text-center">
+                                <div className="text-xs text-muted-foreground">{item.hour}:00</div>
+                                <div className="text-sm font-medium">{item.activity}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>لا توجد بيانات متاحة</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Transactions Tab */}
             <TabsContent value="transactions">
               <Card className="shadow-card">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.transactions')}</CardTitle>
-                  <Button onClick={() => handleExport('المعاملات')} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('admin.export.transactions')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExport('المعاملات')} variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('admin.export.transactions')}
+                    </Button>
+                    <Button onClick={() => handleExport('المعاملات', 'csv')} variant="outline">
+                      CSV
+                    </Button>
+                    <Button onClick={() => handleExport('المعاملات', 'pdf')} variant="outline">
+                      PDF
+                    </Button>
+                    <Button onClick={() => handleExport('المعاملات', 'excel')} variant="outline">
+                      Excel
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-center py-8">
@@ -769,9 +1225,120 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            {/* Chat Tab */}
-            <TabsContent value="chat">
-              <AdminChat />
+            {/* Referrals Tab */}
+            <TabsContent value="referrals">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Referral Settings */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users2 className="h-5 w-5" />
+                      Referral System Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="level1">Level 1 Points (Direct Referrals)</Label>
+                      <Input
+                        id="level1"
+                        type="number"
+                        value={referralSettings.level1Points}
+                        onChange={(e) => setReferralSettings(prev => ({ ...prev, level1Points: parseInt(e.target.value) || 0 }))}
+                        placeholder="100"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="level2">Level 2 Points (Indirect Referrals)</Label>
+                      <Input
+                        id="level2"
+                        type="number"
+                        value={referralSettings.level2Points}
+                        onChange={(e) => setReferralSettings(prev => ({ ...prev, level2Points: parseInt(e.target.value) || 0 }))}
+                        placeholder="50"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="level3">Level 3 Points (Third Level)</Label>
+                      <Input
+                        id="level3"
+                        type="number"
+                        value={referralSettings.level3Points}
+                        onChange={(e) => setReferralSettings(prev => ({ ...prev, level3Points: parseInt(e.target.value) || 0 }))}
+                        placeholder="25"
+                      />
+                    </div>
+                    <Button onClick={handleUpdateReferralSettings} className="w-full">
+                      Update Settings
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Top Referrers */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5" />
+                      Top Referrers
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingReferrers ? (
+                      <div className="text-center py-4">Loading...</div>
+                    ) : topReferrers.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">No referrers found</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {topReferrers.map((referrer, index) => (
+                          <div key={referrer.email} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium">{referrer.first_name} {referrer.last_name}</p>
+                                <p className="text-sm text-muted-foreground">{referrer.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-primary">{referrer.total_referral_points || 0} pts</p>
+                              <p className="text-sm text-muted-foreground">{referrer.referral_count || 0} referrals</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Referral Statistics */}
+              <Card className="shadow-card mt-6">
+                <CardHeader>
+                  <CardTitle>Referral Statistics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {topReferrers.reduce((sum, r) => sum + (r.referral_count || 0), 0)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Total Referrals</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <p className="text-2xl font-bold text-green-600">
+                        {topReferrers.reduce((sum, r) => sum + (r.total_referral_points || 0), 0)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Total Points Awarded</p>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <p className="text-2xl font-bold text-purple-600">
+                        {topReferrers.length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Active Referrers</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
