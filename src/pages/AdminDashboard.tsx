@@ -116,7 +116,6 @@ export default function AdminDashboard() {
   const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
   const [adminNote, setAdminNote] = useState('');
   const [proofImage, setProofImage] = useState(null);
-  const [proofImageUrl, setProofImageUrl] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [timeSlots, setTimeSlots] = useState([]);
   const [packageLimits, setPackageLimits] = useState({});
@@ -576,20 +575,43 @@ export default function AdminDashboard() {
     });
   };
 
-  const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { 
+  const StatCard = ({ title, value, icon: Icon, color = 'text-primary', trend, trendValue }: { 
     title: string; 
     value: number; 
     icon: React.ComponentType<{ className?: string }>; 
-    color?: string 
+    color?: string;
+    trend?: 'up' | 'down' | 'neutral';
+    trendValue?: number;
   }) => (
-    <Card className="shadow-card">
+    <Card className="shadow-card hover:shadow-lg transition-shadow">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
-            <p className={`text-3xl font-bold ${color}`}>{value}</p>
+            <p className={`text-3xl font-bold ${color}`}>{value.toLocaleString()}</p>
+            {trend && trendValue && (
+              <div className="flex items-center gap-1 mt-1">
+                {trend === 'up' ? (
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                ) : trend === 'down' ? (
+                  <TrendingUp className="h-3 w-3 text-red-600 rotate-180" />
+                ) : (
+                  <div className="h-3 w-3" />
+                )}
+                <span className={`text-xs ${trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-muted-foreground'}`}>
+                  {trendValue > 0 ? '+' : ''}{trendValue}%
+                </span>
           </div>
-          <Icon className="h-8 w-8 text-muted-foreground" />
+            )}
+          </div>
+          <div className="relative">
+            <Icon className={`h-8 w-8 ${color}`} />
+            {trend === 'up' && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="w-1 h-1 bg-white rounded-full" />
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -619,21 +641,21 @@ export default function AdminDashboard() {
     fetchOffers();
   }, []);
 
-    const fetchUserCount = async () => {
-      const { count } = await supabase
-        .from('user_info')
-        .select('*', { count: 'exact', head: true })
-        .neq('role', 'admin');
-      setUserCount(count || 0);
-    };
-    const fetchPendingVerifications = async () => {
-      const { count } = await supabase
-        .from('user_info')
-        .select('*', { count: 'exact', head: true })
-        .eq('verified', false)
-        .neq('role', 'admin');
-      setPendingVerifications(count || 0);
-    };
+  const fetchUserCount = async () => {
+    const { count } = await supabase
+      .from('user_info')
+      .select('*', { count: 'exact', head: true })
+      .neq('role', 'admin');
+    setUserCount(count || 0);
+  };
+  const fetchPendingVerifications = async () => {
+    const { count } = await supabase
+      .from('user_info')
+      .select('*', { count: 'exact', head: true })
+      .eq('verified', false)
+      .neq('role', 'admin');
+    setPendingVerifications(count || 0);
+  };
 
   useEffect(() => {
     fetchUserCount();
@@ -1140,7 +1162,6 @@ export default function AdminDashboard() {
     setShowPayModal(false);
     setAdminNote('');
     setProofImage(null);
-    setProofImageUrl('');
     fetchWithdrawals();
   };
   // Reject withdrawal
@@ -1214,17 +1235,82 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
-              <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
-              <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
-              <TabsTrigger value="referrals">{t('admin.referrals')}</TabsTrigger>
-              <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
-              <TabsTrigger value="transactions">{t('admin.transactions')}</TabsTrigger>
-              <TabsTrigger value="analytics">{t('admin.analytics')}</TabsTrigger>
-              <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
-              <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
-              <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
-              <TabsTrigger value="adminChat">{t('admin.supportChat') || 'Support Chat'}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-10 h-auto p-1 bg-muted/50">
+              <TabsTrigger value="users" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <Users className="h-4 w-4" />
+                <span className="text-xs">{t('admin.users')}</span>
+                {userCount > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                    {userCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="offers" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <Gift className="h-4 w-4" />
+                <span className="text-xs">{t('admin.offers')}</span>
+                {activeOffers > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                    {activeOffers}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="referrals" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <Users2 className="h-4 w-4" />
+                <span className="text-xs">{t('admin.referrals')}</span>
+                {topReferrers.length > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                    {topReferrers.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="withdrawals" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-xs">{t('admin.withdrawals')}</span>
+                {pendingWithdrawals > 0 && (
+                  <Badge variant="destructive" className="text-xs px-1 py-0 h-5">
+                    {pendingWithdrawals}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="transactions" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <FileCheck className="h-4 w-4" />
+                <span className="text-xs">{t('admin.transactions')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <BarChart3 className="h-4 w-4" />
+                <span className="text-xs">{t('admin.analytics')}</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <Bell className="h-4 w-4" />
+                <span className="text-xs">{t('admin.notifications')}</span>
+                {notifications.length > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                    {notifications.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="depositNumbers" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-xs">{t('deposit.numbers') || 'Deposit Numbers'}</span>
+                {depositNumbers.length > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                    {depositNumbers.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="depositRequests" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <FileCheck className="h-4 w-4" />
+                <span className="text-xs">{t('deposit.requests') || 'Deposit Requests'}</span>
+                {depositRequests.filter(r => r.status === 'pending').length > 0 && (
+                  <Badge variant="destructive" className="text-xs px-1 py-0 h-5">
+                    {depositRequests.filter(r => r.status === 'pending').length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="adminChat" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-xs">{t('admin.supportChat') || 'Support Chat'}</span>
+              </TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -1234,9 +1320,9 @@ export default function AdminDashboard() {
                   <CardTitle>{t('admin.users')}</CardTitle>
                   <div className="flex gap-2">
                     <Button onClick={() => handleExport(t('admin.users'))} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('admin.export.users')}
-                  </Button>
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('admin.export.users')}
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1251,8 +1337,19 @@ export default function AdminDashboard() {
                           onChange={(e) => setUserSearchTerm(e.target.value)}
                           className="pl-10"
                         />
+                        {userSearchTerm && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                            onClick={() => setUserSearchTerm('')}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
+                    <div className="flex gap-2">
                     <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
                       <SelectTrigger className="w-48">
                         <SelectValue placeholder={t('admin.verificationStatus')} />
@@ -1279,6 +1376,17 @@ export default function AdminDashboard() {
                         />
                       </PopoverContent>
                     </Popover>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setUserSearchTerm('');
+                          setUserStatusFilter('all');
+                          setUserDateFilter(undefined);
+                        }}
+                      >
+                        {t('admin.clearFilters')}
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Filtered Users Table */}
@@ -1414,20 +1522,20 @@ export default function AdminDashboard() {
                     Object.entries(groupedWithdrawals).map(([day, list]) => (
                       <div key={day} className="mb-8">
                         <h3 className="font-semibold mb-2">{day}</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t('admin.withdrawals.user')}</TableHead>
                               <TableHead>{t('profile.phone')}</TableHead>
                               <TableHead>{t('profile.wallet')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.amount')}</TableHead>
                               <TableHead>{t('offers.title')}</TableHead>
                               <TableHead>{t('admin.withdrawals.status')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                        <TableHead>{t('admin.users.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                              <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                              <TableHead>{t('admin.users.actions')}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
                             {list.map(w => (
                               <TableRow key={w.id}>
                                 <TableCell>{w.user_name}</TableCell>
@@ -1437,7 +1545,7 @@ export default function AdminDashboard() {
                                 <TableCell>{w.package_id}</TableCell>
                                 <TableCell>{w.status}</TableCell>
                                 <TableCell>{w.created_at.split('T')[0]}</TableCell>
-                          <TableCell>
+                                <TableCell>
                                   {w.status === 'pending' && (
                                     <>
                                       <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
@@ -1447,11 +1555,11 @@ export default function AdminDashboard() {
                                   {w.status === 'paid' && w.proof_image_url && (
                                     <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
                                   )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     ))
                   )}
@@ -1524,15 +1632,72 @@ export default function AdminDashboard() {
                   <CardTitle>{t('admin.transactions')}</CardTitle>
                   <div className="flex gap-2">
                     <Button onClick={() => handleExport(t('admin.transactions'))} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('admin.export.transactions')}
-                  </Button>
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('admin.export.transactions')}
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-center py-8">
-                    سجل شامل لجميع معاملات المنصة متاح للمراجعة والتصدير
+                    {t('admin.transactions.log')}
                   </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics">
+              <Card className="shadow-card">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>{t('admin.analytics')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-8`}>
+                    {/* Line Chart: New Users Over Time */}
+                    <div>
+                      <h3 className="font-semibold mb-2">{t('admin.analytics.newUsersOverTime')}</h3>
+                      <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-muted-foreground mb-2">{t('admin.analytics.chartPlaceholder')}</p>
+                          <div className="text-sm text-muted-foreground">
+                            <p>{t('admin.analytics.newUsers')}: {analyticsData.newUsersOverTime.reduce((sum, item) => sum + (item.count || 0), 0)}</p>
+                            <p>{t('admin.analytics.date')}: {analyticsData.newUsersOverTime.length > 0 ? analyticsData.newUsersOverTime[0].date : 'N/A'} - {analyticsData.newUsersOverTime.length > 0 ? analyticsData.newUsersOverTime[analyticsData.newUsersOverTime.length - 1].date : 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Pie Chart: Transaction Types */}
+                    <div>
+                      <h3 className="font-semibold mb-2">{t('admin.analytics.transactionTypes')}</h3>
+                      <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-muted-foreground mb-2">{t('admin.analytics.chartPlaceholder')}</p>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {analyticsData.transactionTypes.map((type, index) => (
+                              <p key={index}>
+                                {t(`admin.analytics.${type.type}`)}: {type.count}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Bar Chart: Activity By Hour */}
+                    <div className="md:col-span-2">
+                      <h3 className="font-semibold mb-2">{t('admin.analytics.activityByHour')}</h3>
+                      <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-muted-foreground mb-2">{t('admin.analytics.chartPlaceholder')}</p>
+                          <div className="text-sm text-muted-foreground">
+                            <p>{t('admin.analytics.activity')}: {analyticsData.activityByHour.reduce((sum, item) => sum + (item.activity || 0), 0)}</p>
+                            <p>{t('admin.analytics.hour')}: 0-23</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1628,8 +1793,8 @@ export default function AdminDashboard() {
                           <span className="mr-2">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
                           <span className="mr-2">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
                           {notificationData.scheduledAt && <span>{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
+                        </div>
                       </div>
-                    </div>
                     </div>
                   </div>
                   <div className="mt-8">
@@ -1759,6 +1924,18 @@ export default function AdminDashboard() {
                       </TableBody>
                     </Table>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Admin Chat Tab */}
+            <TabsContent value="adminChat">
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle>{t('admin.supportChat')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdminChat />
                 </CardContent>
               </Card>
             </TabsContent>

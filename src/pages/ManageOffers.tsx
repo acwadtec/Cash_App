@@ -291,7 +291,7 @@ export default function ManageOffers() {
             <div className="fixed inset-0 flex items-center justify-center bg-black/50 dark:bg-black/70 z-50 p-4">
               <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-black dark:text-white border border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">{editOffer ? t('offers.edit') : t('offers.create')}</h2>
+                  <h2 className="text-2xl font-bold">{editOffer ? 'Edit Offer' : 'Create Offer'}</h2>
                   <Button
                     type="button"
                     variant="ghost"
@@ -307,7 +307,7 @@ export default function ManageOffers() {
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="title" className="text-sm font-medium">{t('admin.offers.title')} *</Label>
+                      <Label htmlFor="title" className="text-sm font-medium">Title *</Label>
                       <Input 
                         id="title" 
                         name="title" 
@@ -315,12 +315,12 @@ export default function ManageOffers() {
                         onChange={handleChange} 
                         required 
                         className="mt-1"
-                        placeholder={t('admin.offers.title')}
+                        placeholder="Enter offer title"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="description" className="text-sm font-medium">{t('admin.offers.description')} *</Label>
+                      <Label htmlFor="description" className="text-sm font-medium">Description *</Label>
                       <Textarea 
                         id="description" 
                         name="description" 
@@ -328,13 +328,13 @@ export default function ManageOffers() {
                         onChange={handleChange} 
                         required 
                         className="mt-1"
-                        placeholder={t('admin.offers.description')}
+                        placeholder="Enter offer description"
                         rows={3}
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="amount" className="text-sm font-medium">{t('admin.offers.reward')} *</Label>
+                      <Label htmlFor="amount" className="text-sm font-medium">Reward *</Label>
                       <Input 
                         id="amount" 
                         name="amount" 
@@ -343,14 +343,14 @@ export default function ManageOffers() {
                         onChange={handleChange} 
                         required 
                         className="mt-1"
-                        placeholder={t('admin.offers.reward')}
+                        placeholder="Enter reward amount"
                         min="0"
                         step="0.01"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="cost" className="text-sm font-medium">{t('admin.offers.cost')}</Label>
+                      <Label htmlFor="cost" className="text-sm font-medium">Cost</Label>
                       <Input 
                         id="cost" 
                         name="cost" 
@@ -358,7 +358,7 @@ export default function ManageOffers() {
                         value={form.cost} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder={t('admin.offers.cost')}
+                        placeholder="Enter cost"
                         min="0"
                         step="0.01"
                       />
@@ -368,7 +368,7 @@ export default function ManageOffers() {
                   {/* Right Column */}
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="daily_profit" className="text-sm font-medium">{t('admin.offers.dailyProfit')}</Label>
+                      <Label htmlFor="daily_profit" className="text-sm font-medium">Daily Profit</Label>
                       <Input 
                         id="daily_profit" 
                         name="daily_profit" 
@@ -376,14 +376,14 @@ export default function ManageOffers() {
                         value={form.daily_profit} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder={t('admin.offers.dailyProfit')}
+                        placeholder="Enter daily profit"
                         min="0"
                         step="0.01"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="monthly_profit" className="text-sm font-medium">{t('admin.offers.monthlyProfit')}</Label>
+                      <Label htmlFor="monthly_profit" className="text-sm font-medium">Monthly Profit</Label>
                       <Input 
                         id="monthly_profit" 
                         name="monthly_profit" 
@@ -391,14 +391,14 @@ export default function ManageOffers() {
                         value={form.monthly_profit} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder={t('admin.offers.monthlyProfit')}
+                        placeholder="Enter monthly profit"
                         min="0"
                         step="0.01"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="deadline" className="text-sm font-medium">{t('admin.offers.deadline')}</Label>
+                      <Label htmlFor="deadline" className="text-sm font-medium">Deadline</Label>
                       <Input 
                         id="deadline" 
                         name="deadline" 
@@ -410,7 +410,7 @@ export default function ManageOffers() {
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium">{t('admin.offers.image')}</Label>
+                      <Label className="text-sm font-medium">Image</Label>
                       <div className="mt-1">
                         <div className="flex items-center justify-center w-full">
                           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -439,9 +439,9 @@ export default function ManageOffers() {
                                 <>
                                   <Upload className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
                                   <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <span className="font-semibold">{t('admin.offers.clickToUpload')}</span> {t('admin.offers.orDragDrop')}
+                                    <span className="font-semibold">Click to upload</span> or drag and drop
                                   </p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('admin.offers.imageFormats')}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Supported formats: JPG, PNG, GIF</p>
                                 </>
                               )}
                             </div>
@@ -466,14 +466,14 @@ export default function ManageOffers() {
                     onClick={() => setShowDialog(false)}
                     disabled={uploading}
                   >
-                    {t('common.cancel')}
+                    Cancel
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={uploading}
                     className="min-w-[100px]"
                   >
-                    {uploading ? t('offers.saving') : (editOffer ? t('offers.update') : t('offers.create'))}
+                    {uploading ? 'Saving...' : (editOffer ? 'Update' : 'Create')}
                   </Button>
                 </div>
               </form>

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import ReferralCode from '@/components/ReferralCode';
@@ -82,42 +82,6 @@ export default function Profile() {
     // Compose the path
     const path = `${userUid}/${file}`;
     return supabase.storage.from('id-photos').getPublicUrl(path).data.publicUrl;
-  };
-
-  // Mock user data
-  const userData = {
-    name: t('language.switch') === 'English' ? 'أحمد محمد' : 'Ahmed Mohammed',
-    email: 'ahmed@example.com',
-    phone: '+966501234567',
-    verified: true,
-    joinDate: '2024-01-15',
-    stats: {
-      teamEarnings: 2450.50,
-      capital: 5000.00,
-      personalEarnings: 1230.75,
-      bonuses: 890.25,
-      totalEarnings: 9571.50,
-    },
-    recentActivity: [
-      { 
-        type: 'bonus', 
-        amount: 50, 
-        date: '2024-07-01', 
-        description: t('language.switch') === 'English' ? 'مكافأة إحالة صديق' : 'Friend referral bonus'
-      },
-      { 
-        type: 'earning', 
-        amount: 120, 
-        date: '2024-06-30', 
-        description: t('language.switch') === 'English' ? 'أرباح شخصية' : 'Personal earnings'
-      },
-      { 
-        type: 'team', 
-        amount: 200, 
-        date: '2024-06-28', 
-        description: t('language.switch') === 'English' ? 'أرباح الفريق' : 'Team earnings'
-      },
-    ]
   };
 
   const StatCard = ({ title, value, color = 'text-primary' }: { title: string; value: number; color?: string }) => (

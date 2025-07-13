@@ -73,7 +73,6 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      // Add min-width, allow wrapping, and RTL-aware text alignment
       "h-12 px-4 align-middle font-medium text-muted-foreground whitespace-normal break-words min-w-[120px] text-center rtl:text-right ltr:text-left [&:has([role=checkbox])]:pr-0",
       className
     )}

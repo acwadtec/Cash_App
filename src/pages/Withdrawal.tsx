@@ -20,27 +20,11 @@ export default function Withdrawal() {
     accountDetails: '',
   });
 
-  // Mock user verification status
-  const userVerification = {
-    email: true,
-    phone: true,
-    identity: true,
-    isFullyVerified: true,
-  };
-
-  // Mock available balances
-  const balances = {
-    personalEarnings: 1230.75,
-    teamEarnings: 2450.50,
-    bonuses: 890.25,
-    capital: 5000.00,
-  };
-
   const withdrawalTypes = [
-    { value: 'personal', label: t('profile.personalEarnings'), balance: balances.personalEarnings },
-    { value: 'team', label: t('profile.teamEarnings'), balance: balances.teamEarnings },
-    { value: 'bonuses', label: t('profile.bonuses'), balance: balances.bonuses },
-    { value: 'capital', label: t('profile.capital'), balance: balances.capital },
+    { value: 'personal', label: t('profile.personalEarnings'), balance: 1230.75 },
+    { value: 'team', label: t('profile.teamEarnings'), balance: 2450.50 },
+    { value: 'bonuses', label: t('profile.bonuses'), balance: 890.25 },
+    { value: 'capital', label: t('profile.capital'), balance: 5000.00 },
   ];
 
   const withdrawalMethods = [
@@ -61,15 +45,6 @@ export default function Withdrawal() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userVerification.isFullyVerified) {
-      toast({
-        title: t('withdrawal.error.verification'),
-        description: t('withdrawal.error.verificationMessage'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
     if (!formData.type || !formData.amount || !formData.method) {
       toast({
         title: t('common.error'),
@@ -104,53 +79,6 @@ export default function Withdrawal() {
       accountDetails: '',
     });
   };
-
-  if (!userVerification.isFullyVerified) {
-    return (
-      <div className="min-h-screen py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto">
-            <Card className="shadow-glow border-destructive">
-              <CardHeader className="text-center">
-                <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-                <CardTitle className="text-2xl text-destructive">{t('withdrawal.verificationRequired')}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-lg text-muted-foreground mb-6">
-                  {t('withdrawal.verificationMessage')}
-                </p>
-                
-                <div className="space-y-3 mb-8">
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.emailVerification')}</span>
-                    <Badge className={userVerification.email ? 'bg-success' : 'bg-destructive'}>
-                      {userVerification.email ? t('profile.completed') : t('common.required')}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.phoneVerification')}</span>
-                    <Badge className={userVerification.phone ? 'bg-success' : 'bg-destructive'}>
-                      {userVerification.phone ? t('profile.completed') : t('common.required')}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.identityVerification')}</span>
-                    <Badge className={userVerification.identity ? 'bg-success' : 'bg-destructive'}>
-                      {userVerification.identity ? t('profile.completed') : t('common.required')}
-                    </Badge>
-                  </div>
-                </div>
-
-                <Button size="lg" className="shadow-glow">
-                  {t('withdrawal.completeVerification')}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen py-20">
