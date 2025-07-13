@@ -166,32 +166,95 @@
     animation: scaleIn 0.4s ease-out;
   }
 
-  @keyframes fadeUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
   }
 
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+  /* Line clamp utilities for text truncation */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
   }
 
-  /* Glass effect */
-  .glass {
-    backdrop-filter: blur(12px);
-    background: hsl(var(--card) / 0.7);
-    border: 1px solid hsl(var(--border) / 0.5);
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* Notification specific styles */
+  .notification-badge {
+    @apply absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1 min-w-[18px] h-[18px] flex items-center justify-center font-medium;
+  }
+
+  .notification-dropdown {
+    @apply absolute right-0 mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto animate-fade-in;
+  }
+
+  .notification-item {
+    @apply p-4 border-b border-border last:border-b-0 flex items-start gap-3 hover:bg-muted/30 transition-colors;
+  }
+
+  .notification-content {
+    @apply flex-1 min-w-0;
+  }
+
+  .notification-title {
+    @apply font-semibold text-foreground mb-1 line-clamp-2;
+  }
+
+  .notification-message {
+    @apply text-sm text-muted-foreground mb-2 line-clamp-3;
+  }
+
+  .notification-time {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .notification-status {
+    @apply w-4 h-4 text-green-500 mt-1 flex-shrink-0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

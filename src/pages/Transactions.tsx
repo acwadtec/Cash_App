@@ -22,6 +22,8 @@ export default function Transactions() {
       date: '2024-07-01',
       description: t('language.switch') === 'English' ? 'سحب أرباح شخصية' : 'Personal earnings withdrawal',
       method: t('language.switch') === 'English' ? 'بنك' : 'Bank',
+      rejectionReason: null,
+      adminNote: 'Payment processed successfully',
     },
     {
       id: 'TXN002',
@@ -31,6 +33,8 @@ export default function Transactions() {
       date: '2024-06-30',
       description: t('language.switch') === 'English' ? 'مكافأة إحالة صديق' : 'Friend referral bonus',
       method: t('language.switch') === 'English' ? 'محفظة' : 'Wallet',
+      rejectionReason: null,
+      adminNote: null,
     },
     {
       id: 'TXN003',
@@ -40,6 +44,8 @@ export default function Transactions() {
       date: '2024-06-29',
       description: t('language.switch') === 'English' ? 'أرباح فريق' : 'Team earnings',
       method: t('language.switch') === 'English' ? 'محفظة' : 'Wallet',
+      rejectionReason: null,
+      adminNote: null,
     },
     {
       id: 'TXN004',
@@ -49,6 +55,8 @@ export default function Transactions() {
       date: '2024-06-28',
       description: t('language.switch') === 'English' ? 'سحب مكافآت' : 'Bonus withdrawal',
       method: t('language.switch') === 'English' ? 'بنك' : 'Bank',
+      rejectionReason: 'Invalid bank account details provided',
+      adminNote: null,
     },
     {
       id: 'TXN005',
@@ -58,12 +66,26 @@ export default function Transactions() {
       date: '2024-06-25',
       description: t('language.switch') === 'English' ? 'إيداع رأس مال' : 'Capital deposit',
       method: t('language.switch') === 'English' ? 'تحويل بنكي' : 'Bank transfer',
+      rejectionReason: null,
+      adminNote: null,
+    },
+    {
+      id: 'TXN006',
+      type: 'withdrawal',
+      amount: 750,
+      status: 'approved',
+      date: '2024-07-02',
+      description: t('language.switch') === 'English' ? 'سحب أرباح فريق' : 'Team earnings withdrawal',
+      method: t('language.switch') === 'English' ? 'عملة مشفرة' : 'Cryptocurrency',
+      rejectionReason: null,
+      adminNote: 'Approved for processing',
     },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-success text-success-foreground';
+      case 'approved': return 'bg-blue-100 text-blue-800';
       case 'pending': return 'bg-warning text-warning-foreground';
       case 'rejected': return 'bg-destructive text-destructive-foreground';
       default: return 'bg-muted text-muted-foreground';
@@ -133,6 +155,16 @@ export default function Transactions() {
                       <p className="text-sm text-muted-foreground">
                         {t('transactions.id')} {transaction.id} • {transaction.method}
                       </p>
+                      {transaction.status === 'rejected' && transaction.rejectionReason && (
+                        <p className="text-sm text-red-600 mt-1">
+                          <strong>{t('withdrawal.rejectionReason')}:</strong> {transaction.rejectionReason}
+                        </p>
+                      )}
+                      {transaction.status === 'completed' && transaction.adminNote && (
+                        <p className="text-sm text-green-600 mt-1">
+                          <strong>{t('withdrawal.adminNote')}:</strong> {transaction.adminNote}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="text-right">
