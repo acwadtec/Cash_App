@@ -12,7 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
@@ -257,7 +257,6 @@ export default function AdminDashboard() {
         setUsers(data || []);
       }
       setLoadingUsers(false);
-      fetchActiveOffers();
     };
     fetchUsers();
   }, []);
@@ -321,16 +320,38 @@ export default function AdminDashboard() {
   // Fetch deposit numbers
   const fetchDepositNumbers = async () => {
     setLoadingDepositNumbers(true);
-    const { data } = await supabase.from('deposit_numbers').select('*').order('created_at', { ascending: true });
-    setDepositNumbers(data || []);
-    setLoadingDepositNumbers(false);
+    try {
+      const { data, error } = await supabase.from('deposit_numbers').select('*').order('created_at', { ascending: true });
+      if (error) {
+        console.error('Error fetching deposit numbers:', error);
+        toast({ title: t('common.error'), description: 'Failed to fetch deposit numbers', variant: 'destructive' });
+      } else {
+        setDepositNumbers(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching deposit numbers:', error);
+      toast({ title: t('common.error'), description: 'Failed to fetch deposit numbers', variant: 'destructive' });
+    } finally {
+      setLoadingDepositNumbers(false);
+    }
   };
   // Fetch deposit requests
   const fetchDepositRequests = async () => {
     setLoadingDepositRequests(true);
-    const { data } = await supabase.from('deposit_requests').select('*').order('created_at', { ascending: false });
-    setDepositRequests(data || []);
-    setLoadingDepositRequests(false);
+    try {
+      const { data, error } = await supabase.from('deposit_requests').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching deposit requests:', error);
+        toast({ title: t('common.error'), description: 'Failed to fetch deposit requests', variant: 'destructive' });
+      } else {
+        setDepositRequests(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching deposit requests:', error);
+      toast({ title: t('common.error'), description: 'Failed to fetch deposit requests', variant: 'destructive' });
+    } finally {
+      setLoadingDepositRequests(false);
+    }
   };
   useEffect(() => {
     fetchDepositNumbers();
@@ -379,97 +400,135 @@ export default function AdminDashboard() {
 
   const fetchNotifications = async () => {
     setLoadingNotifications(true);
-    const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
-    if (!error) setNotifications(data || []);
-    setLoadingNotifications(false);
+    try {
+      const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        toast({ title: t('common.error'), description: 'Failed to fetch notifications', variant: 'destructive' });
+      } else {
+        setNotifications(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast({ title: t('common.error'), description: 'Failed to fetch notifications', variant: 'destructive' });
+    } finally {
+      setLoadingNotifications(false);
+    }
   };
 
   // New functions for enhanced features
   const fetchAdvancedStats = async () => {
-    // Fetch monthly deposits
-    const startOfCurrentMonth = startOfMonth(new Date());
-    const endOfCurrentMonth = endOfMonth(new Date());
-    const { data: deposits } = await supabase
-      .from('deposit_requests')
-      .select('amount')
-      .gte('created_at', startOfCurrentMonth.toISOString())
-      .lte('created_at', endOfCurrentMonth.toISOString())
-      .eq('status', 'approved');
-    
-    const totalMonthlyDeposits = deposits?.reduce((sum, deposit) => sum + Number(deposit.amount), 0) || 0;
-    setMonthlyDeposits(totalMonthlyDeposits);
+    try {
+      // Fetch monthly deposits
+      const startOfCurrentMonth = startOfMonth(new Date());
+      const endOfCurrentMonth = endOfMonth(new Date());
+      const { data: deposits, error: depositsError } = await supabase
+        .from('deposit_requests')
+        .select('amount')
+        .gte('created_at', startOfCurrentMonth.toISOString())
+        .lte('created_at', endOfCurrentMonth.toISOString())
+        .eq('status', 'approved');
+      
+      if (depositsError) {
+        console.error('Error fetching monthly deposits:', depositsError);
+      } else {
+        const totalMonthlyDeposits = deposits?.reduce((sum, deposit) => sum + Number(deposit.amount), 0) || 0;
+        setMonthlyDeposits(totalMonthlyDeposits);
+      }
 
-    // Fetch weekly new users
-    const startOfCurrentWeek = startOfWeek(new Date());
-    const endOfCurrentWeek = endOfWeek(new Date());
-    const { count: weeklyUsers } = await supabase
-      .from('user_info')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startOfCurrentWeek.toISOString())
-      .lte('created_at', endOfCurrentWeek.toISOString())
-      .neq('role', 'admin');
-    setWeeklyNewUsers(weeklyUsers || 0);
+      // Fetch weekly new users
+      const startOfCurrentWeek = startOfWeek(new Date());
+      const endOfCurrentWeek = endOfWeek(new Date());
+      const { count: weeklyUsers, error: usersError } = await supabase
+        .from('user_info')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startOfCurrentWeek.toISOString())
+        .lte('created_at', endOfCurrentWeek.toISOString())
+        .neq('role', 'admin');
+      
+      if (usersError) {
+        console.error('Error fetching weekly users:', usersError);
+      } else {
+        setWeeklyNewUsers(weeklyUsers || 0);
+      }
 
-    // Fetch pending withdrawals (using mock data for now)
-    setPendingWithdrawals(15);
+      // Fetch pending withdrawals (using mock data for now)
+      setPendingWithdrawals(15);
 
-    // Calculate average transaction value
-    const { data: allDeposits } = await supabase
-      .from('deposit_requests')
-      .select('amount')
-      .eq('status', 'approved');
-    
-    if (allDeposits && allDeposits.length > 0) {
-      const totalAmount = allDeposits.reduce((sum, deposit) => sum + Number(deposit.amount), 0);
-      const average = totalAmount / allDeposits.length;
-      setAverageTransactionValue(average);
+      // Calculate average transaction value
+      const { data: allDeposits, error: avgError } = await supabase
+        .from('deposit_requests')
+        .select('amount')
+        .eq('status', 'approved');
+      
+      if (avgError) {
+        console.error('Error fetching average transaction value:', avgError);
+      } else if (allDeposits && allDeposits.length > 0) {
+        const totalAmount = allDeposits.reduce((sum, deposit) => sum + Number(deposit.amount), 0);
+        const average = totalAmount / allDeposits.length;
+        setAverageTransactionValue(average);
+      }
+    } catch (error) {
+      console.error('Error fetching advanced stats:', error);
     }
   };
 
   const fetchAnalyticsData = async () => {
-    // New users over time (last 30 days)
-    const thirtyDaysAgo = subDays(new Date(), 30);
-    const { data: usersOverTime } = await supabase
-      .from('user_info')
-      .select('created_at')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .neq('role', 'admin')
-      .order('created_at', { ascending: true });
+    try {
+      // New users over time (last 30 days)
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      const { data: usersOverTime, error: usersError } = await supabase
+        .from('user_info')
+        .select('created_at')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .neq('role', 'admin')
+        .order('created_at', { ascending: true });
 
-    // Group by date
-    const usersByDate = {};
-    usersOverTime?.forEach(user => {
-      const date = format(new Date(user.created_at), 'yyyy-MM-dd');
-      usersByDate[date] = (usersByDate[date] || 0) + 1;
-    });
+      if (usersError) {
+        console.error('Error fetching users over time:', usersError);
+      }
 
-    const newUsersOverTime = Object.entries(usersByDate).map(([date, count]) => ({
-      date,
-      count
-    }));
+      // Group by date
+      const usersByDate = {};
+      usersOverTime?.forEach(user => {
+        const date = format(new Date(user.created_at), 'yyyy-MM-dd');
+        usersByDate[date] = (usersByDate[date] || 0) + 1;
+      });
 
-    // Transaction types (deposit requests by status)
-    const { data: depositRequests } = await supabase
-      .from('deposit_requests')
-      .select('status, amount');
+      const newUsersOverTime = Object.entries(usersByDate).map(([date, count]) => ({
+        date,
+        count
+      }));
 
-    const transactionTypes = [
-      { type: 'approved', count: depositRequests?.filter(r => r.status === 'approved').length || 0 },
-      { type: 'pending', count: depositRequests?.filter(r => r.status === 'pending').length || 0 },
-      { type: 'rejected', count: depositRequests?.filter(r => r.status === 'rejected').length || 0 }
-    ];
+      // Transaction types (deposit requests by status)
+      const { data: depositRequests, error: depositsError } = await supabase
+        .from('deposit_requests')
+        .select('status, amount');
 
-    // Activity by hour (mock data for now)
-    const activityByHour = Array.from({ length: 24 }, (_, i) => ({
-      hour: i,
-      activity: Math.floor(Math.random() * 50) + 10
-    }));
+      if (depositsError) {
+        console.error('Error fetching deposit requests for analytics:', depositsError);
+      }
 
-    setAnalyticsData({
-      newUsersOverTime,
-      transactionTypes,
-      activityByHour
-    });
+      const transactionTypes = [
+        { type: 'approved', count: depositRequests?.filter(r => r.status === 'approved').length || 0 },
+        { type: 'pending', count: depositRequests?.filter(r => r.status === 'pending').length || 0 },
+        { type: 'rejected', count: depositRequests?.filter(r => r.status === 'rejected').length || 0 }
+      ];
+
+      // Activity by hour (mock data for now)
+      const activityByHour = Array.from({ length: 24 }, (_, i) => ({
+        hour: i,
+        activity: Math.floor(Math.random() * 50) + 10
+      }));
+
+      setAnalyticsData({
+        newUsersOverTime,
+        transactionTypes,
+        activityByHour
+      });
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    }
   };
 
   useEffect(() => { 
@@ -510,30 +569,46 @@ export default function AdminDashboard() {
   const fetchOfferUserCounts = async (offersList) => {
     if (!offersList || offersList.length === 0) return;
     const offerIds = offersList.map((o) => o.id);
-    const { data, error } = await supabase
-      .from('offer_joins')
-      .select('offer_id, count:user_id')
-      .in('offer_id', offerIds)
-      .group('offer_id');
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from('offer_joins')
+        .select('offer_id, user_id')
+        .in('offer_id', offerIds);
+      
+      if (error) {
+        console.error('Error fetching offer user counts:', error);
+        setOfferUserCounts({});
+        setOfferProfits({});
+        return;
+      }
+
+      // Group by offer_id and count users
+      const counts = {};
+      const profits = {};
+      
+      data?.forEach((row) => {
+        if (!counts[row.offer_id]) {
+          counts[row.offer_id] = 0;
+        }
+        counts[row.offer_id]++;
+      });
+
+      // Calculate profits for each offer
+      offerIds.forEach((offerId) => {
+        const offer = offersList.find((o) => o.id === offerId);
+        if (offer && counts[offerId]) {
+          // Profit = users * (monthly_profit - cost)
+          profits[offerId] = counts[offerId] * ((offer.monthly_profit || 0) - (offer.cost || 0));
+        }
+      });
+
+      setOfferUserCounts(counts);
+      setOfferProfits(profits);
+    } catch (error) {
+      console.error('Error fetching offer user counts:', error);
       setOfferUserCounts({});
       setOfferProfits({});
-      return;
     }
-    // Map offer_id to count
-    const counts = {};
-    const profits = {};
-    data.forEach((row) => {
-      counts[row.offer_id] = row.count;
-      // Find the offer
-      const offer = offersList.find((o) => o.id === row.offer_id);
-      if (offer) {
-        // Profit = users * (monthly_profit - cost)
-        profits[row.offer_id] = row.count * ((offer.monthly_profit || 0) - (offer.cost || 0));
-      }
-    });
-    setOfferUserCounts(counts);
-    setOfferProfits(profits);
   };
 
   useEffect(() => {
@@ -545,20 +620,28 @@ export default function AdminDashboard() {
   // Fetch top referrers
   const fetchTopReferrers = async () => {
     setLoadingReferrers(true);
-    const { data, error } = await supabase
-      .from('user_info')
-      .select('first_name, last_name, email, referral_count, total_referral_points')
-      .not('referral_count', 'is', null)
-      .order('total_referral_points', { ascending: false })
-      .limit(10);
-    
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from('user_info')
+        .select('first_name, last_name, email, referral_count, total_referral_points')
+        .not('referral_count', 'is', null)
+        .order('total_referral_points', { ascending: false })
+        .limit(10);
+      
+      if (error) {
+        console.error('Error fetching top referrers:', error);
+        toast({ title: t('common.error'), description: 'Failed to fetch top referrers', variant: 'destructive' });
+        setTopReferrers([]);
+      } else {
+        setTopReferrers(data || []);
+      }
+    } catch (error) {
       console.error('Error fetching top referrers:', error);
+      toast({ title: t('common.error'), description: 'Failed to fetch top referrers', variant: 'destructive' });
       setTopReferrers([]);
-    } else {
-      setTopReferrers(data || []);
+    } finally {
+      setLoadingReferrers(false);
     }
-    setLoadingReferrers(false);
   };
 
   // Update referral settings
@@ -582,17 +665,35 @@ export default function AdminDashboard() {
 
   // Load referral settings
   const loadReferralSettings = async () => {
-    const { data, error } = await supabase
-      .from('referral_settings')
-      .select('*')
-      .eq('id', 1)
-      .single();
-    
-    if (!error && data) {
+    try {
+      const { data, error } = await supabase
+        .from('referral_settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      
+      if (error) {
+        console.error('Error loading referral settings:', error);
+        // Use default settings if no settings found
+        setReferralSettings({
+          level1Points: 100,
+          level2Points: 50,
+          level3Points: 25
+        });
+      } else if (data) {
+        setReferralSettings({
+          level1Points: data.level1_points || 100,
+          level2Points: data.level2_points || 50,
+          level3Points: data.level3_points || 25
+        });
+      }
+    } catch (error) {
+      console.error('Error loading referral settings:', error);
+      // Use default settings on error
       setReferralSettings({
-        level1Points: data.level1_points || 100,
-        level2Points: data.level2_points || 50,
-        level3Points: data.level3_points || 25
+        level1Points: 100,
+        level2Points: 50,
+        level3Points: 25
       });
     }
   };
@@ -1190,35 +1291,47 @@ export default function AdminDashboard() {
                     <div>Loading...</div>
                   ) : (
                     <Table>
-                      <thead>
-                        <tr>
-                          <th>{t('deposit.amount') || 'Amount'}</th>
-                          <th>{t('deposit.userNumber') || 'User Number'}</th>
-                          <th>{t('deposit.targetNumber') || 'Target Number'}</th>
-                          <th>{t('deposit.screenshot') || 'Screenshot'}</th>
-                          <th>{t('deposit.status') || 'Status'}</th>
-                          <th>{t('deposit.actions') || 'Actions'}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('deposit.amount') || 'Amount'}</TableHead>
+                          <TableHead>{t('deposit.userNumber') || 'User Number'}</TableHead>
+                          <TableHead>{t('deposit.targetNumber') || 'Target Number'}</TableHead>
+                          <TableHead>{t('deposit.screenshot') || 'Screenshot'}</TableHead>
+                          <TableHead>{t('deposit.status') || 'Status'}</TableHead>
+                          <TableHead>{t('deposit.actions') || 'Actions'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {depositRequests.map((req) => (
-                          <tr key={req.id}>
-                            <td>{req.amount}</td>
-                            <td>{req.user_number}</td>
-                            <td>{req.target_number}</td>
-                            <td><a href={req.screenshot_url} target="_blank" rel="noopener noreferrer">{t('deposit.view') || 'View'}</a></td>
-                            <td>{req.status}</td>
-                            <td>
+                          <TableRow key={req.id}>
+                            <TableCell>{req.amount}</TableCell>
+                            <TableCell>{req.user_number}</TableCell>
+                            <TableCell>{req.target_number}</TableCell>
+                            <TableCell>
+                              <a href={req.screenshot_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                {t('deposit.view') || 'View'}
+                              </a>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
+                                {req.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
                               {req.status === 'pending' && (
-                                <>
-                                  <Button size="sm" className="bg-success mr-2" onClick={() => handleApproveDeposit(req)}>{t('common.save') || 'Approve'}</Button>
-                                  <Button size="sm" variant="destructive" onClick={() => handleRejectDeposit(req.id)}>{t('common.delete') || 'Reject'}</Button>
-                                </>
+                                <div className="flex space-x-2">
+                                  <Button size="sm" className="bg-success" onClick={() => handleApproveDeposit(req)}>
+                                    {t('common.save') || 'Approve'}
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleRejectDeposit(req.id)}>
+                                    {t('common.delete') || 'Reject'}
+                                  </Button>
+                                </div>
                               )}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
+                      </TableBody>
                     </Table>
                   )}
                 </CardContent>
