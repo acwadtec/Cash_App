@@ -99,7 +99,7 @@ export default function Register() {
     if (formData.referralCode && !referrerInfo) {
       toast({
         title: t('common.error'),
-        description: 'Please enter a valid referral code',
+        description: t('register.error.invalidReferral'),
         variant: 'destructive',
       });
       return;
@@ -248,24 +248,24 @@ export default function Register() {
               
               {/* Referral Code Field */}
               <div className="space-y-2">
-                <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+                <Label htmlFor="referralCode">{t('register.referralCode')}</Label>
                 <Input
                   id="referralCode"
                   name="referralCode"
                   type="text"
                   value={formData.referralCode}
                   onChange={handleReferralCodeChange}
-                  placeholder="Enter referral code"
+                  placeholder={t('register.referralCode')}
                   className="h-12 uppercase"
                   maxLength={8}
                 />
                 {loadingReferrer && (
-                  <p className="text-sm text-muted-foreground">Checking referral code...</p>
+                  <p className="text-sm text-muted-foreground">{t('register.checkingReferral')}</p>
                 )}
                 {referrerInfo && (
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm text-green-800">
-                      ✓ Referred by: <strong>{referrerInfo.first_name} {referrerInfo.last_name}</strong>
+                      ✓ {t('register.referredBy')}: <strong>{referrerInfo.first_name} {referrerInfo.last_name}</strong>
                     </p>
                   </div>
                 )}

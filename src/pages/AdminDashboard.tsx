@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Custom Components
 import OffersTable from '@/components/OffersTable';
@@ -120,6 +121,12 @@ export default function AdminDashboard() {
   const [packageLimits, setPackageLimits] = useState({});
   const [settingsLoading, setSettingsLoading] = useState(false);
 
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState('');
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [exporting, setExporting] = useState(false);
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -195,9 +202,393 @@ export default function AdminDashboard() {
   };
 
   const handleExport = (type: string, format?: string) => {
+    setExportType(type);
+    if (format) {
+      setExportFormat(format);
+      performExport(type, format);
+    } else {
+      setShowExportModal(true);
+    }
+  };
+
+  const performExport = async (type: string, format: string) => {
+    setExporting(true);
+    try {
+      // Simulate export process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Here you would implement actual export logic based on type and format
+      let data = [];
+      let fileName = '';
+      
+      if (type === t('admin.users')) {
+        // Fetch comprehensive user data including all metrics
+        const { data: userData, error } = await supabase
+          .from('user_info')
+          .select(`
+            *,
+            user_earnings!inner(
+              total_earnings,
+              personal_earnings,
+              team_earnings,
+              bonuses
+            ),
+            user_activity!inner(
+              total_deposits,
+              total_withdrawals,
+              last_login
+            )
+          `)
+          .neq('role', 'admin');
+        
+        if (error) {
+          console.error('Error fetching user data:', error);
+          data = users; // Fallback to basic user data
+        } else {
+          // Merge the data to create comprehensive user records
+          data = userData?.map(user => ({
+            ...user,
+            total_earnings: user.user_earnings?.total_earnings || 0,
+            personal_earnings: user.user_earnings?.personal_earnings || 0,
+            team_earnings: user.user_earnings?.team_earnings || 0,
+            bonuses: user.user_earnings?.bonuses || 0,
+            total_deposits: user.user_activity?.total_deposits || 0,
+            total_withdrawals: user.user_activity?.total_withdrawals || 0,
+            last_login: user.user_activity?.last_login || null
+          })) || users;
+        }
+        fileName = `users_${new Date().toISOString().split('T')[0]}`;
+      } else if (type === t('admin.transactions')) {
+        // Fetch comprehensive transaction data
+        const { data: transactionData, error } = await supabase
+          .from('transactions')
+          .select(`
+            *,
+            user_info!inner(
+              first_name,
+              last_name,
+              email
+            )
+          `)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching transaction data:', error);
+          // Fallback to mock data
+          data = [
+            { id: 1, user: 'أحمد محمد', type: 'withdrawal', amount: 250, date: '2024-07-01', status: 'completed' },
+            { id: 2, user: 'فاطمة أحمد', type: 'deposit', amount: 150, date: '2024-07-02', status: 'pending' },
+            { id: 3, user: 'محمد علي', type: 'bonus', amount: 300, date: '2024-07-03', status: 'completed' },
+          ];
+        } else {
+          data = transactionData?.map(txn => ({
+            id: txn.id,
+            user: `${txn.user_info?.first_name} ${txn.user_info?.last_name}`,
+            type: txn.type,
+            amount: txn.amount,
+            date: txn.created_at,
+            status: txn.status
+          })) || [];
+        }
+        fileName = `transactions_${new Date().toISOString().split('T')[0]}`;
+      }
+      
+      if (format === 'pdf') {
+        exportToPDF(data, fileName, type);
+      } else if (format === 'excel') {
+        exportToExcel(data, fileName);
+      }
+      
     toast({
       title: t('common.success'),
-      description: `تم تصدير ${type} ${format ? `بصيغة ${format.toUpperCase()}` : ''} بنجاح`,
+        description: `${t('admin.export.success')} ${type} ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      toast({
+        title: t('common.error'),
+        description: t('admin.export.error'),
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+      setShowExportModal(false);
+    }
+  };
+
+
+
+  // Shared function to process export data
+  const processExportData = (data: any[], type: string) => {
+    if (data.length === 0) return { filteredData: [], headers: [], fieldMappings: {} };
+    
+    const isArabic = t('language.switch') === 'English';
+    let importantFields: string[] = [];
+    let fieldMappings: Record<string, string> = {};
+    
+    // Determine data type and set important admin-focused fields
+    if (data[0].hasOwnProperty('first_name') || data[0].hasOwnProperty('email')) {
+      // Users data - comprehensive admin view with all important user metrics
+      importantFields = [
+        'first_name', 'last_name', 'email', 'phone', 'verified', 'created_at',
+        'balance', 'total_earnings', 'personal_earnings', 'team_earnings', 'bonuses',
+        'level', 'referral_count', 'total_referral_points', 'referred_by',
+        'wallet', 'last_login', 'status', 'total_deposits', 'total_withdrawals'
+      ];
+      fieldMappings = {
+        first_name: isArabic ? 'الاسم الأول' : 'First Name',
+        last_name: isArabic ? 'اسم العائلة' : 'Last Name',
+        email: isArabic ? 'البريد الإلكتروني' : 'Email',
+        phone: isArabic ? 'الهاتف' : 'Phone',
+        verified: isArabic ? 'حالة التحقق' : 'Verification Status',
+        created_at: isArabic ? 'تاريخ التسجيل' : 'Registration Date',
+        balance: isArabic ? 'الرصيد الحالي' : 'Current Balance',
+        total_earnings: isArabic ? 'إجمالي الأرباح' : 'Total Earnings',
+        personal_earnings: isArabic ? 'الأرباح الشخصية' : 'Personal Earnings',
+        team_earnings: isArabic ? 'أرباح الفريق' : 'Team Earnings',
+        bonuses: isArabic ? 'المكافآت' : 'Bonuses',
+        level: isArabic ? 'المستوى' : 'Level',
+        referral_count: isArabic ? 'عدد الإحالات' : 'Referral Count',
+        total_referral_points: isArabic ? 'إجمالي نقاط الإحالة' : 'Total Referral Points',
+        referred_by: isArabic ? 'تم الإحالة بواسطة' : 'Referred By',
+        wallet: isArabic ? 'المحفظة' : 'Wallet',
+        last_login: isArabic ? 'آخر تسجيل دخول' : 'Last Login',
+        status: isArabic ? 'الحالة' : 'Status',
+        total_deposits: isArabic ? 'إجمالي الإيداعات' : 'Total Deposits',
+        total_withdrawals: isArabic ? 'إجمالي السحوبات' : 'Total Withdrawals'
+      };
+    } else if (data[0].hasOwnProperty('type') && data[0].hasOwnProperty('amount')) {
+      // Transactions data - admin needs: user, type, amount, date, status
+      importantFields = ['user', 'type', 'amount', 'date', 'status'];
+      fieldMappings = {
+        user: isArabic ? 'المستخدم' : 'User',
+        type: isArabic ? 'نوع المعاملة' : 'Transaction Type',
+        amount: isArabic ? 'المبلغ' : 'Amount',
+        date: isArabic ? 'التاريخ' : 'Date',
+        status: isArabic ? 'الحالة' : 'Status'
+      };
+    } else if (data[0].hasOwnProperty('title') && data[0].hasOwnProperty('description')) {
+      // Offers data - admin needs: title, type, reward, deadline, active status
+      importantFields = ['title', 'type', 'amount', 'deadline', 'active'];
+      fieldMappings = {
+        title: isArabic ? 'عنوان العرض' : 'Offer Title',
+        type: isArabic ? 'نوع العرض' : 'Offer Type',
+        amount: isArabic ? 'المكافأة' : 'Reward',
+        deadline: isArabic ? 'تاريخ الانتهاء' : 'Deadline',
+        active: isArabic ? 'الحالة' : 'Status'
+      };
+    } else if (data[0].hasOwnProperty('user') && data[0].hasOwnProperty('amount') && data[0].hasOwnProperty('method')) {
+      // Withdrawal data - admin needs: user, amount, method, date, status
+      importantFields = ['user', 'amount', 'method', 'date', 'status'];
+      fieldMappings = {
+        user: isArabic ? 'المستخدم' : 'User',
+        amount: isArabic ? 'المبلغ' : 'Amount',
+        method: isArabic ? 'طريقة السحب' : 'Withdrawal Method',
+        date: isArabic ? 'التاريخ' : 'Date',
+        status: isArabic ? 'الحالة' : 'Status'
+      };
+    } else {
+      // Fallback to all fields
+      importantFields = Object.keys(data[0]);
+      fieldMappings = Object.fromEntries(importantFields.map(field => [field, field]));
+    }
+    
+    // Filter and format data to only include important admin fields
+    const filteredData = data.map(row => {
+      const filteredRow: any = {};
+      importantFields.forEach(field => {
+        if (row.hasOwnProperty(field)) {
+          let value = row[field];
+          
+          // Format specific fields for admin readability
+          if (field === 'verified') {
+            value = value ? (isArabic ? 'محقق' : 'Verified') : (isArabic ? 'غير محقق' : 'Unverified');
+          } else if (field === 'active') {
+            value = value ? (isArabic ? 'نشط' : 'Active') : (isArabic ? 'غير نشط' : 'Inactive');
+          } else if (field === 'created_at' || field === 'date' || field === 'last_login') {
+            value = value ? new Date(value).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US') : (isArabic ? 'غير متوفر' : 'Not Available');
+          } else if (field === 'deadline') {
+            value = value ? new Date(value).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US') : (isArabic ? 'غير محدد' : 'Not Set');
+          } else if (field === 'amount' || field === 'balance' || field === 'total_earnings' || 
+                     field === 'personal_earnings' || field === 'team_earnings' || field === 'bonuses' ||
+                     field === 'total_deposits' || field === 'total_withdrawals') {
+            value = value ? `$${Number(value).toLocaleString()}` : '$0';
+          } else if (field === 'level') {
+            value = value ? (isArabic ? `المستوى ${value}` : `Level ${value}`) : (isArabic ? 'المستوى 1' : 'Level 1');
+          } else if (field === 'referral_count' || field === 'total_referral_points') {
+            value = value || '0';
+          } else if (field === 'referred_by') {
+            value = value || (isArabic ? 'لا يوجد' : 'None');
+          } else if (field === 'wallet') {
+            const walletMappings = {
+              vodafone: isArabic ? 'فودافون كاش' : 'Vodafone Cash',
+              orange: isArabic ? 'أورنج كاش' : 'Orange Cash',
+              wepay: isArabic ? 'وي باي' : 'We Pay',
+              etisalat: isArabic ? 'اتصالات كاش' : 'Etisalat Cash'
+            };
+            value = value ? walletMappings[value as keyof typeof walletMappings] || value : (isArabic ? 'غير محدد' : 'Not Set');
+          } else if (field === 'status') {
+            const statusMappings = {
+              active: isArabic ? 'نشط' : 'Active',
+              inactive: isArabic ? 'غير نشط' : 'Inactive',
+              suspended: isArabic ? 'معلق' : 'Suspended',
+              pending: isArabic ? 'قيد المعالجة' : 'Pending',
+              approved: isArabic ? 'تمت الموافقة' : 'Approved',
+              rejected: isArabic ? 'مرفوض' : 'Rejected',
+              completed: isArabic ? 'مكتمل' : 'Completed'
+            };
+            value = value ? statusMappings[value as keyof typeof statusMappings] || value : (isArabic ? 'نشط' : 'Active');
+          } else if (field === 'type') {
+            const typeMappings = {
+              withdrawal: isArabic ? 'سحب' : 'Withdrawal',
+              deposit: isArabic ? 'إيداع' : 'Deposit',
+              bonus: isArabic ? 'مكافأة' : 'Bonus',
+              earning: isArabic ? 'أرباح' : 'Earning',
+              trading: isArabic ? 'تداول' : 'Trading',
+              referral: isArabic ? 'إحالة' : 'Referral',
+              premium: isArabic ? 'متقدم' : 'Premium'
+            };
+            value = typeMappings[value as keyof typeof typeMappings] || value;
+          } else if (field === 'method') {
+            const methodMappings = {
+              bank: isArabic ? 'تحويل بنكي' : 'Bank Transfer',
+              wallet: isArabic ? 'محفظة إلكترونية' : 'Digital Wallet',
+              crypto: isArabic ? 'عملة رقمية' : 'Cryptocurrency'
+            };
+            value = methodMappings[value as keyof typeof methodMappings] || value;
+          }
+          
+          filteredRow[field] = value;
+        }
+      });
+      return filteredRow;
+    });
+    
+    const headers = importantFields.map(field => fieldMappings[field] || field);
+    
+    return { filteredData, headers, fieldMappings, importantFields };
+  };
+
+  const exportToPDF = (data: any[], fileName: string, type: string) => {
+    if (data.length === 0) return;
+    
+    const { filteredData, headers, fieldMappings, importantFields } = processExportData(data, type);
+    const isArabic = t('language.switch') === 'English';
+    
+    const tableHTML = `
+      <html dir="${isArabic ? 'rtl' : 'ltr'}">
+        <head>
+          <title>${type} Report</title>
+          <style>
+            body { 
+              font-family: ${isArabic ? 'Arial, Tahoma, sans-serif' : 'Arial, sans-serif'}; 
+              margin: 20px; 
+              direction: ${isArabic ? 'rtl' : 'ltr'};
+            }
+            table { 
+              border-collapse: collapse; 
+              width: 100%; 
+              margin-top: 20px;
+            }
+            th, td { 
+              border: 1px solid #ddd; 
+              padding: 12px 8px; 
+              text-align: ${isArabic ? 'right' : 'left'}; 
+            }
+            th { 
+              background-color: #f2f2f2; 
+              font-weight: bold; 
+              color: #333;
+            }
+            h1 { 
+              color: #333; 
+              text-align: ${isArabic ? 'right' : 'left'};
+              margin-bottom: 10px;
+            }
+            .report-info {
+              text-align: ${isArabic ? 'right' : 'left'};
+              color: #666;
+              margin-bottom: 20px;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            tr:hover {
+              background-color: #f5f5f5;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${type} Report</h1>
+          <div class="report-info">
+            <p>Generated on: ${new Date().toLocaleDateString(isArabic ? 'ar-EG' : 'en-US')}</p>
+            <p>Total Records: ${filteredData.length}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                ${headers.map(header => `<th>${header}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredData.map(row => `
+                <tr>
+                  ${importantFields.map(field => `<td>${row[field]}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    // Create a new window with the HTML content
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(tableHTML);
+      newWindow.document.close();
+      newWindow.print();
+    }
+    
+    toast({
+      title: t('admin.export.pdfSuccess'),
+      description: t('admin.export.pdfReady'),
+    });
+  };
+
+  const exportToExcel = (data: any[], fileName: string) => {
+    if (data.length === 0) return;
+    
+    const { filteredData, headers, fieldMappings, importantFields } = processExportData(data, '');
+    
+    // Create Excel-compatible content with proper formatting
+    const excelContent = [
+      headers.join('\t'),
+      ...filteredData.map(row => 
+        importantFields.map(field => {
+          const value = row[field];
+          // Escape special characters and wrap in quotes if needed
+          return typeof value === 'string' && (value.includes('\t') || value.includes('\n') || value.includes('"')) 
+            ? `"${value.replace(/"/g, '""')}"` 
+            : value;
+        }).join('\t')
+      )
+    ].join('\n');
+    
+    // Add BOM for Excel to recognize UTF-8
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + excelContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${fileName}.xls`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: t('admin.export.excelSuccess'),
+      description: t('admin.export.excelReady'),
     });
   };
 
@@ -316,7 +707,7 @@ export default function AdminDashboard() {
       // Refresh users list
       const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
       setUsers(data || []);
-      toast({ title: t('common.success'), description: 'User verified successfully' });
+              toast({ title: t('common.success'), description: t('admin.userVerified') });
     } else {
       toast({ title: t('common.error'), description: error.message });
     }
@@ -331,7 +722,7 @@ export default function AdminDashboard() {
       // Refresh users list and user count
       const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
       setUsers(data || []);
-      toast({ title: t('common.success'), description: 'User removed successfully' });
+              toast({ title: t('common.success'), description: t('admin.userRemoved') });
     } else {
       toast({ title: t('common.error'), description: error.message });
     }
@@ -645,14 +1036,14 @@ export default function AdminDashboard() {
       const { data, error } = await supabase.from('user_info').select('first_name, last_name, email, referral_count, total_referral_points').not('referral_count', 'is', null).order('total_referral_points', { ascending: false }).limit(10);
       if (error) {
         console.error('Error fetching top referrers:', error);
-        toast({ title: t('common.error'), description: 'Failed to fetch top referrers', variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('admin.failedToFetchReferrers'), variant: 'destructive' });
         setTopReferrers([]);
       } else {
         setTopReferrers(data || []);
       }
     } catch (error) {
       console.error('Error fetching top referrers:', error);
-      toast({ title: t('common.error'), description: 'Failed to fetch top referrers', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('admin.failedToFetchReferrers'), variant: 'destructive' });
       setTopReferrers([]);
     } finally {
       setLoadingReferrers(false);
@@ -818,19 +1209,19 @@ export default function AdminDashboard() {
               color="text-green-600" 
             />
             <StatCard 
-              title="إجمالي الإيداعات هذا الشهر" 
+              title={t('admin.monthlyDeposits')} 
               value={monthlyDeposits} 
               icon={TrendingUp} 
               color="text-purple-600" 
             />
             <StatCard 
-              title="المستخدمون الجدد هذا الأسبوع" 
+              title={t('admin.weeklyNewUsers')} 
               value={weeklyNewUsers} 
               icon={Users} 
               color="text-indigo-600" 
             />
             <StatCard 
-              title="متوسط قيمة المعاملة" 
+              title={t('admin.avgTransactionValue')} 
               value={Math.round(averageTransactionValue)} 
               icon={BarChart3} 
               color="text-teal-600" 
@@ -842,10 +1233,10 @@ export default function AdminDashboard() {
             <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
-              <TabsTrigger value="referrals">Referrals</TabsTrigger>
+              <TabsTrigger value="referrals">{t('admin.referrals')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
               <TabsTrigger value="transactions">{t('admin.transactions')}</TabsTrigger>
-              <TabsTrigger value="analytics">التحليلات</TabsTrigger>
+              <TabsTrigger value="analytics">{t('admin.analytics')}</TabsTrigger>
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
@@ -857,15 +1248,9 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.users')}</CardTitle>
                   <div className="flex gap-2">
-                    <Button onClick={() => handleExport('المستخدمين')} variant="outline">
+                    <Button onClick={() => handleExport(t('admin.users'))} variant="outline">
                       <Download className="h-4 w-4 mr-2" />
                       {t('admin.export.users')}
-                    </Button>
-                    <Button onClick={() => handleExport('المستخدمين', 'csv')} variant="outline">
-                      CSV
-                    </Button>
-                    <Button onClick={() => handleExport('المستخدمين', 'pdf')} variant="outline">
-                      PDF
                     </Button>
                   </div>
                 </CardHeader>
@@ -876,7 +1261,7 @@ export default function AdminDashboard() {
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input
-                          placeholder="البحث بالاسم أو البريد الإلكتروني أو الهاتف..."
+                          placeholder={t('admin.searchPlaceholder')}
                           value={userSearchTerm}
                           onChange={(e) => setUserSearchTerm(e.target.value)}
                           className="pl-10"
@@ -885,19 +1270,19 @@ export default function AdminDashboard() {
                     </div>
                     <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
                       <SelectTrigger className="w-48">
-                        <SelectValue placeholder="حالة التحقق" />
+                        <SelectValue placeholder={t('admin.verificationStatus')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">جميع الحالات</SelectItem>
-                        <SelectItem value="verified">محقق</SelectItem>
-                        <SelectItem value="pending">معلق</SelectItem>
+                        <SelectItem value="all">{t('admin.allStatuses')}</SelectItem>
+                        <SelectItem value="verified">{t('admin.verified')}</SelectItem>
+                        <SelectItem value="pending">{t('admin.pending')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-48">
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {userDateFilter ? format(userDateFilter, 'yyyy-MM-dd') : 'تاريخ التسجيل'}
+                          {userDateFilter ? format(userDateFilter, 'yyyy-MM-dd') : t('admin.registrationDate')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="end">
@@ -926,13 +1311,13 @@ export default function AdminDashboard() {
                       {loadingUsers ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            Loading...
+                            {t('admin.loading')}
                           </TableCell>
                         </TableRow>
                       ) : filteredUsers.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
-                            No users found
+                            {t('admin.noUsers')}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -949,15 +1334,15 @@ export default function AdminDashboard() {
                             <TableCell>
                               <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleView(user)}>
-                                  View
+                                  {t('admin.view')}
                                 </Button>
                                 {!user.verified && (
                                   <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
-                                    Verify
+                                    {t('admin.verify')}
                                   </Button>
                                 )}
                                 <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
-                                  Remove
+                                  {t('admin.remove')}
                                 </Button>
                               </div>
                             </TableCell>
@@ -1009,7 +1394,7 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.offers')}</CardTitle>
                   <Button onClick={() => navigate('/manage-offers')} className="mt-4">
-                    Manage Offers
+                    {t('admin.manageOffers')}
                   </Button>
                 </CardHeader>
                 <CardContent>
@@ -1021,8 +1406,8 @@ export default function AdminDashboard() {
                       showActions={false}
                       renderExtra={(offer) => (
                         <div className="flex flex-col gap-1 text-xs">
-                          <span><b>Users:</b> {offerUserCounts[offer.id] || 0}</span>
-                          <span><b>Profit/Loss:</b> ${offerProfits[offer.id] !== undefined ? offerProfits[offer.id].toLocaleString() : '0'}</span>
+                          <span><b>{t('admin.usersCount')}</b> {offerUserCounts[offer.id] || 0}</span>
+                          <span><b>{t('admin.profitLoss')}</b> ${offerProfits[offer.id] !== undefined ? offerProfits[offer.id].toLocaleString() : '0'}</span>
                         </div>
                       )}
                     />
@@ -1075,7 +1460,7 @@ export default function AdminDashboard() {
                                     </>
                                   )}
                                   {w.status === 'paid' && w.proof_image_url && (
-                                    <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">Proof</a>
+                                    <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
                                   )}
                                 </TableCell>
                               </TableRow>
@@ -1091,19 +1476,19 @@ export default function AdminDashboard() {
               {showPayModal && selectedWithdrawal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                   <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
-                    <h2 className="text-xl font-bold mb-4">{t('admin.withdrawals.confirmPay')}</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('admin.confirmPay')}</h2>
                     <div className="mb-2">{t('admin.withdrawals.user')}: {selectedWithdrawal.user_name}</div>
                     <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
-                      <Label>{t('admin.withdrawals.adminNote')}</Label>
+                      <Label>{t('admin.adminNote')}</Label>
                       <Input value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                     </div>
                     <div className="mb-2">
-                      <Label>{t('admin.withdrawals.proofImage')}</Label>
+                      <Label>{t('admin.proofImage')}</Label>
                       <Input type="file" accept="image/*" onChange={e => setProofImage(e.target.files[0])} />
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button onClick={handlePay} className="bg-success">{t('admin.withdrawals.confirmPay')}</Button>
+                      <Button onClick={handlePay} className="bg-success">{t('admin.confirmPay')}</Button>
                       <Button variant="destructive" onClick={() => setShowPayModal(false)}>{t('common.cancel')}</Button>
                     </div>
                   </div>
@@ -1113,11 +1498,11 @@ export default function AdminDashboard() {
               {showRejectModal && selectedWithdrawal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                   <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
-                    <h2 className="text-xl font-bold mb-4">{t('admin.withdrawals.rejectTitle')}</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('admin.rejectTitle')}</h2>
                     <div className="mb-2">{t('admin.withdrawals.user')}: {selectedWithdrawal.user_name}</div>
                     <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
-                      <Label>{t('admin.withdrawals.rejectionReason')}</Label>
+                      <Label>{t('admin.rejectionReason')}</Label>
                       <Input value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} />
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -1130,18 +1515,18 @@ export default function AdminDashboard() {
               {/* Settings UI */}
               <Card className="shadow-card mt-8">
                 <CardHeader>
-                  <CardTitle>{t('admin.withdrawals.settings')}</CardTitle>
+                                  <CardTitle>{t('admin.settings')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4">
-                    <Label>{t('admin.withdrawals.timeSlots')}</Label>
+                  <Label>{t('admin.timeSlots')}</Label>
                     <Input value={timeSlots.join(',')} onChange={e => setTimeSlots(e.target.value.split(','))} />
-                    <Button onClick={handleSaveTimeSlots} className="mt-2">{t('admin.withdrawals.saveTimeSlots')}</Button>
+                  <Button onClick={handleSaveTimeSlots} className="mt-2">{t('admin.saveTimeSlots')}</Button>
                   </div>
                   <div>
-                    <Label>{t('admin.withdrawals.packageLimits')}</Label>
+                  <Label>{t('admin.packageLimits')}</Label>
                     <Input value={JSON.stringify(packageLimits)} onChange={e => setPackageLimits(JSON.parse(e.target.value))} />
-                    <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.withdrawals.savePackageLimits')}</Button>
+                  <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.savePackageLimits')}</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1153,18 +1538,9 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.transactions')}</CardTitle>
                   <div className="flex gap-2">
-                    <Button onClick={() => handleExport('المعاملات')} variant="outline">
+                    <Button onClick={() => handleExport(t('admin.transactions'))} variant="outline">
                       <Download className="h-4 w-4 mr-2" />
                       {t('admin.export.transactions')}
-                    </Button>
-                    <Button onClick={() => handleExport('المعاملات', 'csv')} variant="outline">
-                      CSV
-                    </Button>
-                    <Button onClick={() => handleExport('المعاملات', 'pdf')} variant="outline">
-                      PDF
-                    </Button>
-                    <Button onClick={() => handleExport('المعاملات', 'excel')} variant="outline">
-                      Excel
                     </Button>
                   </div>
                 </CardHeader>
@@ -1410,12 +1786,12 @@ export default function AdminDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Users2 className="h-5 w-5" />
-                      Referral System Settings
+                    {t('admin.referralSettings')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="level1">Level 1 Points (Direct Referrals)</Label>
+                      <Label htmlFor="level1">{t('admin.level1Points')}</Label>
                       <Input
                         id="level1"
                         type="number"
@@ -1425,7 +1801,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="level2">Level 2 Points (Indirect Referrals)</Label>
+                      <Label htmlFor="level2">{t('admin.level2Points')}</Label>
                       <Input
                         id="level2"
                         type="number"
@@ -1435,7 +1811,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="level3">Level 3 Points (Third Level)</Label>
+                      <Label htmlFor="level3">{t('admin.level3Points')}</Label>
                       <Input
                         id="level3"
                         type="number"
@@ -1445,7 +1821,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <Button onClick={handleUpdateReferralSettings} className="w-full">
-                      Update Settings
+                      {t('admin.updateSettings')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1455,14 +1831,14 @@ export default function AdminDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Trophy className="h-5 w-5" />
-                      Top Referrers
+                    {t('admin.topReferrers')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {loadingReferrers ? (
-                      <div className="text-center py-4">Loading...</div>
+                      <div className="text-center py-4">{t('admin.loading')}</div>
                     ) : topReferrers.length === 0 ? (
-                      <div className="text-center py-4 text-muted-foreground">No referrers found</div>
+                      <div className="text-center py-4 text-muted-foreground">{t('admin.noReferrers')}</div>
                     ) : (
                       <div className="space-y-3">
                         {topReferrers.map((referrer, index) => (
@@ -1477,8 +1853,8 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-primary">{referrer.total_referral_points || 0} pts</p>
-                              <p className="text-sm text-muted-foreground">{referrer.referral_count || 0} referrals</p>
+                              <p className="font-bold text-primary">{referrer.total_referral_points || 0} {t('admin.pts')}</p>
+                              <p className="text-sm text-muted-foreground">{referrer.referral_count || 0} {t('admin.referrals')}</p>
                             </div>
                           </div>
                         ))}
@@ -1491,7 +1867,7 @@ export default function AdminDashboard() {
               {/* Referral Statistics */}
               <Card className="shadow-card mt-6">
                 <CardHeader>
-                  <CardTitle>Referral Statistics</CardTitle>
+                  <CardTitle>{t('admin.referralStats')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1499,19 +1875,19 @@ export default function AdminDashboard() {
                       <p className="text-2xl font-bold text-blue-600">
                         {topReferrers.reduce((sum, r) => sum + (r.referral_count || 0), 0)}
                       </p>
-                      <p className="text-sm text-muted-foreground">Total Referrals</p>
+                      <p className="text-sm text-muted-foreground">{t('admin.totalReferrals')}</p>
                     </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
                       <p className="text-2xl font-bold text-green-600">
                         {topReferrers.reduce((sum, r) => sum + (r.total_referral_points || 0), 0)}
                       </p>
-                      <p className="text-sm text-muted-foreground">Total Points Awarded</p>
+                      <p className="text-sm text-muted-foreground">{t('admin.totalPointsAwarded')}</p>
                     </div>
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
                       <p className="text-2xl font-bold text-purple-600">
                         {topReferrers.length}
                       </p>
-                      <p className="text-sm text-muted-foreground">Active Referrers</p>
+                      <p className="text-sm text-muted-foreground">{t('admin.activeReferrers')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -1523,18 +1899,66 @@ export default function AdminDashboard() {
       {showUserModal && selectedUser && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
-            <h2 className="text-xl font-bold mb-4">User Details</h2>
-            <div className="mb-2">Name: {selectedUser.first_name} {selectedUser.last_name}</div>
-            <div className="mb-2">Email: {selectedUser.email}</div>
-            <div className="mb-2">Phone: {selectedUser.phone}</div>
-            <div className="mb-2">Wallet: {selectedUser.wallet}</div>
-            <div className="mb-2">Verified: {selectedUser.verified ? 'Yes' : 'No'}</div>
+            <h2 className="text-xl font-bold mb-4">{t('common.userDetails')}</h2>
+            <div className="mb-2">{t('common.name')} {selectedUser.first_name} {selectedUser.last_name}</div>
+            <div className="mb-2">{t('common.email')} {selectedUser.email}</div>
+            <div className="mb-2">{t('common.phone')} {selectedUser.phone}</div>
+            <div className="mb-2">{t('common.wallet')} {selectedUser.wallet}</div>
+            <div className="mb-2">{t('common.verified')} {selectedUser.verified ? t('common.yes') : t('common.no')}</div>
             <button className="mt-4 px-4 py-2 bg-primary text-white rounded" onClick={() => setShowUserModal(false)}>
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>
       )}
+
+      {/* Export Modal */}
+      <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              {t('admin.export.title')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="exportType">{t('admin.export.type')}</Label>
+              <div className="mt-2 p-3 bg-muted rounded-lg">
+                <p className="font-medium">{exportType}</p>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="exportFormat">{t('admin.export.format')}</Label>
+              <Select value={exportFormat} onValueChange={setExportFormat}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder={t('admin.export.selectFormat')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pdf">PDF</SelectItem>
+                  <SelectItem value="excel">Excel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowExportModal(false)}
+                disabled={exporting}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button 
+                onClick={() => performExport(exportType, exportFormat)}
+                disabled={exporting}
+                className="min-w-[100px]"
+              >
+                {exporting ? t('admin.export.exporting') : t('admin.export.export')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

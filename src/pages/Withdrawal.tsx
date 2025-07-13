@@ -197,7 +197,7 @@ export default function Withdrawal() {
                         id="amount"
                         name="amount"
                         type="number"
-                        placeholder="0.00"
+                        placeholder={t('withdrawal.amount')}
                         value={formData.amount}
                         onChange={handleInputChange}
                         className="h-12"

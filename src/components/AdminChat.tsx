@@ -137,10 +137,10 @@ export function AdminChat() {
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (minutes < 1) return 'الآن';
-    if (minutes < 60) return `${minutes} د`;
-    if (hours < 24) return `${hours} س`;
-    return `${days} يوم`;
+    if (minutes < 1) return t('common.now');
+    if (minutes < 60) return `${minutes} ${t('common.minutes')}`;
+    if (hours < 24) return `${hours} ${t('common.hours')}`;
+    return `${days} ${t('common.days')}`;
   };
 
   return (
@@ -156,7 +156,7 @@ export function AdminChat() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="البحث في المحادثات..."
+                placeholder={t('admin.chat.searchConversations')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -279,7 +279,7 @@ export function AdminChat() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="اكتب رسالتك..."
+                  placeholder={t('chat.placeholder')}
                   className="flex-1"
                 />
                 <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
@@ -292,7 +292,7 @@ export function AdminChat() {
           <CardContent className="flex items-center justify-center h-[calc(100vh-350px)]">
             <div className="text-center text-muted-foreground">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>اختر محادثة لعرض الرسائل</p>
+              <p>{t('admin.chat.selectConversation')}</p>
             </div>
           </CardContent>
         )}

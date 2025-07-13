@@ -236,7 +236,7 @@ export default function Deposit() {
       
     } catch (error) {
       console.error('Submit error:', error);
-      toast({ title: t('common.error'), description: 'An unexpected error occurred. Please try again.', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('deposit.error.unexpected'), variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -251,7 +251,7 @@ export default function Deposit() {
               <CardContent className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading deposit page...</p>
+                  <p className="text-muted-foreground">{t('deposit.loading')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -269,8 +269,8 @@ export default function Deposit() {
             <Card className="shadow-glow">
               <CardContent className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <p className="text-muted-foreground mb-4">Please login to access the deposit page</p>
-                  <Button onClick={() => navigate('/login')}>Go to Login</Button>
+                  <p className="text-muted-foreground mb-4">{t('deposit.loginRequired')}</p>
+                  <Button onClick={() => navigate('/login')}>{t('nav.login')}</Button>
                 </div>
               </CardContent>
             </Card>
@@ -297,10 +297,10 @@ export default function Deposit() {
                     value={selectedNumber || ''} 
                     readOnly 
                     className="h-12 font-bold text-lg bg-muted" 
-                    placeholder="Loading deposit number..."
+                    placeholder={t('deposit.loadingNumber')}
                   />
                   {!selectedNumber && (
-                    <p className="text-sm text-muted-foreground mt-1">No deposit numbers available</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t('deposit.noNumbersAvailable')}</p>
                   )}
                 </div>
                 <div>
@@ -313,7 +313,7 @@ export default function Deposit() {
                     value={amount} 
                     onChange={e => setAmount(e.target.value)} 
                     className="h-12" 
-                    placeholder="Enter amount"
+                    placeholder={t('deposit.amount')}
                     required
                   />
                 </div>
@@ -324,7 +324,7 @@ export default function Deposit() {
                     value={userNumber} 
                     onChange={e => setUserNumber(e.target.value)} 
                     className="h-12" 
-                    placeholder="Enter your phone number"
+                    placeholder={t('deposit.userNumber')}
                     required
                   />
                 </div>
@@ -339,7 +339,7 @@ export default function Deposit() {
                     required
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Accepted formats: JPEG, PNG. Max size: 5MB
+                    {t('deposit.acceptedFormats')}
                   </p>
                 </div>
                 <Button 
@@ -347,7 +347,7 @@ export default function Deposit() {
                   className="w-full h-12 text-lg shadow-glow" 
                   disabled={submitting || !selectedNumber}
                 >
-                  {submitting ? 'Submitting...' : t('deposit.submit')}
+                  {submitting ? t('deposit.submitting') : t('deposit.submit')}
                 </Button>
               </form>
             </CardContent>
@@ -358,17 +358,17 @@ export default function Deposit() {
       {/* Deposit History */}
       {history.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">{t('deposit.history') || 'Deposit History'}</h2>
+          <h2 className="text-xl font-bold mb-4">{t('deposit.history')}</h2>
           <div className="space-y-4">
             {history.map((item) => (
               <Card key={item.id} className="shadow-card">
                 <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6">
                   <div className="flex-1">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div><b>{t('deposit.amount') || 'Amount'}:</b> {item.amount}</div>
-                      <div><b>{t('deposit.userNumber') || 'Your Number'}:</b> {item.user_number}</div>
-                      <div><b>{t('deposit.targetNumber') || 'Target Number'}:</b> {item.target_number}</div>
-                      <div><b>{t('deposit.date') || 'Date'}:</b> {new Date(item.created_at).toLocaleDateString()}</div>
+                      <div><b>{t('deposit.amount')}:</b> {item.amount}</div>
+                      <div><b>{t('deposit.userNumber')}:</b> {item.user_number}</div>
+                      <div><b>{t('deposit.targetNumber')}:</b> {item.target_number}</div>
+                      <div><b>{t('deposit.date')}:</b> {new Date(item.created_at).toLocaleDateString()}</div>
                     </div>
                     <div className="mt-2">
                       <Badge variant={item.status === 'approved' ? 'default' : item.status === 'pending' ? 'secondary' : 'destructive'}>
@@ -381,7 +381,7 @@ export default function Deposit() {
                       <a href={item.screenshot_url} target="_blank" rel="noopener noreferrer" className="block">
                         <img 
                           src={item.screenshot_url} 
-                          alt="Deposit screenshot" 
+                          alt={t('deposit.screenshot')} 
                           className="w-24 h-24 object-cover rounded border"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
