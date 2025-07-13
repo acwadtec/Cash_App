@@ -105,6 +105,21 @@ export default function AdminDashboard() {
     { id: 3, user: 'محمد علي', amount: 300, type: 'team', method: 'crypto', date: '2024-07-03' },
   ];
 
+  // Withdrawal management state
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [groupedWithdrawals, setGroupedWithdrawals] = useState({});
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
+  const [adminNote, setAdminNote] = useState('');
+  const [proofImage, setProofImage] = useState(null);
+  const [proofImageUrl, setProofImageUrl] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [packageLimits, setPackageLimits] = useState({});
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -708,6 +723,74 @@ export default function AdminDashboard() {
     fetchTopReferrers();
   }, []);
 
+  // Fetch withdrawals and group by day
+  const fetchWithdrawals = async () => {
+    setLoadingWithdrawals(true);
+    const { data, error } = await supabase.from('withdrawal_requests').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      setWithdrawals(data);
+      // Group by day
+      const grouped = {};
+      data.forEach(w => {
+        const day = w.created_at.split('T')[0];
+        if (!grouped[day]) grouped[day] = [];
+        grouped[day].push(w);
+      });
+      setGroupedWithdrawals(grouped);
+    }
+    setLoadingWithdrawals(false);
+  };
+  useEffect(() => { fetchWithdrawals(); }, []);
+
+  // Fetch settings (time slots, package limits)
+  const fetchSettings = async () => {
+    setSettingsLoading(true);
+    const { data } = await supabase.from('settings').select('*').eq('key', 'withdrawal_time_slots').single();
+    setTimeSlots(data?.value || []);
+    const { data: pkg } = await supabase.from('settings').select('*').eq('key', 'package_withdrawal_limits').single();
+    setPackageLimits(pkg?.value || {});
+    setSettingsLoading(false);
+  };
+  useEffect(() => { fetchSettings(); }, []);
+
+  // Pay withdrawal
+  const handlePay = async () => {
+    let imageUrl = '';
+    if (proofImage) {
+      const fileExt = proofImage.name.split('.').pop();
+      const fileName = `${selectedWithdrawal.id}_${Date.now()}.${fileExt}`;
+      const filePath = `withdrawal-proofs/${fileName}`;
+      const { error: uploadError } = await supabase.storage.from('withdrawal-proofs').upload(filePath, proofImage);
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('withdrawal-proofs').getPublicUrl(filePath);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+    await supabase.from('withdrawal_requests').update({ status: 'paid', admin_note: adminNote, proof_image_url: imageUrl, updated_at: new Date().toISOString() }).eq('id', selectedWithdrawal.id);
+    setShowPayModal(false);
+    setAdminNote('');
+    setProofImage(null);
+    setProofImageUrl('');
+    fetchWithdrawals();
+  };
+  // Reject withdrawal
+  const handleReject = async () => {
+    await supabase.from('withdrawal_requests').update({ status: 'rejected', rejection_reason: rejectionReason, updated_at: new Date().toISOString() }).eq('id', selectedWithdrawal.id);
+    setShowRejectModal(false);
+    setRejectionReason('');
+    fetchWithdrawals();
+  };
+  // Update time slots
+  const handleSaveTimeSlots = async () => {
+    await supabase.from('settings').upsert({ key: 'withdrawal_time_slots', value: timeSlots });
+    fetchSettings();
+  };
+  // Update package limits
+  const handleSavePackageLimits = async () => {
+    await supabase.from('settings').upsert({ key: 'package_withdrawal_limits', value: packageLimits });
+    fetchSettings();
+  };
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -957,135 +1040,116 @@ export default function AdminDashboard() {
             <TabsContent value="withdrawals">
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle>{t('admin.withdrawals')}</CardTitle>
+                  <CardTitle>{t('admin.withdrawals.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('admin.withdrawals.user')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.amount')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.type')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.method')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                        <TableHead>{t('admin.users.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockWithdrawals.map((withdrawal) => (
-                        <TableRow key={withdrawal.id}>
-                          <TableCell className="font-medium">{withdrawal.user}</TableCell>
-                          <TableCell>${withdrawal.amount}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{withdrawal.type}</Badge>
-                          </TableCell>
-                          <TableCell>{withdrawal.method}</TableCell>
-                          <TableCell>{withdrawal.date}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button size="sm" className="bg-success">
-                                {t('admin.withdrawals.approve')}
-                              </Button>
-                              <Button size="sm" variant="destructive">
-                                {t('admin.withdrawals.reject')}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {loadingWithdrawals ? (
+                    <div>Loading...</div>
+                  ) : (
+                    Object.entries(groupedWithdrawals).map(([day, list]) => (
+                      <div key={day} className="mb-8">
+                        <h3 className="font-semibold mb-2">{day}</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                              <TableHead>{t('profile.phone')}</TableHead>
+                              <TableHead>{t('profile.wallet')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                              <TableHead>{t('offers.title')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.status')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                              <TableHead>{t('admin.users.actions')}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {list.map(w => (
+                              <TableRow key={w.id}>
+                                <TableCell>{w.user_name}</TableCell>
+                                <TableCell>{w.phone_number}</TableCell>
+                                <TableCell>{w.wallet_type}</TableCell>
+                                <TableCell>${w.amount}</TableCell>
+                                <TableCell>{w.package_id}</TableCell>
+                                <TableCell>{w.status}</TableCell>
+                                <TableCell>{w.created_at.split('T')[0]}</TableCell>
+                                <TableCell>
+                                  {w.status === 'pending' && (
+                                    <>
+                                      <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
+                                      <Button size="sm" variant="destructive" onClick={() => { setSelectedWithdrawal(w); setShowRejectModal(true); }}>{t('admin.withdrawals.reject')}</Button>
+                                    </>
+                                  )}
+                                  {w.status === 'paid' && w.proof_image_url && (
+                                    <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">Proof</a>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            {/* Analytics Tab */}
-            <TabsContent value="analytics">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* New Users Over Time Chart */}
-                <Card className="shadow-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Users className="h-5 w-5 mr-2" />
-                      المستخدمون الجدد عبر الزمن
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64">
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        {analyticsData.newUsersOverTime.length > 0 ? (
-                          <div className="space-y-2">
-                            {analyticsData.newUsersOverTime.map((item, index) => (
-                              <div key={index} className="flex justify-between items-center">
-                                <span>{item.date}</span>
-                                <Badge variant="outline">{item.count} مستخدم</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p>لا توجد بيانات متاحة</p>
-                        )}
-                      </div>
+              {/* Pay Modal */}
+              {showPayModal && selectedWithdrawal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                  <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
+                    <h2 className="text-xl font-bold mb-4">{t('admin.withdrawals.confirmPay')}</h2>
+                    <div className="mb-2">{t('admin.withdrawals.user')}: {selectedWithdrawal.user_name}</div>
+                    <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
+                    <div className="mb-2">
+                      <Label>{t('admin.withdrawals.adminNote')}</Label>
+                      <Input value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Transaction Types Chart */}
-                <Card className="shadow-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BarChart3 className="h-5 w-5 mr-2" />
-                      أنواع المعاملات
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64">
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        {analyticsData.transactionTypes.length > 0 ? (
-                          <div className="space-y-2">
-                            {analyticsData.transactionTypes.map((item, index) => (
-                              <div key={index} className="flex justify-between items-center">
-                                <span>{item.type === 'approved' ? 'مقبول' : item.type === 'pending' ? 'معلق' : 'مرفوض'}</span>
-                                <Badge variant="outline">{item.count} معاملة</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p>لا توجد بيانات متاحة</p>
-                        )}
-                      </div>
+                    <div className="mb-2">
+                      <Label>{t('admin.withdrawals.proofImage')}</Label>
+                      <Input type="file" accept="image/*" onChange={e => setProofImage(e.target.files[0])} />
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Activity by Hour Chart */}
-                <Card className="shadow-card lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2" />
-                      النشاط حسب الساعة
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64">
-                      <div className="flex items-center justify-center h-full text-muted-foreground">
-                        {analyticsData.activityByHour.length > 0 ? (
-                          <div className="grid grid-cols-6 gap-2 w-full">
-                            {analyticsData.activityByHour.map((item, index) => (
-                              <div key={index} className="text-center">
-                                <div className="text-xs text-muted-foreground">{item.hour}:00</div>
-                                <div className="text-sm font-medium">{item.activity}</div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p>لا توجد بيانات متاحة</p>
-                        )}
-                      </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button onClick={handlePay} className="bg-success">{t('admin.withdrawals.confirmPay')}</Button>
+                      <Button variant="destructive" onClick={() => setShowPayModal(false)}>{t('common.cancel')}</Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </div>
+              )}
+              {/* Reject Modal */}
+              {showRejectModal && selectedWithdrawal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                  <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
+                    <h2 className="text-xl font-bold mb-4">{t('admin.withdrawals.rejectTitle')}</h2>
+                    <div className="mb-2">{t('admin.withdrawals.user')}: {selectedWithdrawal.user_name}</div>
+                    <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
+                    <div className="mb-2">
+                      <Label>{t('admin.withdrawals.rejectionReason')}</Label>
+                      <Input value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button onClick={handleReject} variant="destructive">{t('admin.withdrawals.reject')}</Button>
+                      <Button onClick={() => setShowRejectModal(false)}>{t('common.cancel')}</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Settings UI */}
+              <Card className="shadow-card mt-8">
+                <CardHeader>
+                  <CardTitle>{t('admin.withdrawals.settings')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <Label>{t('admin.withdrawals.timeSlots')}</Label>
+                    <Input value={timeSlots.join(',')} onChange={e => setTimeSlots(e.target.value.split(','))} />
+                    <Button onClick={handleSaveTimeSlots} className="mt-2">{t('admin.withdrawals.saveTimeSlots')}</Button>
+                  </div>
+                  <div>
+                    <Label>{t('admin.withdrawals.packageLimits')}</Label>
+                    <Input value={JSON.stringify(packageLimits)} onChange={e => setPackageLimits(JSON.parse(e.target.value))} />
+                    <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.withdrawals.savePackageLimits')}</Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Transactions Tab */}
