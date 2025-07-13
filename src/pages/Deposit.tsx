@@ -110,6 +110,60 @@ export default function Deposit() {
         .eq('user_uid', user.id)
         .order('created_at', { ascending: false });
       setHistory(data || []);
+
+      // Gamification: Award badges for deposits
+      // Count total deposits
+      const { data: allDeposits } = await supabase
+        .from('deposit_requests')
+        .select('id')
+        .eq('user_uid', user.id);
+      // Award Deposit Novice badge (3 deposits)
+      if (allDeposits && allDeposits.length === 3) {
+        const { data: badge } = await supabase
+          .from('badges')
+          .select('id')
+          .eq('name', 'Deposit Novice')
+          .single();
+        if (badge) {
+          const { data: userBadge } = await supabase
+            .from('user_badges')
+            .select('id')
+            .eq('user_uid', user.id)
+            .eq('badge_id', badge.id);
+          if (!userBadge || userBadge.length === 0) {
+            await supabase.from('user_badges').insert([
+              { user_uid: user.id, badge_id: badge.id }
+            ]);
+          }
+        }
+      }
+      // Award Deposit Master badge (10 deposits)
+      if (allDeposits && allDeposits.length === 10) {
+        const { data: badge } = await supabase
+          .from('badges')
+          .select('id')
+          .eq('name', 'Deposit Master')
+          .single();
+        if (badge) {
+          const { data: userBadge } = await supabase
+            .from('user_badges')
+            .select('id')
+            .eq('user_uid', user.id)
+            .eq('badge_id', badge.id);
+          if (!userBadge || userBadge.length === 0) {
+            await supabase.from('user_badges').insert([
+              { user_uid: user.id, badge_id: badge.id }
+            ]);
+          }
+        }
+      }
+      // Update user level based on badge count
+      const { count } = await supabase
+        .from('user_badges')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_uid', user.id);
+      const newLevel = Math.max(1, Math.floor((count || 0) / 2));
+      await supabase.from('user_info').update({ level: newLevel }).eq('user_uid', user.id);
     }
     setSubmitting(false);
   };
