@@ -13,13 +13,25 @@ import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
 import { supabase } from '@/lib/supabase';
+import { format } from 'date-fns';
+import { useRef } from 'react';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
   const [notificationData, setNotificationData] = useState({
     title: '',
     message: '',
+    type: 'info',
+    target: 'all',
+    targetValue: '',
+    banner: false,
+    scheduledAt: '',
+    imageFile: null,
+    imageUrl: '',
+    id: null,
   });
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
   const navigate = useNavigate();
   const [offers, setOffers] = useState([]);
   const [loadingOffers, setLoadingOffers] = useState(false);
@@ -35,6 +47,8 @@ export default function AdminDashboard() {
   const [depositRequests, setDepositRequests] = useState([]);
   const [loadingDepositNumbers, setLoadingDepositNumbers] = useState(false);
   const [loadingDepositRequests, setLoadingDepositRequests] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Mock data
   const stats = {
@@ -50,22 +64,78 @@ export default function AdminDashboard() {
     { id: 3, user: 'محمد علي', amount: 300, type: 'team', method: 'crypto', date: '2024-07-03' },
   ];
 
-  const handleSendNotification = () => {
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNotificationData(prev => ({ ...prev, imageFile: file, imageUrl: URL.createObjectURL(file) }));
+    }
+  };
+
+  const uploadImage = async (file) => {
+    if (!file) return null;
+    const filePath = `notifications/${Date.now()}-${file.name}`;
+    const { data, error } = await supabase.storage.from('notification-images').upload(filePath, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('notification-images').getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
+  const handleSendNotification = async () => {
     if (!notificationData.title || !notificationData.message) {
-      toast({
-        title: t('common.error'),
-        description: 'يرجى ملء جميع الحقول',
-        variant: 'destructive',
-      });
+      toast({ title: t('common.error'), description: t('common.error'), variant: 'destructive' });
       return;
     }
+    let imageUrl = notificationData.imageUrl;
+    if (notificationData.imageFile && !imageUrl.startsWith('http')) {
+      imageUrl = await uploadImage(notificationData.imageFile);
+    }
+    const notif = {
+      title: notificationData.title,
+      message: notificationData.message,
+      type: notificationData.type,
+      user_uid: notificationData.target === 'user' ? notificationData.targetValue : null,
+      banner: notificationData.banner,
+      scheduled_at: notificationData.scheduledAt ? new Date(notificationData.scheduledAt).toISOString() : null,
+      sent_at: notificationData.scheduledAt ? null : new Date().toISOString(),
+      read: false,
+      image_url: imageUrl || null,
+    };
+    if (editingId) {
+      await supabase.from('notifications').update(notif).eq('id', editingId);
+    } else {
+      await supabase.from('notifications').insert([notif]);
+    }
+    setNotificationData({ title: '', message: '', type: 'info', target: 'all', targetValue: '', banner: false, scheduledAt: '', imageFile: null, imageUrl: '', id: null });
+    setEditingId(null);
+    fetchNotifications();
+  };
 
-    toast({
-      title: t('common.success'),
-      description: 'تم إرسال الإشعار بنجاح',
+  const handleEdit = (notif) => {
+    setNotificationData({
+      title: notif.title,
+      message: notif.message,
+      type: notif.type,
+      target: notif.user_uid ? 'user' : 'all',
+      targetValue: notif.user_uid || '',
+      banner: notif.banner,
+      scheduledAt: notif.scheduled_at ? notif.scheduled_at.slice(0, 16) : '',
+      imageFile: null,
+      imageUrl: notif.image_url || '',
+      id: notif.id,
     });
+    setEditingId(notif.id);
+  };
 
-    setNotificationData({ title: '', message: '' });
+  const handleDelete = async (notif) => {
+    if (notif.image_url) {
+      // Remove image from storage
+      const path = notif.image_url.split('/notification-images/')[1];
+      if (path) {
+        await supabase.storage.from('notification-images').remove([path]);
+      }
+    }
+    await supabase.from('notifications').delete().eq('id', notif.id);
+    fetchNotifications();
   };
 
   const handleExport = (type: string) => {
@@ -118,27 +188,26 @@ export default function AdminDashboard() {
     fetchOffers();
   }, []);
 
-  useEffect(() => {
-    const fetchUserCount = async () => {
-      const { count } = await supabase
-        .from('user_info')
-        .select('*', { count: 'exact', head: true })
-        .neq('role', 'admin');
-      setUserCount(count || 0);
-    };
-    fetchUserCount();
-  }, []);
+  const fetchUserCount = async () => {
+    const { count } = await supabase
+      .from('user_info')
+      .select('*', { count: 'exact', head: true })
+      .neq('role', 'admin');
+    setUserCount(count || 0);
+  };
+  const fetchPendingVerifications = async () => {
+    const { count } = await supabase
+      .from('user_info')
+      .select('*', { count: 'exact', head: true })
+      .eq('verified', false)
+      .neq('role', 'admin');
+    setPendingVerifications(count || 0);
+  };
 
   useEffect(() => {
-    const fetchPendingVerifications = async () => {
-      const { count } = await supabase
-        .from('user_info')
-        .select('*', { count: 'exact', head: true })
-        .eq('verified', false)
-        .neq('role', 'admin');
-      setPendingVerifications(count || 0);
-    };
+    fetchUserCount();
     fetchPendingVerifications();
+    fetchActiveOffers();
   }, []);
 
   useEffect(() => {
@@ -152,9 +221,6 @@ export default function AdminDashboard() {
         setUsers(data || []);
       }
       setLoadingUsers(false);
-      fetchUserCount();
-      fetchPendingVerifications();
-      fetchActiveOffers();
     };
     fetchUsers();
   }, []);
@@ -276,6 +342,14 @@ export default function AdminDashboard() {
     await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id);
     fetchDepositRequests();
   };
+
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+    if (!error) setNotifications(data || []);
+    setLoadingNotifications(false);
+  };
+  useEffect(() => { fetchNotifications(); }, []);
 
   return (
     <div className="min-h-screen py-20">
@@ -499,7 +573,7 @@ export default function AdminDashboard() {
                           id="notificationTitle"
                           value={notificationData.title}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder="عنوان الإشعار"
+                          placeholder={t('admin.notifications.title')}
                         />
                       </div>
                       <div className="space-y-2">
@@ -508,23 +582,115 @@ export default function AdminDashboard() {
                           id="notificationMessage"
                           value={notificationData.message}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
-                          placeholder="نص الرسالة"
+                          placeholder={t('admin.notifications.message')}
                           className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label>{t('admin.notifications.type')}</Label>
+                        <select className="w-full border rounded px-2 py-1" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
+                          <option value="info">{t('admin.notifications.type.info')}</option>
+                          <option value="offer">{t('admin.notifications.type.offer')}</option>
+                          <option value="ad">{t('admin.notifications.type.ad')}</option>
+                          <option value="warning">{t('admin.notifications.type.warning')}</option>
+                          <option value="success">{t('admin.notifications.type.success')}</option>
+                          <option value="error">{t('admin.notifications.type.error')}</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t('admin.notifications.target')}</Label>
+                        <select className="w-full border rounded px-2 py-1" value={notificationData.target} onChange={e => setNotificationData(prev => ({ ...prev, target: e.target.value, targetValue: '' }))}>
+                          <option value="all">{t('admin.notifications.target.all')}</option>
+                          <option value="user">{t('admin.notifications.target.user')}</option>
+                        </select>
+                        {notificationData.target === 'user' && (
+                          <Input
+                            value={notificationData.targetValue}
+                            onChange={e => setNotificationData(prev => ({ ...prev, targetValue: e.target.value }))}
+                            placeholder={t('admin.notifications.target.placeholder')}
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" id="banner" checked={notificationData.banner} onChange={e => setNotificationData(prev => ({ ...prev, banner: e.target.checked }))} />
+                        <Label htmlFor="banner">{t('admin.notifications.banner')}</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="scheduledAt">{t('admin.notifications.schedule')}</Label>
+                        <Input
+                          id="scheduledAt"
+                          type="datetime-local"
+                          value={notificationData.scheduledAt}
+                          onChange={e => setNotificationData(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t('admin.notifications.image')}</Label>
+                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} />
+                        {notificationData.imageUrl && (
+                          <img src={notificationData.imageUrl} alt="preview" style={{ maxWidth: 120, marginTop: 8, borderRadius: 8 }} />
+                        )}
+                      </div>
                       <Button onClick={handleSendNotification} className="w-full">
-                        {t('admin.notifications.sendToAll')}
+                        {t('admin.notifications.send')}
                       </Button>
                     </div>
                     <div className="p-4 bg-accent rounded-lg">
-                      <h4 className="font-semibold mb-2">معاينة الإشعار</h4>
+                      <h4 className="font-semibold mb-2">{t('common.view')}</h4>
                       <div className="bg-background p-3 rounded border">
-                        <h5 className="font-medium">{notificationData.title || 'عنوان الإشعار'}</h5>
+                        <h5 className="font-medium">{notificationData.title || t('admin.notifications.title')}</h5>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {notificationData.message || 'نص الرسالة سيظهر هنا'}
+                          {notificationData.message || t('admin.notifications.message')}
                         </p>
+                        <div className="mt-2 text-xs">
+                          <span className="mr-2">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
+                          <span className="mr-2">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
+                          {notificationData.scheduledAt && <span>{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
+                        </div>
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-8">
+                    <h4 className="font-semibold mb-4">{t('admin.notifications')}</h4>
+                    {loadingNotifications ? (
+                      <div>{t('common.loading')}</div>
+                    ) : notifications.length === 0 ? (
+                      <div>{t('admin.notifications.noNotifications')}</div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('admin.notifications.title')}</TableHead>
+                            <TableHead>{t('admin.notifications.type')}</TableHead>
+                            <TableHead>{t('admin.notifications.target')}</TableHead>
+                            <TableHead>{t('admin.notifications.banner')}</TableHead>
+                            <TableHead>{t('admin.notifications.scheduledAt')}</TableHead>
+                            <TableHead>{t('admin.notifications.status')}</TableHead>
+                            <TableHead>{t('admin.notifications.image')}</TableHead>
+                            <TableHead>{t('admin.notifications.actions')}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {notifications.map((notif) => (
+                            <TableRow key={notif.id}>
+                              <TableCell>{notif.title}</TableCell>
+                              <TableCell>{t(`admin.notifications.type.${notif.type}`)}</TableCell>
+                              <TableCell>{notif.user_uid ? notif.user_uid : t('admin.notifications.target.all')}</TableCell>
+                              <TableCell>{notif.banner ? t('common.success') : t('common.cancel')}</TableCell>
+                              <TableCell>{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
+                              <TableCell>{notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}</TableCell>
+                              <TableCell>
+                                {notif.image_url && <img src={notif.image_url} alt="notif" style={{ maxWidth: 60, borderRadius: 6 }} />}
+                              </TableCell>
+                              <TableCell>
+                                <Button size="sm" variant="outline" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete') || 'Delete'}</Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </div>
                 </CardContent>
               </Card>

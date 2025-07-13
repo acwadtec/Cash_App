@@ -2,6 +2,12 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+const router = express.Router();
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
 const PORT = 4000;
@@ -72,6 +78,17 @@ app.patch('/api/offers/:id/active', (req, res) => {
   writeOffers(offers);
   res.json(offers[idx]);
 });
+
+// Add this endpoint for deleting images from Supabase Storage
+router.delete('/delete-image', async (req, res) => {
+  const { path } = req.body;
+  if (!path) return res.status(400).json({ error: 'No path provided' });
+  const { error } = await supabase.storage.from('notification-images').remove([path]);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+module.exports = router;
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
