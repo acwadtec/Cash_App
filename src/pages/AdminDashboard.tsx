@@ -107,7 +107,7 @@ export default function AdminDashboard() {
 
   // Withdrawal management state
   const [withdrawals, setWithdrawals] = useState([]);
-  const [groupedWithdrawals, setGroupedWithdrawals] = useState({});
+  const [groupedWithdrawals, setGroupedWithdrawals] = useState<Record<string, any[]>>({});
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
     }
     setNotificationData({ title: '', message: '', type: 'info', target: 'all', targetValue: '', banner: false, scheduledAt: '', imageFile: null, imageUrl: '', id: null });
     setEditingId(null);
-    fetchNotifications();
+    fetchNotifications(setNotifications, setLoadingNotifications, toast, t);
   };
 
   const handleEdit = (notif) => {
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
       }
     }
     await supabase.from('notifications').delete().eq('id', notif.id);
-    fetchNotifications();
+    fetchNotifications(setNotifications, setLoadingNotifications, toast, t);
   };
 
   const handleExport = (type: string, format?: string) => {
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
   const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { 
     title: string; 
     value: number; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
     color?: string 
   }) => (
     <Card className="shadow-card">
@@ -337,8 +337,48 @@ export default function AdminDashboard() {
     }
   };
 
+  // Add deposit number
+  const handleAddNumber = async () => {
+    if (!newNumber) return;
+    if (depositNumbers.length >= 10) {
+      toast({ title: t('common.error'), description: t('deposit.error.maxNumbers'), variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase.from('deposit_numbers').insert([{ number: newNumber }]);
+    if (!error) {
+      setNewNumber('');
+      fetchDepositNumbers(setDepositNumbers, setLoadingDepositNumbers, toast, t);
+    }
+  };
+  // Remove deposit number
+  const handleRemoveNumber = async (id) => {
+    await supabase.from('deposit_numbers').delete().eq('id', id);
+    fetchDepositNumbers(setDepositNumbers, setLoadingDepositNumbers, toast, t);
+  };
+  // Update deposit number
+  const handleUpdateNumber = async (id, number) => {
+    await supabase.from('deposit_numbers').update({ number }).eq('id', id);
+    fetchDepositNumbers(setDepositNumbers, setLoadingDepositNumbers, toast, t);
+  };
+  // Approve deposit request
+  const handleApproveDeposit = async (request) => {
+    // Update request status
+    await supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', request.id);
+    // Update user balance
+    const { data: userInfo } = await supabase.from('user_info').select('balance').eq('user_uid', request.user_uid).single();
+    const newBalance = (userInfo?.balance || 0) + Number(request.amount);
+    await supabase.from('user_info').update({ balance: newBalance }).eq('user_uid', request.user_uid);
+    fetchDepositRequests(setDepositRequests, setLoadingDepositRequests, toast, t);
+    toast({ title: t('common.success'), description: t('deposit.success') });
+  };
+  // Reject deposit request
+  const handleRejectDeposit = async (id) => {
+    await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id);
+    fetchDepositRequests(setDepositRequests, setLoadingDepositRequests, toast, t);
+  };
+
   // Fetch deposit numbers
-  const fetchDepositNumbers = async () => {
+  const fetchDepositNumbers = async (setDepositNumbers, setLoadingDepositNumbers, toast, t) => {
     setLoadingDepositNumbers(true);
     try {
       const { data, error } = await supabase.from('deposit_numbers').select('*').order('created_at', { ascending: true });
@@ -356,7 +396,7 @@ export default function AdminDashboard() {
     }
   };
   // Fetch deposit requests
-  const fetchDepositRequests = async () => {
+  const fetchDepositRequests = async (setDepositRequests, setLoadingDepositRequests, toast, t) => {
     setLoadingDepositRequests(true);
     try {
       const { data, error } = await supabase.from('deposit_requests').select('*').order('created_at', { ascending: false });
@@ -374,51 +414,12 @@ export default function AdminDashboard() {
     }
   };
   useEffect(() => {
-    fetchDepositNumbers();
-    fetchDepositRequests();
-  }, []);
+    fetchDepositNumbers(setDepositNumbers, setLoadingDepositNumbers, toast, t);
+    fetchDepositRequests(setDepositRequests, setLoadingDepositRequests, toast, t);
+  }, [toast, t]);
 
-  // Add deposit number
-  const handleAddNumber = async () => {
-    if (!newNumber) return;
-    if (depositNumbers.length >= 10) {
-      toast({ title: t('common.error'), description: t('deposit.error.maxNumbers'), variant: 'destructive' });
-      return;
-    }
-    const { error } = await supabase.from('deposit_numbers').insert([{ number: newNumber }]);
-    if (!error) {
-      setNewNumber('');
-      fetchDepositNumbers();
-    }
-  };
-  // Remove deposit number
-  const handleRemoveNumber = async (id) => {
-    await supabase.from('deposit_numbers').delete().eq('id', id);
-    fetchDepositNumbers();
-  };
-  // Update deposit number
-  const handleUpdateNumber = async (id, number) => {
-    await supabase.from('deposit_numbers').update({ number }).eq('id', id);
-    fetchDepositNumbers();
-  };
-  // Approve deposit request
-  const handleApproveDeposit = async (request) => {
-    // Update request status
-    await supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', request.id);
-    // Update user balance
-    const { data: userInfo } = await supabase.from('user_info').select('balance').eq('user_uid', request.user_uid).single();
-    const newBalance = (userInfo?.balance || 0) + Number(request.amount);
-    await supabase.from('user_info').update({ balance: newBalance }).eq('user_uid', request.user_uid);
-    fetchDepositRequests();
-    toast({ title: t('common.success'), description: t('deposit.success') });
-  };
-  // Reject deposit request
-  const handleRejectDeposit = async (id) => {
-    await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id);
-    fetchDepositRequests();
-  };
-
-  const fetchNotifications = async () => {
+  // Fetch notifications
+  const fetchNotifications = async (setNotifications, setLoadingNotifications, toast, t) => {
     setLoadingNotifications(true);
     try {
       const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
@@ -552,7 +553,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => { 
-    fetchNotifications(); 
+    fetchNotifications(setNotifications, setLoadingNotifications, toast, t); 
     fetchAdvancedStats();
     fetchAnalyticsData();
   }, []);
@@ -638,16 +639,10 @@ export default function AdminDashboard() {
   }, [offers]);
 
   // Fetch top referrers
-  const fetchTopReferrers = async () => {
+  const fetchTopReferrers = async (setTopReferrers, setLoadingReferrers, toast, t) => {
     setLoadingReferrers(true);
     try {
-      const { data, error } = await supabase
-        .from('user_info')
-        .select('first_name, last_name, email, referral_count, total_referral_points')
-        .not('referral_count', 'is', null)
-        .order('total_referral_points', { ascending: false })
-        .limit(10);
-      
+      const { data, error } = await supabase.from('user_info').select('first_name, last_name, email, referral_count, total_referral_points').not('referral_count', 'is', null).order('total_referral_points', { ascending: false }).limit(10);
       if (error) {
         console.error('Error fetching top referrers:', error);
         toast({ title: t('common.error'), description: 'Failed to fetch top referrers', variant: 'destructive' });
@@ -720,8 +715,8 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadReferralSettings();
-    fetchTopReferrers();
-  }, []);
+    fetchTopReferrers(setTopReferrers, setLoadingReferrers, toast, t);
+  }, [toast, t]);
 
   // Fetch withdrawals and group by day
   const fetchWithdrawals = async () => {
