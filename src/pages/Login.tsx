@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 
 export default function Login() {
   const { t } = useLanguage();
