@@ -1,4 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon } from 'lucide-react';
+
+// UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,16 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+
+// Custom Components
+import OffersTable from '@/components/OffersTable';
+
+// Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import OffersTable from '@/components/OffersTable';
-import { AdminChat } from '@/components/AdminChat';
+
+// Services
 import { supabase } from '@/lib/supabase';
-import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import { useRef } from 'react';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
