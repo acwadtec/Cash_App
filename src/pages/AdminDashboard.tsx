@@ -1711,9 +1711,10 @@ export default function AdminDashboard() {
                     {t('admin.notifications')}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
+                <CardContent className="space-y-6 h-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 h-full">
+                    {/* Notification Form */}
+                    <div className="space-y-5 bg-card rounded-xl p-6 border border-border shadow-glow h-full flex flex-col flex-1">
                       <div className="space-y-2">
                         <Label htmlFor="notificationTitle">{t('admin.notifications.title')}</Label>
                         <Input
@@ -1721,6 +1722,7 @@ export default function AdminDashboard() {
                           value={notificationData.title}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, title: e.target.value }))}
                           placeholder={t('admin.notifications.title')}
+                          className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1730,12 +1732,12 @@ export default function AdminDashboard() {
                           value={notificationData.message}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
                           placeholder={t('admin.notifications.message')}
-                          className="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none"
+                          className="flex h-32 w-full rounded-lg border border-border bg-muted px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all text-foreground"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>{t('admin.notifications.type')}</Label>
-                        <select className="w-full border rounded px-2 py-1" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
+                        <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
                           <option value="info">{t('admin.notifications.type.info')}</option>
                           <option value="offer">{t('admin.notifications.type.offer')}</option>
                           <option value="ad">{t('admin.notifications.type.ad')}</option>
@@ -1746,7 +1748,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="space-y-2">
                         <Label>{t('admin.notifications.target')}</Label>
-                        <select className="w-full border rounded px-2 py-1" value={notificationData.target} onChange={e => setNotificationData(prev => ({ ...prev, target: e.target.value, targetValue: '' }))}>
+                        <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.target} onChange={e => setNotificationData(prev => ({ ...prev, target: e.target.value, targetValue: '' }))}>
                           <option value="all">{t('admin.notifications.target.all')}</option>
                           <option value="user">{t('admin.notifications.target.user')}</option>
                         </select>
@@ -1755,11 +1757,12 @@ export default function AdminDashboard() {
                             value={notificationData.targetValue}
                             onChange={e => setNotificationData(prev => ({ ...prev, targetValue: e.target.value }))}
                             placeholder={t('admin.notifications.target.placeholder')}
+                            className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
                           />
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <input type="checkbox" id="banner" checked={notificationData.banner} onChange={e => setNotificationData(prev => ({ ...prev, banner: e.target.checked }))} />
+                        <input type="checkbox" id="banner" checked={notificationData.banner} onChange={e => setNotificationData(prev => ({ ...prev, banner: e.target.checked }))} className="accent-primary w-4 h-4 rounded focus:ring-2 focus:ring-primary/60 transition-all" />
                         <Label htmlFor="banner">{t('admin.notifications.banner')}</Label>
                       </div>
                       <div className="space-y-2">
@@ -1769,33 +1772,45 @@ export default function AdminDashboard() {
                           type="datetime-local"
                           value={notificationData.scheduledAt}
                           onChange={e => setNotificationData(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                          className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>{t('admin.notifications.image')}</Label>
-                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} />
+                        <label className="block w-full cursor-pointer bg-muted border border-dashed border-primary/40 rounded-lg p-3 text-center hover:bg-primary/10 transition-all">
+                          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
+                          <span className="text-sm text-primary-foreground">{t('common.chooseFile') || 'Choose File'}</span>
+                        </label>
                         {notificationData.imageUrl && (
-                          <img src={notificationData.imageUrl} alt="preview" style={{ maxWidth: 120, marginTop: 8, borderRadius: 8 }} />
+                          <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-2 rounded-lg border border-border shadow" />
                         )}
                       </div>
-                      <Button onClick={handleSendNotification} className="w-full">
+                      <Button onClick={handleSendNotification} className="w-full shadow-glow text-lg py-3">
                         {t('admin.notifications.send')}
                       </Button>
                     </div>
-                    <div className="p-4 bg-accent rounded-lg">
-                      <h4 className="font-semibold mb-2">{t('common.view')}</h4>
-                      <div className="bg-background p-3 rounded border">
-                        <h5 className="font-medium">{notificationData.title || t('admin.notifications.title')}</h5>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {notificationData.message || t('admin.notifications.message')}
-                        </p>
-                        <div className="mt-2 text-xs">
-                          <span className="mr-2">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
-                          <span className="mr-2">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
-                          {notificationData.scheduledAt && <span>{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
+                    {/* Divider for large screens */}
+                    <div className="hidden md:block h-full w-px bg-border mx-2" aria-hidden="true"></div>
+                    {/* Notification Preview */}
+                    <Card className="bg-accent/60 border border-border shadow-glow rounded-xl h-full flex flex-col flex-1">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold">{t('common.view')}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <h5 className="font-bold text-primary-foreground text-xl">{notificationData.title || t('admin.notifications.title')}</h5>
+                          <p className="text-base text-muted-foreground mt-1 min-h-[48px]">{notificationData.message || t('admin.notifications.message')}</p>
+                          <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                            <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
+                            <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
+                            {notificationData.scheduledAt && <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
+                          </div>
+                          {notificationData.imageUrl && (
+                            <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-3 rounded-lg border border-border shadow" />
+                          )}
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </div>
                   <div className="mt-8">
                     <h4 className="font-semibold mb-4">{t('admin.notifications')}</h4>
@@ -1804,33 +1819,33 @@ export default function AdminDashboard() {
                     ) : notifications.length === 0 ? (
                       <div>{t('admin.notifications.noNotifications')}</div>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('admin.notifications.title')}</TableHead>
-                            <TableHead>{t('admin.notifications.type')}</TableHead>
-                            <TableHead>{t('admin.notifications.target')}</TableHead>
-                            <TableHead>{t('admin.notifications.banner')}</TableHead>
-                            <TableHead>{t('admin.notifications.scheduledAt')}</TableHead>
-                            <TableHead>{t('admin.notifications.status')}</TableHead>
-                            <TableHead>{t('admin.notifications.image')}</TableHead>
-                            <TableHead>{t('admin.notifications.actions')}</TableHead>
+                      <Table className="bg-card border border-border rounded-xl shadow-glow">
+                        <TableHeader className="bg-muted">
+                          <TableRow className="border-b border-border">
+                            <TableHead className="text-foreground">{t('admin.notifications.title')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.type')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.target')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.banner')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.scheduledAt')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.status')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.image')}</TableHead>
+                            <TableHead className="text-foreground">{t('admin.notifications.actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBody className="bg-card">
                           {notifications.map((notif) => (
-                            <TableRow key={notif.id}>
-                              <TableCell>{notif.title}</TableCell>
-                              <TableCell>{t(`admin.notifications.type.${notif.type}`)}</TableCell>
-                              <TableCell>{notif.user_uid ? notif.user_uid : t('admin.notifications.target.all')}</TableCell>
-                              <TableCell>{notif.banner ? t('common.success') : t('common.cancel')}</TableCell>
-                              <TableCell>{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
-                              <TableCell>{notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}</TableCell>
+                            <TableRow key={notif.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                              <TableCell className="text-foreground">{notif.title}</TableCell>
+                              <TableCell className="text-foreground">{t(`admin.notifications.type.${notif.type}`)}</TableCell>
+                              <TableCell className="text-foreground">{notif.user_uid ? notif.user_uid : t('admin.notifications.target.all')}</TableCell>
+                              <TableCell className="text-foreground">{notif.banner ? t('common.success') : t('common.cancel')}</TableCell>
+                              <TableCell className="text-foreground">{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
+                              <TableCell className="text-foreground">{notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}</TableCell>
                               <TableCell>
-                                {notif.image_url && <img src={notif.image_url} alt="notif" style={{ maxWidth: 60, borderRadius: 6 }} />}
+                                {notif.image_url && <img src={notif.image_url} alt="notif" className="max-w-[60px] rounded-lg border border-border shadow" />}
                               </TableCell>
                               <TableCell>
-                                <Button size="sm" variant="outline" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
+                                <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
                                 <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete') || 'Delete'}</Button>
                               </TableCell>
                             </TableRow>
@@ -1932,7 +1947,10 @@ export default function AdminDashboard() {
             <TabsContent value="adminChat">
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle>{t('admin.supportChat')}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                    {t('admin.supportChat') || 'Support Chat'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <AdminChat />
@@ -2052,21 +2070,6 @@ export default function AdminDashboard() {
                       <p className="text-sm text-muted-foreground">{t('admin.activeReferrers')}</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Admin Chat Tab */}
-            <TabsContent value="adminChat">
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageCircle className="h-5 w-5 mr-2" />
-                    {t('admin.supportChat') || 'Support Chat'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <AdminChat />
                 </CardContent>
               </Card>
             </TabsContent>
