@@ -1040,7 +1040,7 @@ export default function AdminDashboard() {
             <TabsContent value="withdrawals">
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle>Withdrawals Management</CardTitle>
+                  <CardTitle>{t('admin.withdrawals.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {loadingWithdrawals ? (
@@ -1052,14 +1052,14 @@ export default function AdminDashboard() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>User</TableHead>
-                              <TableHead>Phone</TableHead>
-                              <TableHead>Wallet</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead>Package</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Actions</TableHead>
+                              <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                              <TableHead>{t('profile.phone')}</TableHead>
+                              <TableHead>{t('profile.wallet')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                              <TableHead>{t('offers.title')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.status')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                              <TableHead>{t('admin.users.actions')}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1075,8 +1075,8 @@ export default function AdminDashboard() {
                                 <TableCell>
                                   {w.status === 'pending' && (
                                     <>
-                                      <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>Pay</Button>
-                                      <Button size="sm" variant="destructive" onClick={() => { setSelectedWithdrawal(w); setShowRejectModal(true); }}>Reject</Button>
+                                      <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
+                                      <Button size="sm" variant="destructive" onClick={() => { setSelectedWithdrawal(w); setShowRejectModal(true); }}>{t('admin.withdrawals.reject')}</Button>
                                     </>
                                   )}
                                   {w.status === 'paid' && w.proof_image_url && (
@@ -1096,20 +1096,20 @@ export default function AdminDashboard() {
               {showPayModal && selectedWithdrawal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                   <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
-                    <h2 className="text-xl font-bold mb-4">Confirm Payment</h2>
-                    <div className="mb-2">User: {selectedWithdrawal.user_name}</div>
-                    <div className="mb-2">Amount: ${selectedWithdrawal.amount}</div>
+                    <h2 className="text-xl font-bold mb-4">{t('admin.withdrawals.confirmPay')}</h2>
+                    <div className="mb-2">{t('admin.withdrawals.user')}: {selectedWithdrawal.user_name}</div>
+                    <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
-                      <Label>Admin Note</Label>
+                      <Label>{t('admin.withdrawals.adminNote')}</Label>
                       <Input value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                     </div>
                     <div className="mb-2">
-                      <Label>Proof Image</Label>
+                      <Label>{t('admin.withdrawals.proofImage')}</Label>
                       <Input type="file" accept="image/*" onChange={e => setProofImage(e.target.files[0])} />
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button onClick={handlePay} className="bg-success">Confirm Pay</Button>
-                      <Button variant="destructive" onClick={() => setShowPayModal(false)}>Cancel</Button>
+                      <Button onClick={handlePay} className="bg-success">{t('admin.withdrawals.confirmPay')}</Button>
+                      <Button variant="destructive" onClick={() => setShowPayModal(false)}>{t('common.cancel')}</Button>
                     </div>
                   </div>
                 </div>
@@ -1118,16 +1118,16 @@ export default function AdminDashboard() {
               {showRejectModal && selectedWithdrawal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                   <div className="bg-background p-6 rounded shadow-lg min-w-[300px]">
-                    <h2 className="text-xl font-bold mb-4">Reject Withdrawal</h2>
-                    <div className="mb-2">User: {selectedWithdrawal.user_name}</div>
-                    <div className="mb-2">Amount: ${selectedWithdrawal.amount}</div>
+                    <h2 className="text-xl font-bold mb-4">{t('admin.withdrawals.rejectTitle')}</h2>
+                    <div className="mb-2">{t('admin.withdrawals.user')}: {selectedWithdrawal.user_name}</div>
+                    <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
-                      <Label>Rejection Reason</Label>
+                      <Label>{t('admin.withdrawals.rejectionReason')}</Label>
                       <Input value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} />
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button onClick={handleReject} variant="destructive">Reject</Button>
-                      <Button onClick={() => setShowRejectModal(false)}>Cancel</Button>
+                      <Button onClick={handleReject} variant="destructive">{t('admin.withdrawals.reject')}</Button>
+                      <Button onClick={() => setShowRejectModal(false)}>{t('common.cancel')}</Button>
                     </div>
                   </div>
                 </div>
@@ -1135,18 +1135,18 @@ export default function AdminDashboard() {
               {/* Settings UI */}
               <Card className="shadow-card mt-8">
                 <CardHeader>
-                  <CardTitle>Withdrawal Settings</CardTitle>
+                  <CardTitle>{t('admin.withdrawals.settings')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4">
-                    <Label>Withdrawal Time Slots (comma separated, e.g. 10:00-14:00,18:00-20:00)</Label>
+                    <Label>{t('admin.withdrawals.timeSlots')}</Label>
                     <Input value={timeSlots.join(',')} onChange={e => setTimeSlots(e.target.value.split(','))} />
-                    <Button onClick={handleSaveTimeSlots} className="mt-2">Save Time Slots</Button>
+                    <Button onClick={handleSaveTimeSlots} className="mt-2">{t('admin.withdrawals.saveTimeSlots')}</Button>
                   </div>
                   <div>
-                    <Label>Per-Package Withdrawal Limits (JSON: {`{"package_id": limit}`})</Label>
+                    <Label>{t('admin.withdrawals.packageLimits')}</Label>
                     <Input value={JSON.stringify(packageLimits)} onChange={e => setPackageLimits(JSON.parse(e.target.value))} />
-                    <Button onClick={handleSavePackageLimits} className="mt-2">Save Package Limits</Button>
+                    <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.withdrawals.savePackageLimits')}</Button>
                   </div>
                 </CardContent>
               </Card>
