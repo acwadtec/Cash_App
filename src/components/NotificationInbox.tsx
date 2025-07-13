@@ -64,26 +64,44 @@ export function NotificationInbox() {
 
   return (
     <div className="relative">
-      <button ref={bellRef} onClick={() => { setOpen(!open); if (!open) markAllRead(); }} className="relative">
+      <button 
+        ref={bellRef} 
+        onClick={() => { setOpen(!open); if (!open) markAllRead(); }} 
+        className="relative text-foreground hover:text-primary transition-colors"
+      >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1">{unreadCount}</span>
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs px-1 min-w-[18px] h-[18px] flex items-center justify-center font-medium">
+            {unreadCount}
+          </span>
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-background border border-border rounded shadow-lg z-50 max-h-96 overflow-y-auto animate-fade-in">
-          <div className="p-4 border-b font-bold">Notifications</div>
+        <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto animate-fade-in">
+          <div className="p-4 border-b border-border font-bold text-foreground bg-muted/50">
+            Notifications
+          </div>
           {notifications.length === 0 ? (
-            <div className="p-4 text-muted-foreground">No notifications</div>
+            <div className="p-4 text-muted-foreground text-center">
+              No notifications
+            </div>
           ) : (
             notifications.map((notif) => (
-              <div key={notif.id} className="p-4 border-b last:border-b-0 flex items-start gap-2">
-                <div className="flex-1">
-                  <div className="font-semibold">{notif.title}</div>
-                  <div className="text-sm text-muted-foreground">{notif.message}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}</div>
+              <div key={notif.id} className="p-4 border-b border-border last:border-b-0 flex items-start gap-3 hover:bg-muted/30 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-foreground mb-1 line-clamp-2">
+                    {notif.title}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-2 line-clamp-3">
+                    {notif.message}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}
+                  </div>
                 </div>
-                {notif.read && <CheckCircle className="w-4 h-4 text-green-500 mt-1" />}
+                {notif.read && (
+                  <CheckCircle className="w-4 h-4 text-green-500 mt-1 flex-shrink-0" />
+                )}
               </div>
             ))
           )}

@@ -102,44 +102,40 @@ export function NotificationBanner() {
 
   if (!banner || dismissed || (banner.type === 'ad' && phase === 'hidden')) return null;
 
-  // For non-ad banners, show as before
+  // For non-ad banners, show as before with improved styling
   if (banner.type !== 'ad') {
     return (
-      <div className="fixed top-0 left-0 right-0 z-40 bg-primary text-primary-foreground flex items-center justify-between px-4 py-2 shadow-lg animate-fade-in">
-        <div className="flex-1">
-          <strong>{banner.title}</strong>
-          <span className="ml-2">{banner.message}</span>
+      <div className="fixed top-0 left-0 right-0 z-40 bg-primary text-primary-foreground flex items-center justify-between px-4 py-3 shadow-lg animate-fade-in">
+        <div className="flex-1 flex items-center gap-3">
+          <div className="flex-1">
+            <strong className="text-base font-semibold">{banner.title}</strong>
+            <span className="ml-3 text-sm opacity-90">{banner.message}</span>
+          </div>
         </div>
-        <button onClick={() => setDismissed(true)} className="ml-4">
+        <button 
+          onClick={() => setDismissed(true)} 
+          className="ml-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
     );
   }
 
-  // Ad banner: absolutely positioned for animation, improved design
+  // Ad banner: absolutely positioned for animation, improved design with theme-aware colors
   return (
     <div
       ref={bannerRef}
+      className="fixed top-5 left-0 z-50 min-w-[340px] max-w-[95vw] rounded-xl shadow-2xl border-2 border-white/20 backdrop-blur-sm"
       style={{
-        position: 'fixed',
-        top: 20, // Lowered from very top for visibility
         left: '-100%',
-        zIndex: 1000,
-        minWidth: 340,
-        maxWidth: '95vw',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
-        borderRadius: 12,
-        background: 'linear-gradient(90deg, #22d3ee 0%, #2563eb 100%)',
-        color: '#fff',
-        fontWeight: 600,
-        fontSize: 20,
-        padding: '18px 32px',
+        background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)',
+        color: 'hsl(var(--primary-foreground))',
+        padding: '20px 32px',
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
+        gap: '16px',
         cursor: 'pointer',
-        border: '2px solid #fff',
         transition: 'box-shadow 0.2s',
       }}
       onMouseEnter={() => {
@@ -150,25 +146,23 @@ export function NotificationBanner() {
       }}
     >
       {banner.image_url && (
-        <img src={banner.image_url} alt="ad" style={{ maxHeight: 48, borderRadius: 8, marginRight: 12 }} />
+        <img 
+          src={banner.image_url} 
+          alt="ad" 
+          className="max-h-12 rounded-lg border border-white/20 shadow-sm"
+          style={{ marginRight: '12px' }}
+        />
       )}
-      <span style={{ fontSize: 28, marginRight: 12 }}>📢</span>
-      <div style={{ flex: 1, textAlign: 'center' }}>
-        <strong style={{ fontSize: 22 }}>{banner.title}</strong>
-        <span style={{ marginLeft: 12 }}>{banner.message}</span>
+      <span className="text-2xl" style={{ marginRight: '12px' }}>📢</span>
+      <div className="flex-1 text-center">
+        <strong className="text-xl font-bold block mb-1">{banner.title}</strong>
+        <span className="text-sm opacity-90">{banner.message}</span>
       </div>
-      <button onClick={() => setDismissed(true)} style={{
-        background: 'rgba(0,0,0,0.15)',
-        border: 'none',
-        borderRadius: '50%',
-        width: 32,
-        height: 32,
-        color: '#fff',
-        fontSize: 20,
-        marginLeft: 16,
-        cursor: 'pointer'
-      }}>
-        <X className="w-5 h-5" />
+      <button 
+        onClick={() => setDismissed(true)} 
+        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center text-white"
+      >
+        <X className="w-4 h-4" />
       </button>
     </div>
   );

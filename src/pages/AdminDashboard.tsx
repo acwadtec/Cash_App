@@ -1716,28 +1716,28 @@ export default function AdminDashboard() {
                     {/* Notification Form */}
                     <div className="space-y-5 bg-card rounded-xl p-6 border border-border shadow-glow h-full flex flex-col flex-1">
                       <div className="space-y-2">
-                        <Label htmlFor="notificationTitle">{t('admin.notifications.title')}</Label>
+                        <Label htmlFor="notificationTitle" className="text-foreground font-medium">{t('admin.notifications.title')}</Label>
                         <Input
                           id="notificationTitle"
                           value={notificationData.title}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, title: e.target.value }))}
                           placeholder={t('admin.notifications.title')}
-                          className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                          className="focus:ring-2 focus:ring-primary/60 transition-all bg-background text-foreground border-border placeholder:text-muted-foreground"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="notificationMessage">{t('admin.notifications.message')}</Label>
+                        <Label htmlFor="notificationMessage" className="text-foreground font-medium">{t('admin.notifications.message')}</Label>
                         <textarea
                           id="notificationMessage"
                           value={notificationData.message}
                           onChange={(e) => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
                           placeholder={t('admin.notifications.message')}
-                          className="flex h-32 w-full rounded-lg border border-border bg-muted px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all text-foreground"
+                          className="flex h-32 w-full rounded-lg border border-border bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all text-foreground"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>{t('admin.notifications.type')}</Label>
-                        <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
+                        <Label className="text-foreground font-medium">{t('admin.notifications.type')}</Label>
+                        <select className="w-full border rounded-lg px-2 py-2 bg-background text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all placeholder:text-muted-foreground" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
                           <option value="info">{t('admin.notifications.type.info')}</option>
                           <option value="offer">{t('admin.notifications.type.offer')}</option>
                           <option value="ad">{t('admin.notifications.type.ad')}</option>
@@ -1747,8 +1747,8 @@ export default function AdminDashboard() {
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <Label>{t('admin.notifications.target')}</Label>
-                        <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.target} onChange={e => setNotificationData(prev => ({ ...prev, target: e.target.value, targetValue: '' }))}>
+                        <Label className="text-foreground font-medium">{t('admin.notifications.target')}</Label>
+                        <select className="w-full border rounded-lg px-2 py-2 bg-background text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all placeholder:text-muted-foreground" value={notificationData.target} onChange={e => setNotificationData(prev => ({ ...prev, target: e.target.value, targetValue: '' }))}>
                           <option value="all">{t('admin.notifications.target.all')}</option>
                           <option value="user">{t('admin.notifications.target.user')}</option>
                         </select>
@@ -1757,29 +1757,29 @@ export default function AdminDashboard() {
                             value={notificationData.targetValue}
                             onChange={e => setNotificationData(prev => ({ ...prev, targetValue: e.target.value }))}
                             placeholder={t('admin.notifications.target.placeholder')}
-                            className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                            className="focus:ring-2 focus:ring-primary/60 transition-all bg-background text-foreground border-border placeholder:text-muted-foreground"
                           />
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <input type="checkbox" id="banner" checked={notificationData.banner} onChange={e => setNotificationData(prev => ({ ...prev, banner: e.target.checked }))} className="accent-primary w-4 h-4 rounded focus:ring-2 focus:ring-primary/60 transition-all" />
-                        <Label htmlFor="banner">{t('admin.notifications.banner')}</Label>
+                        <Label htmlFor="banner" className="text-foreground">{t('admin.notifications.banner')}</Label>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="scheduledAt">{t('admin.notifications.schedule')}</Label>
+                        <Label htmlFor="scheduledAt" className="text-foreground font-medium">{t('admin.notifications.schedule')}</Label>
                         <Input
                           id="scheduledAt"
                           type="datetime-local"
                           value={notificationData.scheduledAt}
                           onChange={e => setNotificationData(prev => ({ ...prev, scheduledAt: e.target.value }))}
-                          className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                          className="focus:ring-2 focus:ring-primary/60 transition-all bg-background text-foreground border-border"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>{t('admin.notifications.image')}</Label>
-                        <label className="block w-full cursor-pointer bg-muted border border-dashed border-primary/40 rounded-lg p-3 text-center hover:bg-primary/10 transition-all">
+                        <Label className="text-foreground font-medium">{t('admin.notifications.image')}</Label>
+                        <label className="block w-full cursor-pointer bg-muted/50 border border-dashed border-primary/40 rounded-lg p-3 text-center hover:bg-primary/10 transition-all">
                           <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                          <span className="text-sm text-primary-foreground">{t('common.chooseFile') || 'Choose File'}</span>
+                          <span className="text-sm text-foreground">{t('common.chooseFile') || 'Choose File'}</span>
                         </label>
                         {notificationData.imageUrl && (
                           <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-2 rounded-lg border border-border shadow" />
@@ -1792,18 +1792,20 @@ export default function AdminDashboard() {
                     {/* Divider for large screens */}
                     <div className="hidden md:block h-full w-px bg-border mx-2" aria-hidden="true"></div>
                     {/* Notification Preview */}
-                    <Card className="bg-accent/60 border border-border shadow-glow rounded-xl h-full flex flex-col flex-1">
+                    <Card className="bg-card border border-border shadow-glow rounded-xl h-full flex flex-col flex-1">
                       <CardHeader>
-                        <CardTitle className="text-lg font-semibold">{t('common.view')}</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-foreground">{t('common.view')}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-2">
-                          <h5 className="font-bold text-primary-foreground text-xl">{notificationData.title || t('admin.notifications.title')}</h5>
-                          <p className="text-base text-muted-foreground mt-1 min-h-[48px]">{notificationData.message || t('admin.notifications.message')}</p>
-                          <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                            <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
-                            <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
-                            {notificationData.scheduledAt && <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
+                        <div className="space-y-3">
+                          <div className="p-4 bg-primary rounded-lg">
+                            <h5 className="font-bold text-primary-foreground text-xl mb-2">{notificationData.title || t('admin.notifications.title')}</h5>
+                            <p className="text-primary-foreground/90 text-base min-h-[48px]">{notificationData.message || t('admin.notifications.message')}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                            <span className="bg-muted px-2 py-1 rounded text-foreground">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
+                            <span className="bg-muted px-2 py-1 rounded text-foreground">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
+                            {notificationData.scheduledAt && <span className="bg-muted px-2 py-1 rounded text-foreground">{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
                           </div>
                           {notificationData.imageUrl && (
                             <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-3 rounded-lg border border-border shadow" />
@@ -1820,33 +1822,49 @@ export default function AdminDashboard() {
                       <div>{t('admin.notifications.noNotifications')}</div>
                     ) : (
                       <Table className="bg-card border border-border rounded-xl shadow-glow">
-                        <TableHeader className="bg-muted">
+                        <TableHeader className="bg-muted/50">
                           <TableRow className="border-b border-border">
-                            <TableHead className="text-foreground">{t('admin.notifications.title')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.type')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.target')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.banner')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.scheduledAt')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.status')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.image')}</TableHead>
-                            <TableHead className="text-foreground">{t('admin.notifications.actions')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.title')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.type')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.target')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.banner')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.scheduledAt')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.status')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.image')}</TableHead>
+                            <TableHead className="text-foreground font-medium">{t('admin.notifications.actions')}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody className="bg-card">
                           {notifications.map((notif) => (
-                            <TableRow key={notif.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                              <TableCell className="text-foreground">{notif.title}</TableCell>
-                              <TableCell className="text-foreground">{t(`admin.notifications.type.${notif.type}`)}</TableCell>
+                            <TableRow key={notif.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                              <TableCell className="text-foreground font-medium">{notif.title}</TableCell>
+                              <TableCell className="text-foreground">
+                                <span className="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary-foreground">
+                                  {t(`admin.notifications.type.${notif.type}`)}
+                                </span>
+                              </TableCell>
                               <TableCell className="text-foreground">{notif.user_uid ? notif.user_uid : t('admin.notifications.target.all')}</TableCell>
-                              <TableCell className="text-foreground">{notif.banner ? t('common.success') : t('common.cancel')}</TableCell>
-                              <TableCell className="text-foreground">{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
-                              <TableCell className="text-foreground">{notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}</TableCell>
-                              <TableCell>
-                                {notif.image_url && <img src={notif.image_url} alt="notif" className="max-w-[60px] rounded-lg border border-border shadow" />}
+                              <TableCell className="text-foreground">
+                                <span className={`px-2 py-1 rounded-full text-xs ${notif.banner ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'}`}>
+                                  {notif.banner ? t('common.success') : t('common.cancel')}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-foreground text-sm">{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
+                              <TableCell className="text-foreground">
+                                <span className={`px-2 py-1 rounded-full text-xs ${notif.sent_at ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : notif.scheduled_at ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'}`}>
+                                  {notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}
+                                </span>
                               </TableCell>
                               <TableCell>
-                                <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete') || 'Delete'}</Button>
+                                {notif.image_url && (
+                                  <img src={notif.image_url} alt="notif" className="max-w-[60px] rounded-lg border border-border shadow hover:scale-105 transition-transform" />
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete') || 'Delete'}</Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
