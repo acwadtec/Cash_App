@@ -462,6 +462,55 @@ async function processReferral(newUserId: string, referralCode: string) {
       return;
     }
 
+    // Gamification: Award badges for referrals
+    // Award Referral Star badge (5 referrals)
+    if (newReferralCount === 5) {
+      const { data: badge } = await supabase
+        .from('badges')
+        .select('id')
+        .eq('name', 'Referral Star')
+        .single();
+      if (badge) {
+        const { data: userBadge } = await supabase
+          .from('user_badges')
+          .select('id')
+          .eq('user_uid', referrerData.user_uid)
+          .eq('badge_id', badge.id);
+        if (!userBadge || userBadge.length === 0) {
+          await supabase.from('user_badges').insert([
+            { user_uid: referrerData.user_uid, badge_id: badge.id }
+          ]);
+        }
+      }
+    }
+    // Award Referral Champion badge (20 referrals)
+    if (newReferralCount === 20) {
+      const { data: badge } = await supabase
+        .from('badges')
+        .select('id')
+        .eq('name', 'Referral Champion')
+        .single();
+      if (badge) {
+        const { data: userBadge } = await supabase
+          .from('user_badges')
+          .select('id')
+          .eq('user_uid', referrerData.user_uid)
+          .eq('badge_id', badge.id);
+        if (!userBadge || userBadge.length === 0) {
+          await supabase.from('user_badges').insert([
+            { user_uid: referrerData.user_uid, badge_id: badge.id }
+          ]);
+        }
+      }
+    }
+    // Update referrer's level based on badge count
+    const { count } = await supabase
+      .from('user_badges')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_uid', referrerData.user_uid);
+    const newLevel = Math.max(1, Math.floor((count || 0) / 2));
+    await supabase.from('user_info').update({ level: newLevel }).eq('user_uid', referrerData.user_uid);
+
     // Record the referral
     const { error: insertError } = await supabase
       .from('referrals')
