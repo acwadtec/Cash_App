@@ -12,7 +12,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
+<<<<<<< Updated upstream
 import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle, Search, Filter, BarChart3, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
+=======
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy } from 'lucide-react';
+>>>>>>> Stashed changes
 import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
@@ -76,6 +80,15 @@ export default function AdminDashboard() {
   const fileInputRef = useRef(null);
   const [offerUserCounts, setOfferUserCounts] = useState({});
   const [offerProfits, setOfferProfits] = useState({});
+
+  // Add referral system state
+  const [referralSettings, setReferralSettings] = useState({
+    level1Points: 100,
+    level2Points: 50,
+    level3Points: 25
+  });
+  const [topReferrers, setTopReferrers] = useState([]);
+  const [loadingReferrers, setLoadingReferrers] = useState(false);
 
   // Mock data
   const stats = {
@@ -248,6 +261,10 @@ export default function AdminDashboard() {
         setUsers(data || []);
       }
       setLoadingUsers(false);
+<<<<<<< Updated upstream
+=======
+      fetchActiveOffers();
+>>>>>>> Stashed changes
     };
     fetchUsers();
   }, []);
@@ -288,8 +305,6 @@ export default function AdminDashboard() {
       const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
       setUsers(data || []);
       toast({ title: t('common.success'), description: 'User verified successfully' });
-      fetchUserCount();
-      fetchPendingVerifications();
     } else {
       toast({ title: t('common.error'), description: error.message });
     }
@@ -304,7 +319,6 @@ export default function AdminDashboard() {
       // Refresh users list and user count
       const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
       setUsers(data || []);
-      fetchUserCount();
       toast({ title: t('common.success'), description: 'User removed successfully' });
     } else {
       toast({ title: t('common.error'), description: error.message });
@@ -370,6 +384,7 @@ export default function AdminDashboard() {
     fetchDepositRequests();
   };
 
+<<<<<<< Updated upstream
   const fetchNotifications = async () => {
     setLoadingNotifications(true);
     const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
@@ -535,6 +550,68 @@ export default function AdminDashboard() {
     }
   }, [offers]);
 
+=======
+  // Fetch top referrers
+  const fetchTopReferrers = async () => {
+    setLoadingReferrers(true);
+    const { data, error } = await supabase
+      .from('user_info')
+      .select('first_name, last_name, email, referral_count, total_referral_points')
+      .not('referral_count', 'is', null)
+      .order('total_referral_points', { ascending: false })
+      .limit(10);
+    
+    if (error) {
+      console.error('Error fetching top referrers:', error);
+      setTopReferrers([]);
+    } else {
+      setTopReferrers(data || []);
+    }
+    setLoadingReferrers(false);
+  };
+
+  // Update referral settings
+  const handleUpdateReferralSettings = async () => {
+    const { error } = await supabase
+      .from('referral_settings')
+      .upsert([{
+        id: 1, // Assuming single settings record
+        level1_points: referralSettings.level1Points,
+        level2_points: referralSettings.level2Points,
+        level3_points: referralSettings.level3Points,
+        updated_at: new Date().toISOString()
+      }]);
+    
+    if (error) {
+      toast({ title: t('common.error'), description: 'Failed to update referral settings', variant: 'destructive' });
+    } else {
+      toast({ title: t('common.success'), description: 'Referral settings updated successfully' });
+    }
+  };
+
+  // Load referral settings
+  const loadReferralSettings = async () => {
+    const { data, error } = await supabase
+      .from('referral_settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    
+    if (!error && data) {
+      setReferralSettings({
+        level1Points: data.level1_points || 100,
+        level2Points: data.level2_points || 50,
+        level3Points: data.level3_points || 25
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadReferralSettings();
+    fetchTopReferrers();
+  }, []);
+
+>>>>>>> Stashed changes
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -588,7 +665,11 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
+<<<<<<< Updated upstream
             <TabsList className="grid w-full grid-cols-9">
+=======
+            <TabsList className="grid w-full grid-cols-8">
+>>>>>>> Stashed changes
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
@@ -597,7 +678,11 @@ export default function AdminDashboard() {
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
+<<<<<<< Updated upstream
               <TabsTrigger value="chat">{t('admin.chat')}</TabsTrigger>
+=======
+              <TabsTrigger value="referrals">Referrals</TabsTrigger>
+>>>>>>> Stashed changes
             </TabsList>
 
             {/* Users Tab */}
@@ -1158,9 +1243,126 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
+<<<<<<< Updated upstream
             {/* Chat Tab */}
             <TabsContent value="chat">
               <AdminChat />
+=======
+            {/* Referrals Tab */}
+            <TabsContent value="referrals">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Referral Settings */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users2 className="h-5 w-5" />
+                      Referral System Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="level1">Level 1 Points (Direct Referrals)</Label>
+                      <Input
+                        id="level1"
+                        type="number"
+                        value={referralSettings.level1Points}
+                        onChange={(e) => setReferralSettings(prev => ({ ...prev, level1Points: parseInt(e.target.value) || 0 }))}
+                        placeholder="100"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="level2">Level 2 Points (Indirect Referrals)</Label>
+                      <Input
+                        id="level2"
+                        type="number"
+                        value={referralSettings.level2Points}
+                        onChange={(e) => setReferralSettings(prev => ({ ...prev, level2Points: parseInt(e.target.value) || 0 }))}
+                        placeholder="50"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="level3">Level 3 Points (Third Level)</Label>
+                      <Input
+                        id="level3"
+                        type="number"
+                        value={referralSettings.level3Points}
+                        onChange={(e) => setReferralSettings(prev => ({ ...prev, level3Points: parseInt(e.target.value) || 0 }))}
+                        placeholder="25"
+                      />
+                    </div>
+                    <Button onClick={handleUpdateReferralSettings} className="w-full">
+                      Update Settings
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Top Referrers */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5" />
+                      Top Referrers
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingReferrers ? (
+                      <div className="text-center py-4">Loading...</div>
+                    ) : topReferrers.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">No referrers found</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {topReferrers.map((referrer, index) => (
+                          <div key={referrer.email} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium">{referrer.first_name} {referrer.last_name}</p>
+                                <p className="text-sm text-muted-foreground">{referrer.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-primary">{referrer.total_referral_points || 0} pts</p>
+                              <p className="text-sm text-muted-foreground">{referrer.referral_count || 0} referrals</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Referral Statistics */}
+              <Card className="shadow-card mt-6">
+                <CardHeader>
+                  <CardTitle>Referral Statistics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {topReferrers.reduce((sum, r) => sum + (r.referral_count || 0), 0)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Total Referrals</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <p className="text-2xl font-bold text-green-600">
+                        {topReferrers.reduce((sum, r) => sum + (r.total_referral_points || 0), 0)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Total Points Awarded</p>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <p className="text-2xl font-bold text-purple-600">
+                        {topReferrers.length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Active Referrers</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+>>>>>>> Stashed changes
             </TabsContent>
           </Tabs>
         </div>
