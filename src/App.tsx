@@ -17,7 +17,6 @@ import Withdrawal from "./pages/Withdrawal";
 import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 import ManageOffers from './pages/ManageOffers';
-import HelpCenter from './pages/HelpCenter';
 
 const queryClient = new QueryClient();
 
