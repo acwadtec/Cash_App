@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { toast } from '@/hooks/use-toast';
 import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +18,6 @@ import { useRef } from 'react';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
-  const { theme } = useTheme();
   const [notificationData, setNotificationData] = useState({
     title: '',
     message: '',
@@ -49,12 +47,8 @@ export default function AdminDashboard() {
   const [depositRequests, setDepositRequests] = useState([]);
   const [loadingDepositNumbers, setLoadingDepositNumbers] = useState(false);
   const [loadingDepositRequests, setLoadingDepositRequests] = useState(false);
-<<<<<<< HEAD
-  const [offerJoins, setOfferJoins] = useState<any[]>([]);
-=======
   const [editingId, setEditingId] = useState(null);
   const fileInputRef = useRef(null);
->>>>>>> 1d7a5ddcb50d37f31acf82fefd649a60b1a9f9ef
 
   // Mock data
   const stats = {
@@ -232,17 +226,6 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const fetchOfferJoins = async () => {
-      const { data, error } = await supabase
-        .from('offer_joins')
-        .select('id, joined_at, offer_id, user_info:user_id(first_name, last_name, email), offer:offer_id(title)')
-        .order('joined_at', { ascending: false });
-      if (!error) setOfferJoins(data || []);
-    };
-    fetchOfferJoins();
-  }, []);
-
-  useEffect(() => {
     // Check if user is admin
     const checkAdmin = async () => {
       const { data: userData } = await supabase.auth.getUser();
@@ -409,7 +392,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
@@ -417,11 +400,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
-<<<<<<< HEAD
-              <TabsTrigger value="offerJoins">{t('admin.tracking.tab')}</TabsTrigger>
-=======
               <TabsTrigger value="chat">{t('admin.chat')}</TabsTrigger>
->>>>>>> 1d7a5ddcb50d37f31acf82fefd649a60b1a9f9ef
             </TabsList>
 
             {/* Users Tab */}
@@ -790,61 +769,9 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
-<<<<<<< HEAD
-            {/* Offer Joins Section */}
-            <TabsContent value="offerJoins">
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle>{t('admin.tracking.tab')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* Offer Performance Summary */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">{t('admin.tracking.performance')}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {offers.map((offer) => {
-                        const joinedCount = offerJoins.filter(j => j.offer_id === offer.id).length;
-                        const totalProfit = joinedCount * (offer.monthly_profit || 0);
-                        return (
-                          <div key={offer.id} className="p-4 rounded border bg-card flex flex-col gap-1">
-                            <div className="font-bold">{offer.title}</div>
-                            <div>{t('admin.tracking.usersJoined')}: <span className="font-semibold">{joinedCount}</span></div>
-                            <div>{t('admin.tracking.totalProfit')}: <span className="font-semibold text-green-600">${totalProfit.toLocaleString()}</span></div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {/* Joined Users Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead>
-                        <tr className="bg-gray-50 dark:bg-gray-800">
-                          <th className="px-4 py-2 text-left">{t('admin.tracking.offer')}</th>
-                          <th className="px-4 py-2 text-left">{t('admin.tracking.user')}</th>
-                          <th className="px-4 py-2 text-left">{t('admin.tracking.email')}</th>
-                          <th className="px-4 py-2 text-left">{t('admin.tracking.joinedAt')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {offerJoins.map(join => (
-                          <tr key={join.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                            <td className="px-4 py-2">{join.offer?.title || join.offer_id}</td>
-                            <td className="px-4 py-2">{join.user_info ? `${join.user_info.first_name} ${join.user_info.last_name}` : join.user_id}</td>
-                            <td className="px-4 py-2">{join.user_info?.email || ''}</td>
-                            <td className="px-4 py-2">{join.joined_at ? new Date(join.joined_at).toLocaleString() : ''}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-=======
             {/* Chat Tab */}
             <TabsContent value="chat">
               <AdminChat />
->>>>>>> 1d7a5ddcb50d37f31acf82fefd649a60b1a9f9ef
             </TabsContent>
           </Tabs>
         </div>
