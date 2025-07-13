@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Copy, Share2, Users, Trophy } from 'lucide-react';
+import { Copy, Share2, Trophy } from 'lucide-react';
 
 interface ReferralCodeProps {
   userUid: string;
