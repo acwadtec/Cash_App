@@ -2,14 +2,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 interface Offer {
   id: string;
   title: string;
   description: string;
   amount: number;
+  cost?: number;
+  daily_profit?: number;
+  monthly_profit?: number;
+  image_url?: string;
   type?: string;
   deadline?: string;
   minAmount?: number;
@@ -17,13 +23,17 @@ interface Offer {
 
 export default function Offers() {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const [joinedOffers, setJoinedOffers] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOffers = async () => {
       setLoading(true);
-      // Fetch only active offers from Supabase
+      // Fetch all fields from Supabase
       const { data, error } = await supabase
         .from('offers')
         .select('*')
@@ -37,6 +47,35 @@ export default function Offers() {
     };
     fetchOffers();
   }, []);
+
+  useEffect(() => {
+    const fetchUserAndJoins = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: joins } = await supabase
+          .from('offer_joins')
+          .select('offer_id')
+          .eq('user_id', user.id);
+        setJoinedOffers(joins ? joins.map(j => j.offer_id) : []);
+      }
+    };
+    fetchUserAndJoins();
+  }, []);
+
+  const handleJoinOffer = async (offerId: string) => {
+    if (!userId) {
+      toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId }]);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to join offer.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'You have joined the offer!' });
+      setJoinedOffers(prev => [...prev, offerId]);
+    }
+  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -79,10 +118,34 @@ export default function Offers() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <img
+                    src={offer.image_url || '/placeholder.svg'}
+                    alt={offer.title}
+                    className="w-full h-40 object-contain rounded mb-4 bg-white p-2 border"
+                    onError={e => e.currentTarget.src = '/placeholder.svg'}
+                  />
                   <p className="text-muted-foreground mb-4 leading-relaxed">
                     {offer.description}
                   </p>
                   <div className="space-y-2 mb-6 text-sm">
+                    {offer.cost !== undefined && offer.cost !== 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cost:</span>
+                        <span>${offer.cost}</span>
+                      </div>
+                    )}
+                    {offer.daily_profit !== undefined && offer.daily_profit !== 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Daily Profit:</span>
+                        <span>${offer.daily_profit}</span>
+                      </div>
+                    )}
+                    {offer.monthly_profit !== undefined && offer.monthly_profit !== 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Monthly Profit:</span>
+                        <span>${offer.monthly_profit}</span>
+                      </div>
+                    )}
                     {offer.deadline && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('offers.deadline') || 'Deadline:'}</span>
@@ -96,8 +159,12 @@ export default function Offers() {
                       </div>
                     )}
                   </div>
-                  <Button className="w-full shadow-glow">
-                    {t('offers.join') || 'Join Offer'}
+                  <Button
+                    className="w-full shadow-glow"
+                    onClick={() => handleJoinOffer(offer.id)}
+                    disabled={joinedOffers.includes(offer.id)}
+                  >
+                    {joinedOffers.includes(offer.id) ? 'Joined' : (t('offers.join') || 'Join Offer')}
                   </Button>
                 </CardContent>
               </Card>

@@ -257,6 +257,7 @@ const translations = {
     'deposit.approve': 'موافقة',
     'deposit.reject': 'رفض',
     'deposit.user': 'المستخدم',
+<<<<<<< Updated upstream
     
     // Help Center
     'help.title': 'مركز المساعدة',
@@ -298,6 +299,24 @@ const translations = {
     'help.faq.answer5': 'يمكنك متابعة حالة طلباتك من صفحة المعاملات في حسابك.',
     'help.faq.question6': 'هل الأموال آمنة؟',
     'help.faq.answer6': 'نعم، نستخدم أحدث تقنيات الأمان لحماية أموالك وبياناتك الشخصية.',
+=======
+    'deposit.targetNumber': 'رقم الإيداع الرسمي',
+    'deposit.userNumber': 'رقم المستخدم',
+    'deposit.amount': 'المبلغ',
+    'deposit.success': 'تم إرسال طلب الإيداع بنجاح وسيتم مراجعته قريباً',
+    'deposit.error.maxNumbers': 'لا يمكن إضافة أكثر من 10 أرقام إيداع',
+    'deposit.error.required': 'جميع الحقول مطلوبة',
+    'deposit.error.imageType': 'يجب أن تكون الصورة من نوع jpg أو png',
+    // Tracking Tab
+    'admin.tracking.tab': 'تفاصيل العروض والتتبع',
+    'admin.tracking.performance': 'أداء العروض',
+    'admin.tracking.offer': 'العرض',
+    'admin.tracking.usersJoined': 'عدد المنضمين',
+    'admin.tracking.totalProfit': 'إجمالي الربح الشهري',
+    'admin.tracking.user': 'المستخدم',
+    'admin.tracking.email': 'البريد الإلكتروني',
+    'admin.tracking.joinedAt': 'تاريخ الانضمام',
+>>>>>>> Stashed changes
   },
   en: {
     // Navigation
@@ -543,6 +562,7 @@ const translations = {
     'deposit.approve': 'Approve',
     'deposit.reject': 'Reject',
     'deposit.user': 'User',
+<<<<<<< Updated upstream
     
     // Help Center
     'help.title': 'Help Center',
@@ -584,6 +604,24 @@ const translations = {
     'help.faq.answer5': 'You can track your request status from the transactions page in your account.',
     'help.faq.question6': 'Is my money safe?',
     'help.faq.answer6': 'Yes, we use the latest security technologies to protect your money and personal data.',
+=======
+    'deposit.targetNumber': 'Target Number',
+    'deposit.userNumber': 'User Number',
+    'deposit.amount': 'Amount',
+    'deposit.success': 'Deposit request sent successfully and will be reviewed soon',
+    'deposit.error.maxNumbers': 'Cannot add more than 10 deposit numbers',
+    'deposit.error.required': 'All fields are required',
+    'deposit.error.imageType': 'Screenshot must be a jpg or png image',
+    // Tracking Tab
+    'admin.tracking.tab': 'Offers Details and Tracking',
+    'admin.tracking.performance': 'Offer Performance',
+    'admin.tracking.offer': 'Offer',
+    'admin.tracking.usersJoined': 'Users Joined',
+    'admin.tracking.totalProfit': 'Total Monthly Profit',
+    'admin.tracking.user': 'User',
+    'admin.tracking.email': 'Email',
+    'admin.tracking.joinedAt': 'Joined At',
+>>>>>>> Stashed changes
   }
 };
 

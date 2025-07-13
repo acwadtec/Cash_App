@@ -5,16 +5,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table } from '@/components/ui/table';
 import { Dialog } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import OffersTable from '@/components/OffersTable';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Offer {
   id: string;
   title: string;
   description: string;
   amount: number;
+  cost: number;
+  daily_profit: number;
+  monthly_profit: number;
+  image_url?: string;
   active?: boolean;
   deadline?: string;
 }
@@ -24,7 +31,18 @@ export default function ManageOffers() {
   const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [editOffer, setEditOffer] = useState<Offer | null>(null);
-  const [form, setForm] = useState({ title: '', description: '', amount: '', deadline: '' });
+  const [form, setForm] = useState({ 
+    title: '', 
+    description: '', 
+    amount: '', 
+    cost: '',
+    daily_profit: '',
+    monthly_profit: '',
+    deadline: '' 
+  });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   // Fetch offers from Supabase
@@ -49,14 +67,69 @@ export default function ManageOffers() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Upload image to Supabase storage
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `offer-images/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('offer-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('offer-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
   // Open dialog for create or edit
   const openDialog = (offer?: Offer) => {
     if (offer) {
       setEditOffer(offer);
-      setForm({ title: offer.title, description: offer.description, amount: offer.amount.toString(), deadline: offer.deadline || '' });
+      setForm({ 
+        title: offer.title, 
+        description: offer.description, 
+        amount: offer.amount.toString(), 
+        cost: offer.cost?.toString() || '',
+        daily_profit: offer.daily_profit?.toString() || '',
+        monthly_profit: offer.monthly_profit?.toString() || '',
+        deadline: offer.deadline || '' 
+      });
+      setImagePreview(offer.image_url || '');
+      setImageFile(null);
     } else {
       setEditOffer(null);
-      setForm({ title: '', description: '', amount: '', deadline: '' });
+      setForm({ 
+        title: '', 
+        description: '', 
+        amount: '', 
+        cost: '',
+        daily_profit: '',
+        monthly_profit: '',
+        deadline: '' 
+      });
+      setImagePreview('');
+      setImageFile(null);
     }
     setShowDialog(true);
   };
@@ -64,16 +137,87 @@ export default function ManageOffers() {
   // Create or update offer
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, amount: Number(form.amount), deadline: form.deadline || null };
+    setUploading(true);
+
     if (editOffer) {
-      // Update
+      // Update logic (with image upload if needed)
+      let imageUrl = editOffer.image_url || '';
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `image.${fileExt}`;
+        const filePath = `offers/${editOffer.id}/${fileName}`;
+        const bucketName = 'offer-images';
+        console.log('Uploading to bucket:', bucketName, 'path:', filePath);
+        const { error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(filePath, imageFile, { upsert: true });
+        console.log('Upload error:', uploadError);
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(filePath);
+          console.log('Public URL:', urlData.publicUrl);
+          imageUrl = urlData.publicUrl;
+        }
+      }
+      const payload = {
+        ...form,
+        amount: Number(form.amount),
+        cost: Number(form.cost) || 0,
+        daily_profit: Number(form.daily_profit) || 0,
+        monthly_profit: Number(form.monthly_profit) || 0,
+        image_url: imageUrl,
+        deadline: form.deadline || null
+      };
       const { error } = await supabase.from('offers').update(payload).eq('id', editOffer.id);
       if (error) console.error('Error updating offer:', error);
-    } else {
-      // Create
-      const { error } = await supabase.from('offers').insert([payload]);
-      if (error) console.error('Error creating offer:', error);
+      setUploading(false);
+      setShowDialog(false);
+      fetchOffers();
+      return;
     }
+
+    // Create logic (insert, then upload image, then update)
+    // 1. Insert offer without image_url
+    const { data: insertData, error: insertError } = await supabase.from('offers').insert([
+      {
+        ...form,
+        amount: Number(form.amount),
+        cost: Number(form.cost) || 0,
+        daily_profit: Number(form.daily_profit) || 0,
+        monthly_profit: Number(form.monthly_profit) || 0,
+        deadline: form.deadline || null,
+        image_url: null
+      }
+    ]).select().single();
+    if (insertError || !insertData) {
+      setUploading(false);
+      setShowDialog(false);
+      return;
+    }
+    let imageUrl = '';
+    if (imageFile) {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `image.${fileExt}`;
+      const filePath = `offers/${insertData.id}/${fileName}`;
+      const bucketName = 'offer-images';
+      console.log('Uploading to bucket:', bucketName, 'path:', filePath);
+      const { error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, imageFile, { upsert: true });
+      console.log('Upload error:', uploadError);
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePath);
+        console.log('Public URL:', urlData.publicUrl);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+    if (imageUrl) {
+      await supabase.from('offers').update({ image_url: imageUrl }).eq('id', insertData.id);
+    }
+    setUploading(false);
     setShowDialog(false);
     fetchOffers();
   };
@@ -105,7 +249,7 @@ export default function ManageOffers() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Manage Offers</h1>
           <div className="flex gap-2">
-            <Button onClick={() => navigate('/admin')} variant="success">Save</Button>
+            <Button onClick={() => navigate('/admin')} variant="outline">Back to Admin</Button>
             <Button onClick={() => openDialog()}>Create Offer</Button>
             <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0}>
               Delete All
@@ -144,28 +288,193 @@ export default function ManageOffers() {
         {/* Dialog for create/edit */}
         {showDialog && (
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-              <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md text-black">
-                <h2 className="text-xl font-bold mb-4">{editOffer ? 'Edit Offer' : 'Create Offer'}</h2>
-                <div className="mb-4">
-                  <Label htmlFor="title" className="text-black">Title</Label>
-                  <Input id="title" name="title" value={form.title} onChange={handleChange} required className="text-white bg-black" />
+            <div className="fixed inset-0 flex items-center justify-center bg-black/50 dark:bg-black/70 z-50 p-4">
+              <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-black dark:text-white border border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">{editOffer ? 'Edit Offer' : 'Create Offer'}</h2>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDialog(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
-                <div className="mb-4">
-                  <Label htmlFor="description" className="text-black">Description</Label>
-                  <Input id="description" name="description" value={form.description} onChange={handleChange} required className="text-white bg-black" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="title" className="text-sm font-medium">Title *</Label>
+                      <Input 
+                        id="title" 
+                        name="title" 
+                        value={form.title} 
+                        onChange={handleChange} 
+                        required 
+                        className="mt-1"
+                        placeholder="Enter offer title"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description" className="text-sm font-medium">Description *</Label>
+                      <Textarea 
+                        id="description" 
+                        name="description" 
+                        value={form.description} 
+                        onChange={handleChange} 
+                        required 
+                        className="mt-1"
+                        placeholder="Enter offer description"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="amount" className="text-sm font-medium">Amount *</Label>
+                      <Input 
+                        id="amount" 
+                        name="amount" 
+                        type="number" 
+                        value={form.amount} 
+                        onChange={handleChange} 
+                        required 
+                        className="mt-1"
+                        placeholder="Enter amount"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="cost" className="text-sm font-medium">Cost</Label>
+                      <Input 
+                        id="cost" 
+                        name="cost" 
+                        type="number" 
+                        value={form.cost} 
+                        onChange={handleChange} 
+                        className="mt-1"
+                        placeholder="Enter cost"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="daily_profit" className="text-sm font-medium">Daily Profit</Label>
+                      <Input 
+                        id="daily_profit" 
+                        name="daily_profit" 
+                        type="number" 
+                        value={form.daily_profit} 
+                        onChange={handleChange} 
+                        className="mt-1"
+                        placeholder="Enter daily profit"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="monthly_profit" className="text-sm font-medium">Monthly Profit</Label>
+                      <Input 
+                        id="monthly_profit" 
+                        name="monthly_profit" 
+                        type="number" 
+                        value={form.monthly_profit} 
+                        onChange={handleChange} 
+                        className="mt-1"
+                        placeholder="Enter monthly profit"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="deadline" className="text-sm font-medium">Deadline</Label>
+                      <Input 
+                        id="deadline" 
+                        name="deadline" 
+                        type="date" 
+                        value={form.deadline} 
+                        onChange={handleChange} 
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium">Offer Image</Label>
+                      <div className="mt-1">
+                        <div className="flex items-center justify-center w-full">
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              {imagePreview ? (
+                                <div className="relative">
+                                  <img 
+                                    src={imagePreview} 
+                                    alt="Preview" 
+                                    className="max-h-24 max-w-full object-contain"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                                    onClick={() => {
+                                      setImagePreview('');
+                                      setImageFile(null);
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <>
+                                  <Upload className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
+                                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                    <span className="font-semibold">Click to upload</span> or drag and drop
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                                </>
+                              )}
+                            </div>
+                            <input 
+                              id="image" 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={handleImageChange}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="mb-6">
-                  <Label htmlFor="amount" className="text-black">Amount</Label>
-                  <Input id="amount" name="amount" type="number" value={form.amount} onChange={handleChange} required className="text-white bg-black" />
-                </div>
-                <div className="mb-6">
-                  <Label htmlFor="deadline" className="text-black">Deadline</Label>
-                  <Input id="deadline" name="deadline" type="date" value={form.deadline} onChange={handleChange} required className="text-white bg-black" />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" className="text-white bg-black" onClick={() => setShowDialog(false)}>Cancel</Button>
-                  <Button type="submit">{editOffer ? 'Update' : 'Create'}</Button>
+
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowDialog(false)}
+                    disabled={uploading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={uploading}
+                    className="min-w-[100px]"
+                  >
+                    {uploading ? 'Saving...' : (editOffer ? 'Update' : 'Create')}
+                  </Button>
                 </div>
               </form>
             </div>
