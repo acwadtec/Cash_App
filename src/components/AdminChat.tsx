@@ -148,6 +148,20 @@ export function AdminChat() {
       setNewMessage('');
       fetchMessages();
       fetchConversations();
+
+      // Send notification to user
+      await supabase.from('notifications').insert([
+        {
+          title: t('chat.newAdminMessage') || 'رسالة جديدة من الدعم',
+          message: newMessage.trim(),
+          type: 'info',
+          user_uid: selectedConversationId,
+          banner: false,
+          scheduled_at: new Date().toISOString(),
+          sent_at: new Date().toISOString(),
+          read: false,
+        }
+      ]);
     }
   };
 
