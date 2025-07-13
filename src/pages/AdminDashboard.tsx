@@ -124,7 +124,7 @@ export default function AdminDashboard() {
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState('');
-  const [exportFormat, setExportFormat] = useState('pdf');
+  const [exportFormat, setExportFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
 
   const handleImageChange = (e) => {
@@ -293,10 +293,10 @@ export default function AdminDashboard() {
         fileName = `transactions_${new Date().toISOString().split('T')[0]}`;
       }
       
-      if (format === 'pdf') {
+      if (format === 'csv') {
+        exportToCSV(data, fileName);
+      } else if (format === 'pdf') {
         exportToPDF(data, fileName, type);
-      } else if (format === 'excel') {
-        exportToExcel(data, fileName);
       }
       
     toast({
@@ -468,53 +468,82 @@ export default function AdminDashboard() {
     return { filteredData, headers, fieldMappings, importantFields };
   };
 
+  // Define region/section mapping
+  const getRegionHeaders = (lang: string) => {
+    if (lang === 'ar') {
+      return [
+        { label: 'معلومات المستخدم', span: 7 },
+        { label: 'معلومات مالية', span: 7 },
+        { label: 'معلومات الإحالة', span: 4 }
+      ];
+    } else {
+      return [
+        { label: 'User Info', span: 7 },
+        { label: 'Financial Info', span: 7 },
+        { label: 'Referral Info', span: 4 }
+      ];
+    }
+  };
+
+  // Update exportToCSV to add region row
+  const exportToCSV = (data: any[], fileName: string) => {
+    if (data.length === 0) return;
+    const { filteredData, headers, importantFields } = processExportData(data, '');
+    // CSV escaping and undefined/null handling
+    const escapeCSV = (value: any) => {
+      if (value === undefined || value === null) return '';
+      const str = String(value);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+    const csvContent = [
+      headers.join(','),
+      ...filteredData.map(row =>
+        importantFields.map(field => escapeCSV(row[field])).join(',')
+      )
+    ].join('\n');
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${fileName}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: t('admin.export.excelSuccess'),
+      description: t('admin.export.excelReady'),
+    });
+  };
+
+  // Add exportToPDF with region headers
   const exportToPDF = (data: any[], fileName: string, type: string) => {
     if (data.length === 0) return;
-    
-    const { filteredData, headers, fieldMappings, importantFields } = processExportData(data, type);
+    const { filteredData, headers, importantFields } = processExportData(data, type);
     const isArabic = t('language.switch') === 'English';
-    
+    // Build header row
+    const headerRowHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+    // Build data rows
+    const dataRowsHTML = filteredData.map(row =>
+      '<tr>' + importantFields.map(field => `<td>${row[field] ?? ''}</td>`).join('') + '</tr>'
+    ).join('');
     const tableHTML = `
       <html dir="${isArabic ? 'rtl' : 'ltr'}">
         <head>
           <title>${type} Report</title>
           <style>
-            body { 
-              font-family: ${isArabic ? 'Arial, Tahoma, sans-serif' : 'Arial, sans-serif'}; 
-              margin: 20px; 
-              direction: ${isArabic ? 'rtl' : 'ltr'};
-            }
-            table { 
-              border-collapse: collapse; 
-              width: 100%; 
-              margin-top: 20px;
-            }
-            th, td { 
-              border: 1px solid #ddd; 
-              padding: 12px 8px; 
-              text-align: ${isArabic ? 'right' : 'left'}; 
-            }
-            th { 
-              background-color: #f2f2f2; 
-              font-weight: bold; 
-              color: #333;
-            }
-            h1 { 
-              color: #333; 
-              text-align: ${isArabic ? 'right' : 'left'};
-              margin-bottom: 10px;
-            }
-            .report-info {
-              text-align: ${isArabic ? 'right' : 'left'};
-              color: #666;
-              margin-bottom: 20px;
-            }
-            tr:nth-child(even) {
-              background-color: #f9f9f9;
-            }
-            tr:hover {
-              background-color: #f5f5f5;
-            }
+            body { font-family: ${isArabic ? 'Arial, Tahoma, sans-serif' : 'Arial, sans-serif'}; margin: 20px; direction: ${isArabic ? 'rtl' : 'ltr'}; }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: ${isArabic ? 'right' : 'left'}; }
+            th { background-color: #f2f2f2; font-weight: bold; color: #333; }
+            h1 { color: #333; text-align: ${isArabic ? 'right' : 'left'}; margin-bottom: 10px; }
+            .report-info { text-align: ${isArabic ? 'right' : 'left'}; color: #666; margin-bottom: 20px; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            tr:hover { background-color: #f5f5f5; }
           </style>
         </head>
         <body>
@@ -525,70 +554,24 @@ export default function AdminDashboard() {
           </div>
           <table>
             <thead>
-              <tr>
-                ${headers.map(header => `<th>${header}</th>`).join('')}
-              </tr>
+              ${headerRowHTML}
             </thead>
             <tbody>
-              ${filteredData.map(row => `
-                <tr>
-                  ${importantFields.map(field => `<td>${row[field]}</td>`).join('')}
-                </tr>
-              `).join('')}
+              ${dataRowsHTML}
             </tbody>
           </table>
         </body>
       </html>
     `;
-    
-    // Create a new window with the HTML content
     const newWindow = window.open('', '_blank');
     if (newWindow) {
       newWindow.document.write(tableHTML);
       newWindow.document.close();
       newWindow.print();
     }
-    
     toast({
       title: t('admin.export.pdfSuccess'),
       description: t('admin.export.pdfReady'),
-    });
-  };
-
-  const exportToExcel = (data: any[], fileName: string) => {
-    if (data.length === 0) return;
-    
-    const { filteredData, headers, fieldMappings, importantFields } = processExportData(data, '');
-    
-    // Create Excel-compatible content with proper formatting
-    const excelContent = [
-      headers.join('\t'),
-      ...filteredData.map(row => 
-        importantFields.map(field => {
-          const value = row[field];
-          // Escape special characters and wrap in quotes if needed
-          return typeof value === 'string' && (value.includes('\t') || value.includes('\n') || value.includes('"')) 
-            ? `"${value.replace(/"/g, '""')}"` 
-            : value;
-        }).join('\t')
-      )
-    ].join('\n');
-    
-    // Add BOM for Excel to recognize UTF-8
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + excelContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${fileName}.xls`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: t('admin.export.excelSuccess'),
-      description: t('admin.export.excelReady'),
     });
   };
 
@@ -1935,8 +1918,8 @@ export default function AdminDashboard() {
                   <SelectValue placeholder={t('admin.export.selectFormat')} />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="csv">CSV</SelectItem>
                   <SelectItem value="pdf">PDF</SelectItem>
-                  <SelectItem value="excel">Excel</SelectItem>
                 </SelectContent>
               </Select>
             </div>
