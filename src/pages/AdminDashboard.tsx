@@ -6,14 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, MessageCircle, Search, Filter, BarChart3, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
 import { supabase } from '@/lib/supabase';
-import { format } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { useRef } from 'react';
 
 export default function AdminDashboard() {
@@ -47,6 +52,26 @@ export default function AdminDashboard() {
   const [depositRequests, setDepositRequests] = useState([]);
   const [loadingDepositNumbers, setLoadingDepositNumbers] = useState(false);
   const [loadingDepositRequests, setLoadingDepositRequests] = useState(false);
+  
+  // New state for enhanced features
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userDateFilter, setUserDateFilter] = useState<Date | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Advanced stats state
+  const [monthlyDeposits, setMonthlyDeposits] = useState(0);
+  const [weeklyNewUsers, setWeeklyNewUsers] = useState(0);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState(0);
+  const [averageTransactionValue, setAverageTransactionValue] = useState(0);
+  
+  // Analytics data
+  const [analyticsData, setAnalyticsData] = useState({
+    newUsersOverTime: [],
+    transactionTypes: [],
+    activityByHour: []
+  });
   const [editingId, setEditingId] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -138,10 +163,10 @@ export default function AdminDashboard() {
     fetchNotifications();
   };
 
-  const handleExport = (type: string) => {
+  const handleExport = (type: string, format?: string) => {
     toast({
       title: t('common.success'),
-      description: `تم تصدير ${type} بنجاح`,
+      description: `تم تصدير ${type} ${format ? `بصيغة ${format.toUpperCase()}` : ''} بنجاح`,
     });
   };
 
@@ -349,7 +374,128 @@ export default function AdminDashboard() {
     if (!error) setNotifications(data || []);
     setLoadingNotifications(false);
   };
-  useEffect(() => { fetchNotifications(); }, []);
+
+  // New functions for enhanced features
+  const fetchAdvancedStats = async () => {
+    // Fetch monthly deposits
+    const startOfCurrentMonth = startOfMonth(new Date());
+    const endOfCurrentMonth = endOfMonth(new Date());
+    const { data: deposits } = await supabase
+      .from('deposit_requests')
+      .select('amount')
+      .gte('created_at', startOfCurrentMonth.toISOString())
+      .lte('created_at', endOfCurrentMonth.toISOString())
+      .eq('status', 'approved');
+    
+    const totalMonthlyDeposits = deposits?.reduce((sum, deposit) => sum + Number(deposit.amount), 0) || 0;
+    setMonthlyDeposits(totalMonthlyDeposits);
+
+    // Fetch weekly new users
+    const startOfCurrentWeek = startOfWeek(new Date());
+    const endOfCurrentWeek = endOfWeek(new Date());
+    const { count: weeklyUsers } = await supabase
+      .from('user_info')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfCurrentWeek.toISOString())
+      .lte('created_at', endOfCurrentWeek.toISOString())
+      .neq('role', 'admin');
+    setWeeklyNewUsers(weeklyUsers || 0);
+
+    // Fetch pending withdrawals (using mock data for now)
+    setPendingWithdrawals(15);
+
+    // Calculate average transaction value
+    const { data: allDeposits } = await supabase
+      .from('deposit_requests')
+      .select('amount')
+      .eq('status', 'approved');
+    
+    if (allDeposits && allDeposits.length > 0) {
+      const totalAmount = allDeposits.reduce((sum, deposit) => sum + Number(deposit.amount), 0);
+      const average = totalAmount / allDeposits.length;
+      setAverageTransactionValue(average);
+    }
+  };
+
+  const fetchAnalyticsData = async () => {
+    // New users over time (last 30 days)
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const { data: usersOverTime } = await supabase
+      .from('user_info')
+      .select('created_at')
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .neq('role', 'admin')
+      .order('created_at', { ascending: true });
+
+    // Group by date
+    const usersByDate = {};
+    usersOverTime?.forEach(user => {
+      const date = format(new Date(user.created_at), 'yyyy-MM-dd');
+      usersByDate[date] = (usersByDate[date] || 0) + 1;
+    });
+
+    const newUsersOverTime = Object.entries(usersByDate).map(([date, count]) => ({
+      date,
+      count
+    }));
+
+    // Transaction types (deposit requests by status)
+    const { data: depositRequests } = await supabase
+      .from('deposit_requests')
+      .select('status, amount');
+
+    const transactionTypes = [
+      { type: 'approved', count: depositRequests?.filter(r => r.status === 'approved').length || 0 },
+      { type: 'pending', count: depositRequests?.filter(r => r.status === 'pending').length || 0 },
+      { type: 'rejected', count: depositRequests?.filter(r => r.status === 'rejected').length || 0 }
+    ];
+
+    // Activity by hour (mock data for now)
+    const activityByHour = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      activity: Math.floor(Math.random() * 50) + 10
+    }));
+
+    setAnalyticsData({
+      newUsersOverTime,
+      transactionTypes,
+      activityByHour
+    });
+  };
+
+  useEffect(() => { 
+    fetchNotifications(); 
+    fetchAdvancedStats();
+    fetchAnalyticsData();
+  }, []);
+
+  // Filtering and pagination logic
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = userSearchTerm === '' || 
+      user.first_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.phone?.includes(userSearchTerm);
+    
+    const matchesStatus = userStatusFilter === 'all' || 
+      (userStatusFilter === 'verified' && user.verified) ||
+      (userStatusFilter === 'pending' && !user.verified);
+    
+    const matchesDate = !userDateFilter || 
+      format(new Date(user.created_at), 'yyyy-MM-dd') === format(userDateFilter, 'yyyy-MM-dd');
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [userSearchTerm, userStatusFilter, userDateFilter]);
 
   return (
     <div className="min-h-screen py-20">
@@ -363,7 +509,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
             <StatCard 
               title={t('admin.stats.totalUsers')} 
               value={userCount} 
@@ -383,20 +529,33 @@ export default function AdminDashboard() {
               color="text-green-600" 
             />
             <StatCard 
-              title={t('admin.stats.pendingWithdrawals')} 
-              value={stats.pendingWithdrawals} 
-              icon={DollarSign} 
-              color="text-red-600" 
+              title="إجمالي الإيداعات هذا الشهر" 
+              value={monthlyDeposits} 
+              icon={TrendingUp} 
+              color="text-purple-600" 
+            />
+            <StatCard 
+              title="المستخدمون الجدد هذا الأسبوع" 
+              value={weeklyNewUsers} 
+              icon={Users} 
+              color="text-indigo-600" 
+            />
+            <StatCard 
+              title="متوسط قيمة المعاملة" 
+              value={Math.round(averageTransactionValue)} 
+              icon={BarChart3} 
+              color="text-teal-600" 
             />
           </div>
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="users">{t('admin.users')}</TabsTrigger>
               <TabsTrigger value="offers">{t('admin.offers')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('admin.withdrawals')}</TabsTrigger>
               <TabsTrigger value="transactions">{t('admin.transactions')}</TabsTrigger>
+              <TabsTrigger value="analytics">التحليلات</TabsTrigger>
               <TabsTrigger value="notifications">{t('admin.notifications')}</TabsTrigger>
               <TabsTrigger value="depositNumbers">{t('deposit.numbers') || 'Deposit Numbers'}</TabsTrigger>
               <TabsTrigger value="depositRequests">{t('deposit.requests') || 'Deposit Requests'}</TabsTrigger>
@@ -408,12 +567,62 @@ export default function AdminDashboard() {
               <Card className="shadow-card">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.users')}</CardTitle>
-                  <Button onClick={() => handleExport('المستخدمين')} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('admin.export.users')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExport('المستخدمين')} variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('admin.export.users')}
+                    </Button>
+                    <Button onClick={() => handleExport('المستخدمين', 'csv')} variant="outline">
+                      CSV
+                    </Button>
+                    <Button onClick={() => handleExport('المستخدمين', 'pdf')} variant="outline">
+                      PDF
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Search and Filters */}
+                  <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          placeholder="البحث بالاسم أو البريد الإلكتروني أو الهاتف..."
+                          value={userSearchTerm}
+                          onChange={(e) => setUserSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="حالة التحقق" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">جميع الحالات</SelectItem>
+                        <SelectItem value="verified">محقق</SelectItem>
+                        <SelectItem value="pending">معلق</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-48">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {userDateFilter ? format(userDateFilter, 'yyyy-MM-dd') : 'تاريخ التسجيل'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={userDateFilter}
+                          onSelect={setUserDateFilter}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Filtered Users Table */}
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -431,14 +640,14 @@ export default function AdminDashboard() {
                             Loading...
                           </TableCell>
                         </TableRow>
-                      ) : users.length === 0 ? (
+                      ) : filteredUsers.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
                             No users found
                           </TableCell>
                         </TableRow>
                       ) : (
-                        users.map((user) => (
+                        paginatedUsers.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
                             <TableCell>{user.email}</TableCell>
@@ -468,6 +677,39 @@ export default function AdminDashboard() {
                       )}
                     </TableBody>
                   </Table>
+
+                  {/* Pagination */}
+                  {filteredUsers.length > itemsPerPage && (
+                    <div className="mt-6">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                              className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: Math.ceil(filteredUsers.length / itemsPerPage) }, (_, i) => (
+                            <PaginationItem key={i + 1}>
+                              <PaginationLink
+                                onClick={() => setCurrentPage(i + 1)}
+                                isActive={currentPage === i + 1}
+                                className="cursor-pointer"
+                              >
+                                {i + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredUsers.length / itemsPerPage)))}
+                              className={currentPage === Math.ceil(filteredUsers.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -537,15 +779,115 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
+            {/* Analytics Tab */}
+            <TabsContent value="analytics">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* New Users Over Time Chart */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      المستخدمون الجدد عبر الزمن
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        {analyticsData.newUsersOverTime.length > 0 ? (
+                          <div className="space-y-2">
+                            {analyticsData.newUsersOverTime.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center">
+                                <span>{item.date}</span>
+                                <Badge variant="outline">{item.count} مستخدم</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>لا توجد بيانات متاحة</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Transaction Types Chart */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="h-5 w-5 mr-2" />
+                      أنواع المعاملات
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        {analyticsData.transactionTypes.length > 0 ? (
+                          <div className="space-y-2">
+                            {analyticsData.transactionTypes.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center">
+                                <span>{item.type === 'approved' ? 'مقبول' : item.type === 'pending' ? 'معلق' : 'مرفوض'}</span>
+                                <Badge variant="outline">{item.count} معاملة</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>لا توجد بيانات متاحة</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Activity by Hour Chart */}
+                <Card className="shadow-card lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      النشاط حسب الساعة
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        {analyticsData.activityByHour.length > 0 ? (
+                          <div className="grid grid-cols-6 gap-2 w-full">
+                            {analyticsData.activityByHour.map((item, index) => (
+                              <div key={index} className="text-center">
+                                <div className="text-xs text-muted-foreground">{item.hour}:00</div>
+                                <div className="text-sm font-medium">{item.activity}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>لا توجد بيانات متاحة</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Transactions Tab */}
             <TabsContent value="transactions">
               <Card className="shadow-card">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('admin.transactions')}</CardTitle>
-                  <Button onClick={() => handleExport('المعاملات')} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('admin.export.transactions')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleExport('المعاملات')} variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('admin.export.transactions')}
+                    </Button>
+                    <Button onClick={() => handleExport('المعاملات', 'csv')} variant="outline">
+                      CSV
+                    </Button>
+                    <Button onClick={() => handleExport('المعاملات', 'pdf')} variant="outline">
+                      PDF
+                    </Button>
+                    <Button onClick={() => handleExport('المعاملات', 'excel')} variant="outline">
+                      Excel
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-center py-8">
