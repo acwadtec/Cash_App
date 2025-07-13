@@ -22,6 +22,7 @@ export default function Profile() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [userUid, setUserUid] = useState<string | null>(null);
+  const [userBadges, setUserBadges] = useState([]);
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -48,6 +49,21 @@ export default function Profile() {
     };
     checkUserInfo();
   }, []);
+
+  // Fetch user badges
+  useEffect(() => {
+    const fetchBadges = async () => {
+      if (!userUid) return;
+      const { data, error } = await supabase
+        .from('user_badges')
+        .select('*, badge:badge_id(*)')
+        .eq('user_uid', userUid);
+      if (!error && data) {
+        setUserBadges(data.map(row => row.badge));
+      }
+    };
+    fetchBadges();
+  }, [userUid]);
 
   // Helper to get image URL from storage path
   const getImageUrl = (type: 'front' | 'back') => {
@@ -212,6 +228,24 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Gamification: Level and Badges */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-2">Level: {userInfo?.level || 1}</h2>
+            <div className="flex flex-wrap gap-4">
+              {userBadges.length === 0 ? (
+                <span className="text-muted-foreground">No badges earned yet.</span>
+              ) : (
+                userBadges.map(badge => (
+                  <div key={badge.id} className="flex flex-col items-center p-2 bg-muted rounded-lg shadow" style={{ minWidth: 100 }}>
+                    <img src={badge.icon_url || '/public/placeholder.svg'} alt={badge.name} style={{ width: 48, height: 48, marginBottom: 8 }} />
+                    <div className="font-semibold">{badge.name}</div>
+                    <div className="text-xs text-muted-foreground text-center">{badge.description}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
