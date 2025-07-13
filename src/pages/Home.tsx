@@ -1,12 +1,41 @@
 
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Shield, Zap, Clock } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const redirectIfLoggedIn = async () => {
+      if (localStorage.getItem('cash-logged-in')) {
+        // Check role
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
+        if (user) {
+          const { data: userInfo } = await supabase
+            .from('user_info')
+            .select('role')
+            .eq('user_uid', user.id)
+            .single();
+          const params = new URLSearchParams(location.search);
+          const asUser = params.get('asUser');
+          if (userInfo?.role === 'admin' && !asUser) {
+            navigate('/admin');
+            return;
+          }
+        }
+        navigate('/profile');
+      }
+    };
+    redirectIfLoggedIn();
+  }, [navigate, location.search]);
 
   const features = [
     {

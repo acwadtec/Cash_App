@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,13 @@ import { supabase } from '@/lib/supabase';
 export default function Login() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem('cash-logged-in')) {
+      navigate('/profile');
+    }
+  }, [navigate]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',

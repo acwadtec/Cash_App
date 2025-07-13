@@ -22,6 +22,12 @@ export default function Register() {
   const [referrerInfo, setReferrerInfo] = useState<any>(null);
   const [loadingReferrer, setLoadingReferrer] = useState(false);
 
+  useEffect(() => {
+    if (localStorage.getItem('cash-logged-in')) {
+      navigate('/profile');
+    }
+  }, [navigate]);
+
   // Load referral code from URL if present
   useEffect(() => {
     const refCode = searchParams.get('ref');

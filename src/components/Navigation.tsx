@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Moon, Sun, Menu, X } from 'lucide-react';
 import { NotificationInbox } from './NotificationInbox';
+import { supabase } from '@/lib/supabase';
 
 export function Navigation() {
   const { language, setLanguage, t, isRTL } = useLanguage();
@@ -12,6 +13,26 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isLoggedIn = Boolean(localStorage.getItem('cash-logged-in'));
+  const isAdmin = location.pathname.startsWith('/admin');
+  const isManageOffers = location.pathname.startsWith('/manage-offers');
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        const { data: userInfo } = await supabase
+          .from('user_info')
+          .select('role')
+          .eq('user_uid', user.id)
+          .single();
+        setIsAdminUser(userInfo?.role === 'admin');
+      }
+    };
+    if (isLoggedIn) checkAdmin();
+  }, [isLoggedIn]);
 
   const navItems = [
     { href: '/offers', label: t('nav.offers') },
@@ -24,9 +45,6 @@ export function Navigation() {
 
   const isActive = (href: string) => location.pathname === href;
   const isHome = location.pathname === '/';
-  const isLoggedIn = Boolean(localStorage.getItem('cash-logged-in'));
-  const isAdmin = location.pathname.startsWith('/admin');
-  const isManageOffers = location.pathname.startsWith('/manage-offers');
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-sm">
@@ -112,6 +130,17 @@ export function Navigation() {
                 className="text-sm font-medium ml-2"
               >
                 Logout
+              </Button>
+            )}
+
+            {isAdminUser && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-sm font-medium ml-2"
+                onClick={() => navigate('/', { replace: true })}
+              >
+                {t('admin.goToWebsite') || 'Go to Website'}
               </Button>
             )}
 
