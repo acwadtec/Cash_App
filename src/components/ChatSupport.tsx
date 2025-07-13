@@ -126,6 +126,23 @@ export function ChatSupport({
     }
   }, [isOpen, messages.length, t, userId]);
 
+  // Mark unread admin messages as read when chat is opened
+  useEffect(() => {
+    if (isOpen && userId) {
+      const markRead = async () => {
+        await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('conversation_id', userId)
+          .eq('sender', 'admin')
+          .eq('is_read', false);
+        fetchMessages();
+      };
+      markRead();
+    }
+    // eslint-disable-next-line
+  }, [isOpen, userId]);
+
   const sendMessage = async (text: string, attachments: string[] = []) => {
     if (!text.trim() && attachments.length === 0) return;
     if (!userId) return;
