@@ -17,6 +17,7 @@ import Withdrawal from "./pages/Withdrawal";
 import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 import ManageOffers from './pages/ManageOffers';
+import HelpCenter from './pages/HelpCenter';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="withdrawal" element={<Withdrawal />} />
                 <Route path="help" element={<HelpCenter />} />
                 <Route path="manage-offers" element={<ManageOffers />} />
+                <Route path="help" element={<HelpCenter />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

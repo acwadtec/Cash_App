@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Moon, Sun, Menu, X } from 'lucide-react';
+import { NotificationInbox } from './NotificationInbox';
 
 export function Navigation() {
   const { language, setLanguage, t, isRTL } = useLanguage();
@@ -81,6 +82,9 @@ export function Navigation() {
             >
               {t('language.switch')}
             </Button>
+
+            {/* Notification Inbox (bell) */}
+            {!isHome && isLoggedIn && !isAdmin && <NotificationInbox />}
 
             {/* Logout Button */}
             {!isHome && isLoggedIn && !isAdmin && (
