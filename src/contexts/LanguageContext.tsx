@@ -745,13 +745,32 @@ const translations = {
     'admin.noLevels': 'لا توجد مستويات',
     'offers.loading': 'جاري تحميل العروض...',
 
+    // Admin Gamification
+    'admin.gamification': 'نظام التحفيز',
+    'admin.badges': 'إدارة الشارات',
+    'admin.levels': 'إدارة المستويات',
+    'admin.gamificationSettings': 'إعدادات نظام التحفيز',
+    'admin.pointsMultiplier': 'مضاعف النقاط',
+    'admin.badgeActive': 'نشط',
+    'admin.levelDescription': 'الوصف',
+    'admin.levelBenefits': 'المزايا',
+    'admin.pointsEarned': 'النقاط المكتسبة',
+    'admin.noUserBadges': 'لم يتم الحصول على شارات بعد',
+    'admin.automation': 'إعدادات الأتمتة',
+    'admin.update': 'تحديث',
+    'admin.create': 'إنشاء',
+    'admin.cancel': 'إلغاء',
+    'admin.assign': 'تعيين',
+    'admin.actions': 'الإجراءات',
+    'common.chooseFile': 'اختر ملف',
+
     // Referral Network Page
     'referral.networkTitle': 'شبكة الإحالة',
     'referral.level2': 'المستوى 2 (غير مباشر)',
     'referral.level3': 'المستوى 3',
     'referral.level1List': 'إحالات المستوى 1:',
     'referral.level2List': 'إحالات المستوى 2:',
-    'referral.level3List': 'Level 3 Referrals:', // (this should be Arabic, but just delete this line here)
+    'referral.level3List': 'إحالات المستوى 3:',
 
   },
   en: {
@@ -1441,6 +1460,25 @@ const translations = {
     'admin.deleteWarning2': 'This action cannot be undone.',
     'admin.noLevels': 'No levels found',
     'offers.loading': 'Loading offers...',
+    
+    // Admin Gamification
+    'admin.gamification': 'Gamification',
+    'admin.badges': 'Badges Management',
+    'admin.levels': 'Levels Management',
+    'admin.gamificationSettings': 'Gamification Settings',
+    'admin.pointsMultiplier': 'Points Multiplier',
+    'admin.badgeActive': 'Active',
+    'admin.levelDescription': 'Description',
+    'admin.levelBenefits': 'Benefits',
+    'admin.pointsEarned': 'Points Earned',
+    'admin.noUserBadges': 'No badges earned yet',
+    'admin.automation': 'Automation Settings',
+    'admin.update': 'Update',
+    'admin.create': 'Create',
+    'admin.cancel': 'Cancel',
+    'admin.assign': 'Assign',
+    'admin.actions': 'Actions',
+    'common.chooseFile': 'Choose File',
     
     // Referral Network Page
     'referral.networkTitle': 'Referral Network',
