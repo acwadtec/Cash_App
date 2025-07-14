@@ -238,20 +238,17 @@ export default function HelpCenter() {
                   <Info className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-primary-foreground">
-                  {t('language.switch') === 'English' ? 'Need More Help?' : 'تحتاج مساعدة إضافية؟'}
+                  {t('help.needMoreHelp')}
                 </h3>
                 <p className="text-primary-foreground/80 mb-6">
-                  {t('language.switch') === 'English' 
-                    ? 'Our support team is available 24/7 to assist you with any questions or concerns.'
-                    : 'فريق الدعم متوفر على مدار الساعة لمساعدتك في أي استفسارات أو مخاوف.'
-                  }
+                  {t('help.supportMessage')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Badge className="bg-primary-foreground/20 text-primary-foreground px-4 py-2 text-base">
-                    {t('language.switch') === 'English' ? 'Email Support' : 'الدعم عبر البريد الإلكتروني'}
+                    {t('help.emailSupport')}
                   </Badge>
                   <Badge className="bg-primary-foreground/20 text-primary-foreground px-4 py-2 text-base">
-                    {t('language.switch') === 'English' ? 'Live Chat' : 'الدردشة المباشرة'}
+                    {t('help.liveChat')}
                   </Badge>
                 </div>
               </div>

@@ -40,6 +40,7 @@ const translations = {
     'login.userLogin': 'دخول المستخدم',
     'login.success': 'تم تسجيل الدخول بنجاح',
     'login.error': 'خطأ في البريد الإلكتروني أو كلمة المرور',
+    'login.unexpectedError': 'حدث خطأ غير متوقع',
     
     // Admin Dashboard
     'admin.title': 'لوحة الإدارة',
@@ -135,7 +136,6 @@ const translations = {
     'home.title': 'مرحباً بك في كاش',
     'home.subtitle': 'منصة التداول الذكية لإدارة أرباحك بأمان',
     'home.cta': 'ابدأ الآن',
-    'home.login': 'تسجيل الدخول',
     'home.cta2.title': 'ابدأ رحلتك مع كاش اليوم',
     'home.cta2.subtitle': 'انضم إلى آلاف المستخدمين الذين يثقون بمنصة كاش لإدارة أرباحهم',
     'home.cta2.button': 'إنشاء حساب مجاني',
@@ -405,6 +405,20 @@ const translations = {
     'chat.attachment.error': 'خطأ في رفع الملف',
     'chat.attachment.size': 'حجم الملف كبير جداً',
     'chat.attachment.type': 'نوع الملف غير مدعوم',
+
+    // Home Page Hero Section
+    'home.hero.title': 'مرحباً بك في كاش',
+    'home.hero.subtitle': 'منصة التداول الذكية لإدارة أرباحك بأمان',
+    'home.hero.cta': 'ابدأ الآن',
+    'home.hero.learnMore': 'اعرف المزيد',
+
+    // Home Page Features Section
+    'home.features.title': 'لماذا تختار كاش؟',
+
+    // Home Page CTA Section
+    'home.cta.title': 'ابدأ رحلتك مع كاش اليوم',
+    'home.cta.subtitle': 'انضم إلى آلاف المستخدمين الذين يثقون بمنصة كاش لإدارة أرباحهم',
+    'home.cta.button': 'إنشاء حساب مجاني',  
     
     // Admin Dashboard Additional
     'admin.analytics': 'التحليلات',
@@ -523,7 +537,6 @@ const translations = {
     'admin.quickActions.supportChat': 'دعم العملاء',
     
     // Offers
-    'offers.loading': 'جاري التحميل...',
     'offers.manageOffers': 'إدارة العروض',
     'offers.saving': 'جاري الحفظ...',
     'offers.update': 'تحديث',
@@ -555,6 +568,97 @@ const translations = {
     'common.minutes': 'د',
     'common.hours': 'س',
     'common.days': 'يوم',
+
+    // NotFound Page
+    'notfound.404': '٤٠٤',
+    'notfound.oops': 'عذراً! الصفحة غير موجودة',
+    'notfound.returnHome': 'العودة للرئيسية',
+
+    // ReferralCode Component
+    'referral.program': 'برنامج الإحالة',
+    'referral.accountVerificationRequired': 'مطلوب التحقق من الحساب',
+    'referral.verifyToAccess': 'يرجى التحقق من حسابك للوصول إلى برنامج الإحالة وكسب المكافآت.',
+    'referral.loading': 'جاري تحميل بيانات الإحالة...',
+    'referral.yourProgram': 'برنامج الإحالة الخاص بك',
+    'referral.yourCode': 'كود الإحالة الخاص بك',
+    'referral.totalReferrals': 'إجمالي الإحالات',
+    'referral.pointsEarned': 'النقاط المكتسبة',
+    'referral.level1': 'المستوى 1',
+    'referral.level2plus3': 'المستوى 2+3',
+    'referral.howItWorks': 'كيف يعمل',
+    'referral.howItWorks.level1': 'اكسب نقاط عند تسجيل أصدقائك باستخدام كودك',
+    'referral.howItWorks.level2': 'اكسب نقاط عند إحالة أصدقائك للآخرين',
+    'referral.howItWorks.level3': 'اكسب نقاط من الإحالات من المستوى الثالث',
+    'referral.howItWorks.share': 'شارك كودك مع أصدقائك لبدء كسب المكافآت!',
+
+    // Transactions/General
+    'transactions.paymentProcessed': 'تمت معالجة الدفع بنجاح',
+    'transactions.invalidBankDetails': 'تم إدخال تفاصيل حساب بنكي غير صحيحة',
+    'transactions.friendReferralBonus': 'مكافأة إحالة صديق',
+    'transactions.personalEarningsWithdrawal': 'سحب أرباح شخصية',
+    'transactions.teamEarningsWithdrawal': 'سحب أرباح فريق',
+    'transactions.capitalDeposit': 'إيداع رأس مال',
+    'transactions.bank': 'بنك',
+    'transactions.wallet': 'محفظة',
+    'transactions.bankTransfer': 'تحويل بنكي',
+    'transactions.cryptocurrency': 'عملة مشفرة',
+    'transactions.teamEarnings': 'أرباح الفريق',
+    'common.completeProfile': 'يرجى إكمال بيانات حسابك للوصول للموقع. سيتم تحويلك لإعداد الحساب...',
+    'deposit.completeProfile': 'يرجى إكمال بيانات حسابك لإجراء الإيداعات. سيتم تحويلك لإعداد الحساب...',
+    // Help Center Additional
+    'help.needMoreHelp': 'تحتاج مساعدة إضافية؟',
+    'help.supportMessage': 'فريق الدعم متوفر على مدار الساعة لمساعدتك في أي استفسارات أو مخاوف.',
+    'help.emailSupport': 'الدعم عبر البريد الإلكتروني',
+    'help.liveChat': 'الدردشة المباشرة',
+    // Offers Additional
+    'offers.joined': 'تم الانضمام',
+    'offers.cost': 'التكلفة:',
+    'offers.dailyProfit': 'الربح اليومي:',
+    'offers.monthlyProfit': 'الربح الشهري:',
+    'offers.notifyMe': 'أبلغني',
+    'offers.stayTuned': 'تابع آخر العروض والمكافآت.',
+    // Transactions Descriptions/Methods
+    'transactions.desc.personalEarningsWithdrawal': 'سحب أرباح شخصية',
+    'transactions.desc.friendReferralBonus': 'مكافأة إحالة صديق',
+    'transactions.desc.teamEarnings': 'أرباح الفريق',
+    'transactions.desc.bonusWithdrawal': 'سحب مكافآت',
+    'transactions.desc.capitalDeposit': 'إيداع رأس مال',
+    'transactions.desc.teamEarningsWithdrawal': 'سحب أرباح فريق',
+    'transactions.method.bank': 'بنك',
+    'transactions.method.wallet': 'محفظة',
+    'transactions.method.bankTransfer': 'تحويل بنكي',
+    'transactions.method.cryptocurrency': 'عملة مشفرة',
+    'transactions.approvedForProcessing': 'تمت الموافقة للمعالجة',
+    // Register Page Additional
+    'register.invalidReferralTitle': 'كود الإحالة غير صالح',
+    'register.invalidReferralDesc': 'كود الإحالة الذي أدخلته غير صالح.',
+    'register.unverifiedReferralDesc': 'كود الإحالة يخص حساب غير موثق.',
+    'register.validReferralTitle': 'كود الإحالة صالح',
+    'register.validReferralDesc': 'سيتم إحالتك بواسطة',
+    // Profile Page Additional
+    'profile.noData': 'لا توجد بيانات للملف الشخصي',
+    'profile.noDataDesc': 'يرجى إكمال بيانات حسابك لعرض ملفك الشخصي.',
+    'profile.updateAccount': 'تحديث بيانات الحساب',
+    'profile.achievements': 'الإنجازات',
+    'profile.level': 'المستوى',
+    'profile.levelDesc': 'مستواك الحالي',
+    'profile.badges': 'الشارات',
+    'profile.noBadges': 'لم تحصل على أي شارات بعد',
+    'profile.accountInfo': 'معلومات الحساب',
+    'profile.edit': 'تعديل',
+    'profile.idPhotos': 'صور الهوية',
+    'profile.profilePhoto': 'صورة الملف الشخصي',
+    'profile.view': 'عرض',
+    'profile.idFrontLabel': 'الوجه الأمامي',
+    'profile.idBackLabel': 'الوجه الخلفي',
+    // Update Account Page
+    'updateAccount.title': 'تحديث بيانات الحساب',
+    'updateAccount.subtitle': 'يرجى إكمال بيانات حسابك للمتابعة',
+    'updateAccount.submit': 'إكمال التسجيل',
+    'updateAccount.success': 'تم حفظ البيانات بنجاح',
+    'updateAccount.error': 'حدث خطأ أثناء الحفظ',
+    // Withdrawal Page
+    'withdrawal.completeProfileAlert': 'يرجى إكمال بيانات حسابك لإجراء السحب. سيتم تحويلك لإعداد الحساب...'
   },
   en: {
     // Navigation
@@ -583,6 +687,7 @@ const translations = {
     'login.userLogin': 'User Login',
     'login.success': 'Login successful',
     'login.error': 'Invalid email or password',
+    'login.unexpectedError': 'An unexpected error occurred',
     
     // Admin Dashboard
     'admin.title': 'Admin Dashboard',
@@ -1066,7 +1171,6 @@ const translations = {
     'admin.quickActions.supportChat': 'Customer Support',
     
     // Offers
-    'offers.loading': 'Loading...',
     'offers.manageOffers': 'Manage Offers',
     'offers.saving': 'Saving...',
     'offers.update': 'Update',
@@ -1098,6 +1202,121 @@ const translations = {
     'common.minutes': 'min',
     'common.hours': 'hr',
     'common.days': 'day',
+
+    // NotFound Page
+    'notfound.404': '404',
+    'notfound.oops': 'Oops! Page not found',
+    'notfound.returnHome': 'Return to Home',
+
+    // ReferralCode Component
+    'referral.program': 'Referral Program',
+    'referral.accountVerificationRequired': 'Account Verification Required',
+    'referral.verifyToAccess': 'Please verify your account to access the referral program and earn rewards.',
+    'referral.loading': 'Loading referral data...',
+    'referral.yourProgram': 'Your Referral Program',
+    'referral.yourCode': 'Your Referral Code',
+    'referral.totalReferrals': 'Total Referrals',
+    'referral.pointsEarned': 'Points Earned',
+    'referral.level1': 'Level 1',
+    'referral.level2plus3': 'Level 2+3',
+    'referral.howItWorks': 'How It Works',
+    'referral.howItWorks.level1': 'Earn points when friends sign up using your code',
+    'referral.howItWorks.level2': 'Earn points when your referrals refer others',
+    'referral.howItWorks.level3': 'Earn points from third-level referrals',
+    'referral.howItWorks.share': 'Share your code with friends to start earning rewards!',
+
+    // Transactions/General
+    'transactions.paymentProcessed': 'Payment processed successfully',
+    'transactions.invalidBankDetails': 'Invalid bank account details provided',
+    'transactions.friendReferralBonus': 'Friend referral bonus',
+    'transactions.personalEarningsWithdrawal': 'Personal earnings withdrawal',
+    'transactions.teamEarningsWithdrawal': 'Team earnings withdrawal',
+    'transactions.capitalDeposit': 'Capital deposit',
+    'transactions.bank': 'Bank',
+    'transactions.wallet': 'Wallet',
+    'transactions.bankTransfer': 'Bank transfer',
+    'transactions.cryptocurrency': 'Cryptocurrency',
+    'transactions.teamEarnings': 'Team earnings',
+    'common.completeProfile': 'Please complete your account information to access the website. Redirecting to profile setup...',
+    'deposit.completeProfile': 'Please complete your account information to make deposits. Redirecting to profile setup...',
+    // Help Center Additional
+    'help.needMoreHelp': 'Need More Help?',
+    'help.supportMessage': 'Our support team is available 24/7 to assist you with any questions or concerns.',
+    'help.emailSupport': 'Email Support',
+    'help.liveChat': 'Live Chat',
+    // Offers Additional
+    'offers.joined': 'Joined',
+    'offers.cost': 'Cost:',
+    'offers.dailyProfit': 'Daily Profit:',
+    'offers.monthlyProfit': 'Monthly Profit:',
+    'offers.notifyMe': 'Notify Me',
+    'offers.stayTuned': 'Stay tuned for the latest offers and rewards.',
+    // Transactions Descriptions/Methods
+    'transactions.desc.personalEarningsWithdrawal': 'Personal earnings withdrawal',
+    'transactions.desc.friendReferralBonus': 'Friend referral bonus',
+    'transactions.desc.teamEarnings': 'Team earnings',
+    'transactions.desc.bonusWithdrawal': 'Bonus withdrawal',
+    'transactions.desc.capitalDeposit': 'Capital deposit',
+    'transactions.desc.teamEarningsWithdrawal': 'Team earnings withdrawal',
+    'transactions.method.bank': 'Bank',
+    'transactions.method.wallet': 'Wallet',
+    'transactions.method.bankTransfer': 'Bank transfer',
+    'transactions.method.cryptocurrency': 'Cryptocurrency',
+    'transactions.approvedForProcessing': 'Approved for processing',
+    // Register Page Additional
+    'register.invalidReferralTitle': 'Invalid Referral Code',
+    'register.invalidReferralDesc': 'The referral code you entered is not valid.',
+    'register.unverifiedReferralDesc': 'The referral code belongs to an unverified account.',
+    'register.validReferralTitle': 'Valid Referral Code',
+    'register.validReferralDesc': "You'll be referred by",
+    // Profile Page Additional
+    'profile.noData': 'No Profile Data',
+    'profile.noDataDesc': 'Please complete your account information to view your profile.',
+    'profile.updateAccount': 'Update Account Information',
+    'profile.achievements': 'Achievements',
+    'profile.level': 'Level',
+    'profile.levelDesc': 'Your current level',
+    'profile.badges': 'Badges',
+    'profile.noBadges': 'No badges earned yet',
+    'profile.accountInfo': 'Account Information',
+    'profile.edit': 'Edit',
+    'profile.idPhotos': 'ID Photos',
+    'profile.profilePhoto': 'Profile Photo',
+    'profile.view': 'View',
+    'profile.idFrontLabel': 'Front',
+    'profile.idBackLabel': 'Back',
+    // Update Account Page
+    'updateAccount.title': 'Update Account Information',
+    'updateAccount.subtitle': 'Please complete your account information to continue',
+    'updateAccount.submit': 'Complete Registration',
+    'updateAccount.success': 'Data saved successfully',
+    'updateAccount.error': 'An error occurred while saving',
+    // Withdrawal Page
+    'withdrawal.completeProfileAlert': 'Please complete your account information to make withdrawals. Redirecting to profile setup...',
+    // Deposit Page Additional (missing keys)
+    'deposit.error.amountInvalid': 'Please enter a valid amount',
+    'deposit.error.phoneInvalid': 'Please enter a valid phone number',
+    'deposit.error.loginRequired': 'Please login to submit deposit',
+    'deposit.error.uploadFailed': 'Failed to upload screenshot. Please try again.',
+    'deposit.error.submitFailed': 'Failed to submit deposit request. Please try again.',
+    'deposit.error.historyFailed': 'Failed to load deposit history',
+    'deposit.error.numbersFailed': 'Failed to load deposit numbers',
+    'deposit.error.noNumbers': 'No deposit numbers available',
+    'deposit.error.fileSize': 'File size must be less than 5MB',
+
+    // Home Page Hero Section
+    'home.hero.title': 'Welcome to Cash',
+    'home.hero.subtitle': 'Smart trading platform to manage your earnings securely',
+    'home.hero.cta': 'Get Started',
+    'home.hero.learnMore': 'Learn More',
+
+    // Home Page Features Section
+    'home.features.title': 'Why Choose Cash?',
+
+    // Home Page CTA Section
+    'home.cta.title': 'Start Your Journey with Cash Today',
+    'home.cta.subtitle': 'Join thousands of users who trust Cash platform to manage their earnings',
+    'home.cta.button': 'Create Free Account',
   }
 };
 

@@ -145,7 +145,7 @@ export default function Offers() {
         </div>
 
         {loading ? (
-          <div className="text-center">Loading...</div>
+          <div className="text-center">{t('offers.loading')}</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {offers.map((offer) => (
@@ -178,31 +178,31 @@ export default function Offers() {
                   <div className="space-y-2 mb-6 text-sm">
                     {offer.cost !== undefined && offer.cost !== 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cost:</span>
+                        <span className="text-muted-foreground">{t('offers.cost')}:</span>
                         <span>${offer.cost}</span>
                       </div>
                     )}
                     {offer.daily_profit !== undefined && offer.daily_profit !== 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Daily Profit:</span>
+                        <span className="text-muted-foreground">{t('offers.dailyProfit')}:</span>
                         <span>${offer.daily_profit}</span>
                       </div>
                     )}
                     {offer.monthly_profit !== undefined && offer.monthly_profit !== 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Monthly Profit:</span>
+                        <span className="text-muted-foreground">{t('offers.monthlyProfit')}:</span>
                         <span>${offer.monthly_profit}</span>
                       </div>
                     )}
                     {offer.deadline && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.deadline') || 'Deadline:'}</span>
+                        <span className="text-muted-foreground">{t('offers.deadline')}:</span>
                         <span>{offer.deadline}</span>
                       </div>
                     )}
                     {offer.minAmount && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.minAmount') || 'Minimum:'}</span>
+                        <span className="text-muted-foreground">{t('offers.minAmount')}:</span>
                         <span>${offer.minAmount}</span>
                       </div>
                     )}
@@ -212,7 +212,7 @@ export default function Offers() {
                     onClick={() => handleJoinOffer(offer.id)}
                     disabled={joinedOffers.includes(offer.id)}
                   >
-                    {joinedOffers.includes(offer.id) ? 'Joined' : (t('offers.join') || 'Join Offer')}
+                    {joinedOffers.includes(offer.id) ? t('offers.joined') : t('offers.join')}
                   </Button>
                 </CardContent>
               </Card>
@@ -223,12 +223,12 @@ export default function Offers() {
         <div className="mt-12 text-center">
           <Card className="max-w-2xl mx-auto gradient-card shadow-glow">
             <CardContent className="pt-8">
-              <h3 className="text-2xl font-bold mb-4">{t('offers.notification.title') || "Don't Miss New Offers!"}</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('offers.notification.title')}</h3>
               <p className="text-muted-foreground mb-6">
-                {t('offers.notification.subtitle') || 'Stay tuned for the latest offers and rewards.'}
+                {t('offers.notification.subtitle') || t('offers.stayTuned')}
               </p>
               <Button variant="outline" size="lg">
-                {t('offers.notification.button') || 'Notify Me'}
+                {t('offers.notification.button') || t('offers.notifyMe')}
               </Button>
             </CardContent>
           </Card>

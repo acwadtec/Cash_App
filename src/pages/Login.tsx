@@ -86,7 +86,7 @@ export default function Login() {
       console.error('Login error:', error);
       toast({
         title: t('common.error'),
-        description: 'An unexpected error occurred',
+        description: t('login.unexpectedError'),
         variant: 'destructive',
       });
     } finally {
