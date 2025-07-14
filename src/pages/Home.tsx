@@ -88,17 +88,17 @@ export default function Home() {
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 gradient-primary bg-clip-text text-transparent">
             {t('home.hero.title')}
-          </h1>
+            </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             {t('home.hero.subtitle')}
-          </p>
+            </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="text-lg px-8 py-3 shadow-glow">
               <Link to="/register">{t('home.hero.cta')}</Link>
-            </Button>
+              </Button>
             <Button asChild variant="outline" size="lg" className="text-lg px-8 py-3">
               <Link to="/offers">{t('home.hero.learnMore')}</Link>
-            </Button>
+              </Button>
           </div>
         </div>
       </section>
@@ -129,10 +129,10 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-4">{t('home.cta.title')}</h2>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
             {t('home.cta.subtitle')}
-          </p>
+              </p>
           <Button asChild size="lg" className="text-lg px-8 py-3 shadow-glow">
             <Link to="/register">{t('home.cta.button')}</Link>
-          </Button>
+              </Button>
         </div>
       </section>
     </div>

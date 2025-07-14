@@ -68,12 +68,12 @@ export default function Deposit() {
           toast({ title: t('common.error'), description: 'Failed to load deposit numbers', variant: 'destructive' });
         } else if (numbersData && numbersData.length > 0) {
           const numbers = numbersData.map((n) => n.number);
-          setSelectedNumber(numbers[Math.floor(Math.random() * numbers.length)]);
+        setSelectedNumber(numbers[Math.floor(Math.random() * numbers.length)]);
         } else {
           toast({ title: t('common.error'), description: 'No deposit numbers available', variant: 'destructive' });
-        }
-        
-        // Fetch deposit history
+      }
+
+  // Fetch deposit history
         const { data: historyData, error: historyError } = await supabase
           .from('deposit_requests')
           .select('*')
@@ -85,7 +85,7 @@ export default function Deposit() {
           toast({ title: t('common.error'), description: 'Failed to load deposit history', variant: 'destructive' });
         } else {
           setHistory(historyData || []);
-        }
+      }
       } catch (error) {
         console.error('Error in checkAuthAndFetchData:', error);
         toast({ title: t('common.error'), description: 'An unexpected error occurred', variant: 'destructive' });
@@ -152,7 +152,7 @@ export default function Deposit() {
     setSubmitting(true);
     
     try {
-      // Upload screenshot to Supabase Storage
+    // Upload screenshot to Supabase Storage
       const filePath = `deposits/${user.id}/${Date.now()}-${screenshot.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('deposit-screenshots')
@@ -206,7 +206,7 @@ export default function Deposit() {
       
       if (!historyError) {
         setHistory(historyData || []);
-      }
+    }
       
       // Handle gamification (simplified)
       try {
@@ -423,8 +423,8 @@ export default function Deposit() {
                             e.currentTarget.style.display = 'none';
                           }}
                         />
-                      </a>
-                    </div>
+                    </a>
+                  </div>
                   )}
                 </CardContent>
               </Card>

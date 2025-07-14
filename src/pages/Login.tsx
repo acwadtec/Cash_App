@@ -37,34 +37,34 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Supabase Auth login
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
+    // Supabase Auth login
+    const { error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
       
-      if (error) {
-        toast({
-          title: t('common.error'),
-          description: error.message,
-          variant: 'destructive',
-        });
-        return;
-      }
+    if (error) {
+      toast({
+        title: t('common.error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
 
       // Check if user is admin using new admins table
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
       
-      if (user) {
+    if (user) {
         const isAdmin = await checkIfUserIsAdmin(user.id);
         
-        toast({
-          title: t('common.success'),
-          description: t('login.success'),
-        });
+    toast({
+      title: t('common.success'),
+      description: t('login.success'),
+    });
         
-        localStorage.setItem('cash-logged-in', 'true');
+    localStorage.setItem('cash-logged-in', 'true');
         
         // Don't redirect admins automatically - let them use the toggle button
         // Check if user has user_info data (for non-admin users)
@@ -77,7 +77,7 @@ export default function Login() {
         if (userInfo) {
           // User has info, go to home page
           navigate('/');
-        } else {
+    } else {
           // User doesn't have info, go to update account
           navigate('/update-account');
         }
@@ -99,40 +99,40 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">{t('login.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+          <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Input
+                <Input
                 type="email"
-                name="email"
+                  name="email"
                 placeholder={t('login.email')}
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
             <div>
-              <Input
+                <Input
                 type="password"
-                name="password"
+                  name="password"
                 placeholder={t('login.password')}
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? t('common.loading') : t('login.submit')}
-            </Button>
-          </form>
+              </Button>
+            </form>
           <div className="mt-4 text-center">
             <Link to="/register" className="text-primary hover:underline">
               {t('login.noAccount')}
             </Link>
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
     </div>
   );
 }

@@ -60,7 +60,7 @@ export default function Profile() {
       const { data, error } = await supabase
         .from('user_badges')
         .select('*, badge:badge_id(*)')
-        .eq('user_uid', userUid);
+        .eq('user_id', userUid);
       if (!error && data) {
         setUserBadges(data.map(row => row.badge));
       }

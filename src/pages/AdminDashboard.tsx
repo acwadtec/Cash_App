@@ -1336,17 +1336,26 @@ export default function AdminDashboard() {
 
   const fetchUserBadges = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch all user badges
+      const { data: badges, error: badgeError } = await supabase
         .from('user_badges')
-        .select(`
-          *,
-          badge:badge_id(*),
-          user:user_uid(email, first_name, last_name)
-        `)
+        .select('*, badge:badge_id(*)')
         .order('earned_at', { ascending: false });
-      
-      if (error) throw error;
-      setUserBadges(data || []);
+      if (badgeError) throw badgeError;
+
+      // Fetch all user info
+      const { data: users, error: userError } = await supabase
+        .from('user_info')
+        .select('user_uid, email, first_name, last_name');
+      if (userError) throw userError;
+
+      // Merge user info into badges
+      const userMap = Object.fromEntries((users || []).map(u => [u.user_uid, u]));
+      const badgesWithUser = (badges || []).map(b => ({
+        ...b,
+        user: userMap[b.user_id] || null
+      }));
+      setUserBadges(badgesWithUser);
     } catch (error) {
       console.error('Error fetching user badges:', error);
     }
@@ -1493,7 +1502,13 @@ export default function AdminDashboard() {
         // Update existing level
         const { error } = await supabase
           .from('levels')
-          .update(levelForm)
+          .update({
+            level: levelForm.level,
+            name: levelForm.name,
+            description: levelForm.description,
+            requirement: levelForm.requirement,
+            benefits: levelForm.benefits
+          })
           .eq('id', selectedLevel.id);
         
         if (error) throw error;
@@ -1503,7 +1518,15 @@ export default function AdminDashboard() {
         // Create new level
         const { error } = await supabase
           .from('levels')
-          .insert([levelForm]);
+          .insert([
+            {
+              level: levelForm.level,
+              name: levelForm.name,
+              description: levelForm.description,
+              requirement: levelForm.requirement,
+              benefits: levelForm.benefits
+            }
+          ]);
         
         if (error) throw error;
         
@@ -1560,19 +1583,26 @@ export default function AdminDashboard() {
         
         toast({ title: t('common.success'), description: 'User badge updated successfully' });
       } else {
-        // Create new user badge
+        // Add new user badge (upsert to avoid unique constraint error)
+        const badgePayload = {
+          user_id: userBadgeForm.user_id,
+          badge_id: userBadgeForm.badge_id,
+          points_earned: userBadgeForm.points_earned,
+          earned_at: new Date().toISOString()
+        };
+        console.log('Assigning badge:', badgePayload);
         const { error } = await supabase
           .from('user_badges')
-          .insert([{
-            ...userBadgeForm,
-            earned_at: new Date().toISOString()
-          }]);
-        
-        if (error) throw error;
-        
+          .upsert([
+            badgePayload
+          ], { onConflict: 'user_id,badge_id' });
+        if (error) {
+          console.error('Supabase error:', error, 'Payload:', badgePayload);
+          toast({ title: t('common.error'), description: error.message || 'Failed to save user badge', variant: 'destructive' });
+          return;
+        }
         toast({ title: t('common.success'), description: 'User badge assigned successfully' });
       }
-      
       setShowUserBadgeModal(false);
       setSelectedUserBadge(null);
       setUserBadgeForm({
@@ -1582,8 +1612,8 @@ export default function AdminDashboard() {
       });
       fetchUserBadges();
     } catch (error) {
-      console.error('Error creating/updating user badge:', error);
-      toast({ title: t('common.error'), description: 'Failed to save user badge', variant: 'destructive' });
+      console.error('Error creating/updating user badge:', error, userBadgeForm);
+      toast({ title: t('common.error'), description: error.message || 'Failed to save user badge', variant: 'destructive' });
     }
   };
 
@@ -2128,6 +2158,7 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
+<<<<<<< Updated upstream
                         {Object.entries(packageLimits).map(([pkg, vals], idx) => {
                           const { min, max, daily } = vals as { min: number; max: number; daily: number };
                           return (
@@ -2143,6 +2174,20 @@ export default function AdminDashboard() {
                             </TableRow>
                           );
                         })}
+=======
+                        {Object.entries(packageLimits).map(([pkg, vals], idx) => (
+                          <TableRow key={pkg}>
+                            <TableCell>{pkg}</TableCell>
+                            <TableCell>{vals.min}</TableCell>
+                            <TableCell>{vals.max}</TableCell>
+                            <TableCell>{vals.daily}</TableCell>
+                            <TableCell>
+                              <Button size="xs" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
+                              <Button size="xs" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+>>>>>>> Stashed changes
                         {Object.keys(packageLimits).length === 0 && (
                           <TableRow><TableCell colSpan={5} className="text-muted-foreground">None set</TableCell></TableRow>
                         )}
@@ -3151,7 +3196,7 @@ export default function AdminDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
+                    <SelectItem key={user.user_uid} value={user.user_uid}>
                       {user.first_name} {user.last_name} ({user.email})
                     </SelectItem>
                   ))}

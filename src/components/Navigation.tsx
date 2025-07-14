@@ -96,19 +96,19 @@ export function Navigation() {
           <div className="hidden md:flex items-center space-x-6">
             {isLoggedIn && !isAdmin && (
               <>
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
                     className={`text-sm font-medium transition-colors hover:text-primary ${
                       isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
               </>
-            )}
+          )}
 
             {/* Admin Switch View Button */}
             {isAdminUser && (
@@ -186,23 +186,23 @@ export function Navigation() {
               <div className="flex items-center space-x-2">
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/login">{t('nav.login')}</Link>
-                </Button>
+              </Button>
                 <Button asChild size="sm">
                   <Link to="/register">{t('nav.register')}</Link>
-                </Button>
+              </Button>
               </div>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="sm"
+            {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="sm"
             className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+              </Button>
         </div>
 
         {/* Mobile Navigation */}
@@ -210,18 +210,18 @@ export function Navigation() {
           <div className="md:hidden py-4 border-t">
             {isLoggedIn && !isAdmin && (
               <div className="space-y-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
                     className={`block px-4 py-2 text-sm font-medium transition-colors hover:text-primary ${
                       isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
                     }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
               </div>
             )}
 
