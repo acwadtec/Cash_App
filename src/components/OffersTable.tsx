@@ -13,6 +13,7 @@ interface Offer {
   image_url?: string;
   type?: string;
   deadline?: string;
+  active?: boolean;
 }
 
 interface OffersTableProps {

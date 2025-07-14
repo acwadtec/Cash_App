@@ -22,7 +22,7 @@ interface Offer {
   daily_profit: number;
   monthly_profit: number;
   image_url?: string;
-  active?: boolean;
+  active: boolean;
   deadline?: string;
 }
 
