@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ReferralNetwork() {
+  const { t, isRTL } = useLanguage();
   const [userInfo, setUserInfo] = useState<any>(null);
   const [userUid, setUserUid] = useState<string | null>(null);
   const [level1Referrals, setLevel1Referrals] = useState<any[]>([]);
@@ -97,33 +99,33 @@ export default function ReferralNetwork() {
   };
 
   return (
-    <div className="min-h-screen py-20">
+    <div className={`min-h-screen py-20 ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Referral Network</h1>
+          <h1 className="text-3xl font-bold mb-8">{t('referral.networkTitle') || 'Referral Network'}</h1>
           {userInfo?.referral_code && (
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>Referral Network</CardTitle>
+                <CardTitle>{t('referral.networkTitle') || 'Referral Network'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">{level1Referrals.length}</div>
-                    <div className="text-sm text-muted-foreground">Level 1 (Direct)</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 (Direct)'}</div>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">{level2Referrals.length}</div>
-                    <div className="text-sm text-muted-foreground">Level 2 (Indirect)</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level2') || 'Level 2 (Indirect)'}</div>
                   </div>
                   <div className="text-center p-4 bg-orange-50 rounded-lg">
                     <div className="text-2xl font-bold text-orange-600">{level3Referrals.length}</div>
-                    <div className="text-sm text-muted-foreground">Level 3</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3'}</div>
                   </div>
                 </div>
                 {level1Referrals.length > 0 && (
                   <div className="mt-4">
-                    <div className="font-semibold mb-2">Level 1 Referrals:</div>
+                    <div className="font-semibold mb-2">{t('referral.level1List') || 'Level 1 Referrals:'}</div>
                     <ul className="list-disc ml-6">
                       {level1Referrals.map(u => (
                         <li key={u.user_uid}>{u.first_name} {u.last_name} ({u.email})</li>
@@ -133,7 +135,7 @@ export default function ReferralNetwork() {
                 )}
                 {level2Referrals.length > 0 && (
                   <div className="mt-4">
-                    <div className="font-semibold mb-2">Level 2 Referrals:</div>
+                    <div className="font-semibold mb-2">{t('referral.level2List') || 'Level 2 Referrals:'}</div>
                     <ul className="list-disc ml-6">
                       {level2Referrals.map(u => (
                         <li key={u.user_uid}>{u.first_name} {u.last_name} ({u.email})</li>
@@ -143,7 +145,7 @@ export default function ReferralNetwork() {
                 )}
                 {level3Referrals.length > 0 && (
                   <div className="mt-4">
-                    <div className="font-semibold mb-2">Level 3 Referrals:</div>
+                    <div className="font-semibold mb-2">{t('referral.level3List') || 'Level 3 Referrals:'}</div>
                     <ul className="list-disc ml-6">
                       {level3Referrals.map(u => (
                         <li key={u.user_uid}>{u.first_name} {u.last_name} ({u.email})</li>

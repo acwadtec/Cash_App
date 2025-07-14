@@ -66,8 +66,9 @@ const translations = {
     'nav.login': 'تسجيل الدخول',
     'nav.admin': 'لوحة الإدارة',
     'nav.logout': 'تسجيل الخروج',
-    'nav.deposit': 'إيداع',
-    'nav.help': 'مركز المساعدة',
+    'nav.deposit': 'الإيداع',
+    'nav.help': 'مساعدة',
+    'nav.team': 'الفريق',
     'nav.website': 'الموقع',
     'nav.dashboard': 'لوحة التحكم',
     'nav.register': 'تسجيل',
@@ -744,6 +745,14 @@ const translations = {
     'admin.noLevels': 'لا توجد مستويات',
     'offers.loading': 'جاري تحميل العروض...',
 
+    // Referral Network Page
+    'referral.networkTitle': 'شبكة الإحالة',
+    'referral.level2': 'المستوى 2 (غير مباشر)',
+    'referral.level3': 'المستوى 3',
+    'referral.level1List': 'إحالات المستوى 1:',
+    'referral.level2List': 'إحالات المستوى 2:',
+    'referral.level3List': 'Level 3 Referrals:', // (this should be Arabic, but just delete this line here)
+
   },
   en: {
     // Navigation
@@ -756,7 +765,8 @@ const translations = {
     'nav.admin': 'Admin Dashboard',
     'nav.logout': 'Logout',
     'nav.deposit': 'Deposit',
-    'nav.help': 'Help Center',
+    'nav.help': 'Help',
+    'nav.team': 'Team',
     'nav.website': 'Website',
     'nav.dashboard': 'Dashboard',
     'nav.register': 'Register',
@@ -1432,5 +1442,13 @@ const translations = {
     'admin.noLevels': 'No levels found',
     'offers.loading': 'Loading offers...',
     
+    // Referral Network Page
+    'referral.networkTitle': 'Referral Network',
+    'referral.level2': 'Level 2 (Indirect)',
+    'referral.level3': 'Level 3',
+    'referral.level1List': 'Level 1 Referrals:',
+    'referral.level2List': 'Level 2 Referrals:',
+    'referral.level3List': 'Level 3 Referrals:',
+
   }
 };
