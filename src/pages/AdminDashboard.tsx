@@ -2090,7 +2090,7 @@ export default function AdminDashboard() {
                         return (
                           <li key={idx} className="flex items-center gap-2">
                             <span><b>{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][day]}</b>: {start}:00 - {end}:00</span>
-                            <Button size="xs" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete') || 'Delete'}</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete') || 'Delete'}</Button>
                           </li>
                         );
                       })}
@@ -2128,18 +2128,21 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {Object.entries(packageLimits).map(([pkg, vals], idx) => (
-                          <TableRow key={pkg}>
-                            <TableCell>{pkg}</TableCell>
-                            <TableCell>{vals.min}</TableCell>
-                            <TableCell>{vals.max}</TableCell>
-                            <TableCell>{vals.daily}</TableCell>
-                            <TableCell>
-                              <Button size="xs" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
-                              <Button size="xs" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {Object.entries(packageLimits).map(([pkg, vals], idx) => {
+                          const { min, max, daily } = vals as { min: number; max: number; daily: number };
+                          return (
+                            <TableRow key={pkg}>
+                              <TableCell>{pkg}</TableCell>
+                              <TableCell>{min}</TableCell>
+                              <TableCell>{max}</TableCell>
+                              <TableCell>{daily}</TableCell>
+                              <TableCell>
+                                <Button size="sm" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                         {Object.keys(packageLimits).length === 0 && (
                           <TableRow><TableCell colSpan={5} className="text-muted-foreground">None set</TableCell></TableRow>
                         )}
