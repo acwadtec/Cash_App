@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 interface WithdrawalSettings {
   timeSlots: string[];
@@ -34,6 +35,7 @@ interface WithdrawalRequest {
 
 export default function Withdrawal() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     type: '',
     amount: '',
@@ -48,6 +50,7 @@ export default function Withdrawal() {
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [userPackage, setUserPackage] = useState('basic'); // This should come from user profile
+  const [showAlert, setShowAlert] = useState(false);
 
   const withdrawalTypes = [
     { value: 'personal', label: t('profile.personalEarnings'), balance: 1230.75 },
@@ -83,14 +86,14 @@ export default function Withdrawal() {
     if (amount < packageLimit.min) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.minAmount', { min: packageLimit.min }) 
+        message: t('withdrawal.error.minAmount') 
       };
     }
 
     if (amount > packageLimit.max) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.maxAmount', { max: packageLimit.max }) 
+        message: t('withdrawal.error.maxAmount') 
       };
     }
 
@@ -107,11 +110,7 @@ export default function Withdrawal() {
     if (todayTotal + amount > packageLimit.daily) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.dailyLimit', { 
-          daily: packageLimit.daily, 
-          used: todayTotal,
-          remaining: packageLimit.daily - todayTotal
-        }) 
+        message: t('withdrawal.error.dailyLimit') 
       };
     }
 
@@ -123,6 +122,32 @@ export default function Withdrawal() {
     const loadData = async () => {
       setLoading(true);
       try {
+        // Check if user has user_info data
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
+        if (user) {
+          // Check if user is admin
+          const isAdmin = await checkIfUserIsAdmin(user.id);
+          
+          // Only check user_info for non-admin users
+          if (!isAdmin) {
+            const { data: userInfo } = await supabase
+              .from('user_info')
+              .select('user_uid')
+              .eq('user_uid', user.id)
+              .single();
+            
+            if (!userInfo) {
+              // Show alert before redirecting
+              setShowAlert(true);
+              setTimeout(() => {
+                navigate('/update-account');
+              }, 3000); // Redirect after 3 seconds
+              return;
+            }
+          }
+        }
+        
         // Load withdrawal settings
         const { data: timeSlotsData } = await supabase
           .from('settings')
@@ -188,7 +213,7 @@ export default function Withdrawal() {
     };
 
     loadData();
-  }, [t]);
+  }, [t, navigate]);
 
   // Update current time every minute
   useEffect(() => {
@@ -302,6 +327,18 @@ export default function Withdrawal() {
 
   return (
     <div className="min-h-screen py-20">
+      {/* Alert for incomplete account information */}
+      {showAlert && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              {t('common.completeProfile') || 'Please complete your account information to make withdrawals. Redirecting to profile setup...'}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
@@ -350,11 +387,7 @@ export default function Withdrawal() {
                         <Alert className="mb-6 border-blue-200 bg-blue-50">
                           <Package className="h-4 w-4 text-blue-600" />
                           <AlertDescription className="text-blue-800">
-                            {t('withdrawal.packageLimits', {
-                              min: settings.packageLimits[userPackage].min,
-                              max: settings.packageLimits[userPackage].max,
-                              daily: settings.packageLimits[userPackage].daily
-                            })}
+                            {t('withdrawal.packageLimits')}
                           </AlertDescription>
                         </Alert>
                       )}

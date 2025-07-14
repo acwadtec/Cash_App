@@ -1,16 +1,53 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 
 export default function Transactions() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+
+  // Check if user has user_info data
+  useEffect(() => {
+    const checkUserInfo = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        // Check if user is admin
+        const isAdmin = await checkIfUserIsAdmin(user.id);
+        
+        // Only check user_info for non-admin users
+        if (!isAdmin) {
+          const { data: userInfo } = await supabase
+            .from('user_info')
+            .select('user_uid')
+            .eq('user_uid', user.id)
+            .single();
+          
+          if (!userInfo) {
+            // Show alert before redirecting
+            setShowAlert(true);
+            setTimeout(() => {
+              navigate('/update-account');
+            }, 3000); // Redirect after 3 seconds
+            return;
+          }
+        }
+      }
+    };
+    checkUserInfo();
+  }, [navigate]);
 
   // Mock transactions data
   const transactions = [
@@ -101,6 +138,18 @@ export default function Transactions() {
 
   return (
     <div className="min-h-screen py-20">
+      {/* Alert for incomplete account information */}
+      {showAlert && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              {t('common.completeProfile') || 'Please complete your account information to view transactions. Redirecting to profile setup...'}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">

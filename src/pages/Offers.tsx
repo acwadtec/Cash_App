@@ -1,11 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 
 interface Offer {
   id: string;
@@ -24,11 +27,44 @@ interface Offer {
 export default function Offers() {
   const { t } = useLanguage();
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [joinedOffers, setJoinedOffers] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
+
+  // Check if user has user_info data
+  useEffect(() => {
+    const checkUserInfo = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) {
+        // Check if user is admin
+        const isAdmin = await checkIfUserIsAdmin(user.id);
+        
+        // Only check user_info for non-admin users
+        if (!isAdmin) {
+          const { data: userInfo } = await supabase
+            .from('user_info')
+            .select('user_uid')
+            .eq('user_uid', user.id)
+            .single();
+          
+          if (!userInfo) {
+            // Show alert before redirecting
+            setShowAlert(true);
+            setTimeout(() => {
+              navigate('/update-account');
+            }, 3000); // Redirect after 3 seconds
+            return;
+          }
+        }
+      }
+    };
+    checkUserInfo();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -88,6 +124,18 @@ export default function Offers() {
 
   return (
     <div className="min-h-screen py-20">
+      {/* Alert for incomplete account information */}
+      {showAlert && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              {t('common.completeProfile') || 'Please complete your account information to access offers. Redirecting to profile setup...'}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">{t('offers.title') || 'Available Offers'}</h1>

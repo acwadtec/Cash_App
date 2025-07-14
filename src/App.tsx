@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import Offers from "./pages/Offers";
 import Profile from "./pages/Profile";
+import UpdateAccount from "./pages/UpdateAccount";
 import Transactions from "./pages/Transactions";
 import Withdrawal from "./pages/Withdrawal";
 import Deposit from "./pages/Deposit";
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="admin" element={<AdminDashboard />} />
                 <Route path="offers" element={<Offers />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="update-account" element={<UpdateAccount />} />
                 <Route path="transactions" element={<Transactions />} />
                 <Route path="withdrawal" element={<Withdrawal />} />
                 <Route path="deposit" element={<Deposit />} />

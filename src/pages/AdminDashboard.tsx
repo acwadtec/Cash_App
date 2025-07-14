@@ -27,6 +27,7 @@ import { toast } from '@/hooks/use-toast';
 
 // Services
 import { supabase } from '@/lib/supabase';
+import { checkIfUserIsAdmin } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -644,16 +645,14 @@ export default function AdminDashboard() {
     const fetchUserCount = async () => {
       const { count } = await supabase
         .from('user_info')
-        .select('*', { count: 'exact', head: true })
-        .neq('role', 'admin');
+        .select('*', { count: 'exact', head: true });
       setUserCount(count || 0);
     };
     const fetchPendingVerifications = async () => {
       const { count } = await supabase
         .from('user_info')
         .select('*', { count: 'exact', head: true })
-        .eq('verified', false)
-        .neq('role', 'admin');
+        .eq('verified', false);
       setPendingVerifications(count || 0);
     };
 
@@ -666,7 +665,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUsers = async () => {
       setLoadingUsers(true);
-      const { data, error } = await supabase.from('user_info').select('*').neq('role', 'admin');
+      const { data, error } = await supabase.from('user_info').select('*');
       if (error) {
         console.error('Error fetching users:', error);
         setUsers([]);
@@ -684,12 +683,8 @@ export default function AdminDashboard() {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       if (user) {
-        const { data: userInfo } = await supabase
-          .from('user_info')
-          .select('role')
-          .eq('user_uid', user.id)
-          .single();
-        if (!userInfo || userInfo.role !== 'admin') {
+        const isAdmin = await checkIfUserIsAdmin(user.id);
+        if (!isAdmin) {
           navigate('/profile');
         }
       } else {
@@ -711,9 +706,9 @@ export default function AdminDashboard() {
       .eq('id', userId);
     if (!error) {
       // Refresh users list
-      const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
+      const { data } = await supabase.from('user_info').select('*');
       setUsers(data || []);
-              toast({ title: t('common.success'), description: t('admin.userVerified') });
+      toast({ title: t('common.success'), description: t('admin.userVerified') });
     } else {
       toast({ title: t('common.error'), description: error.message });
     }
@@ -726,9 +721,9 @@ export default function AdminDashboard() {
       .eq('id', userId);
     if (!error) {
       // Refresh users list and user count
-      const { data } = await supabase.from('user_info').select('*').neq('role', 'admin');
+      const { data } = await supabase.from('user_info').select('*');
       setUsers(data || []);
-              toast({ title: t('common.success'), description: t('admin.userRemoved') });
+      toast({ title: t('common.success'), description: t('admin.userRemoved') });
     } else {
       toast({ title: t('common.error'), description: error.message });
     }
@@ -899,7 +894,6 @@ export default function AdminDashboard() {
         .from('user_info')
         .select('created_at')
         .gte('created_at', thirtyDaysAgo.toISOString())
-        .neq('role', 'admin')
         .order('created_at', { ascending: true });
 
       if (usersError) {
@@ -1706,36 +1700,36 @@ export default function AdminDashboard() {
             <TabsContent value="notifications">
               <div className="w-full px-0 md:px-0">
                 <Card className="shadow-card w-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Bell className="h-5 w-5 mr-2" />
-                      {t('admin.notifications')}
-                    </CardTitle>
-                  </CardHeader>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Bell className="h-5 w-5 mr-2" />
+                    {t('admin.notifications')}
+                  </CardTitle>
+                </CardHeader>
                   <CardContent className="space-y-6 h-full">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 h-full w-full">
                       {/* Notification Form */}
                       <div className="space-y-5 bg-card rounded-xl p-6 border border-border shadow-glow h-full flex flex-col flex-1">
-                        <div className="space-y-2">
-                          <Label htmlFor="notificationTitle">{t('admin.notifications.title')}</Label>
-                          <Input
-                            id="notificationTitle"
-                            value={notificationData.title}
-                            onChange={(e) => setNotificationData(prev => ({ ...prev, title: e.target.value }))}
+                      <div className="space-y-2">
+                        <Label htmlFor="notificationTitle">{t('admin.notifications.title')}</Label>
+                        <Input
+                          id="notificationTitle"
+                          value={notificationData.title}
+                          onChange={(e) => setNotificationData(prev => ({ ...prev, title: e.target.value }))}
                             placeholder={t('admin.notifications.title')}
                             className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="notificationMessage">{t('admin.notifications.message')}</Label>
-                          <textarea
-                            id="notificationMessage"
-                            value={notificationData.message}
-                            onChange={(e) => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="notificationMessage">{t('admin.notifications.message')}</Label>
+                        <textarea
+                          id="notificationMessage"
+                          value={notificationData.message}
+                          onChange={(e) => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
                             placeholder={t('admin.notifications.message')}
                             className="flex h-32 w-full rounded-lg border border-border bg-muted px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all text-foreground"
-                          />
-                        </div>
+                        />
+                      </div>
                         <div className="space-y-2">
                           <Label>{t('admin.notifications.type')}</Label>
                           <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
@@ -1788,8 +1782,8 @@ export default function AdminDashboard() {
                         </div>
                         <Button onClick={handleSendNotification} className="w-full shadow-glow text-lg py-3">
                           {t('admin.notifications.send')}
-                        </Button>
-                      </div>
+                      </Button>
+                    </div>
                       {/* Divider for large screens */}
                       <div className="hidden md:block h-full w-px bg-border mx-2" aria-hidden="true"></div>
                       {/* Notification Preview */}
@@ -1805,11 +1799,11 @@ export default function AdminDashboard() {
                               <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
                               <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
                               {notificationData.scheduledAt && <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
-                        </div>
+                      </div>
                             {notificationData.imageUrl && (
                               <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-3 rounded-lg border border-border shadow" />
                             )}
-                      </div>
+                    </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -1854,9 +1848,9 @@ export default function AdminDashboard() {
                           </TableBody>
                         </Table>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </CardContent>
+              </Card>
               </div>
             </TabsContent>
 

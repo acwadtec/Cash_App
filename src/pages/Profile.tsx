@@ -2,20 +2,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useForm } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 import ReferralCode from '@/components/ReferralCode';
+import { Camera, Edit } from 'lucide-react';
 
 export default function Profile() {
   const { t } = useLanguage();
-  const form = useForm();
-  const [uploading, setUploading] = useState(false);
+  const navigate = useNavigate();
   const [hasUserInfo, setHasUserInfo] = useState(false);
   const [loadingUserInfo, setLoadingUserInfo] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -30,6 +28,7 @@ export default function Profile() {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
         setLoadingUserInfo(false);
+        navigate('/login');
         return;
       }
       const user = userData.user;
@@ -44,11 +43,12 @@ export default function Profile() {
         setUserInfo(data);
       } else {
         setHasUserInfo(false);
+        // Don't redirect - let users stay on the page and see the message
       }
       setLoadingUserInfo(false);
     };
     checkUserInfo();
-  }, []);
+  }, [navigate]);
 
   // Fetch user badges
   useEffect(() => {
@@ -66,8 +66,15 @@ export default function Profile() {
   }, [userUid]);
 
   // Helper to get image URL from storage path
-  const getImageUrl = (type: 'front' | 'back') => {
+  const getImageUrl = (type: 'front' | 'back' | 'profile') => {
     if (!userUid) return '';
+    
+    if (type === 'profile') {
+      const dbUrl = userInfo?.profile_photo_url;
+      if (!dbUrl) return '';
+      return supabase.storage.from('user-photos').getPublicUrl(dbUrl).data.publicUrl;
+    }
+    
     const fileName = type === 'front' ? 'front' : 'back';
     // Find the file name from the DB url if available, fallback to latest
     let dbUrl = type === 'front' ? userInfo?.id_front_url : userInfo?.id_back_url;
@@ -81,91 +88,93 @@ export default function Profile() {
     if (!file) return dbUrl || '';
     // Compose the path
     const path = `${userUid}/${file}`;
-    return supabase.storage.from('id-photos').getPublicUrl(path).data.publicUrl;
+    return supabase.storage.from('user-photos').getPublicUrl(path).data.publicUrl;
   };
 
-  const StatCard = ({ title, value, color = 'text-primary' }: { title: string; value: number; color?: string }) => (
-    <Card className="text-center shadow-card">
-      <CardContent className="pt-6">
-        <div className={`text-3xl font-bold ${color} mb-2`}>
-          ${value.toLocaleString()}
-        </div>
-        <div className="text-sm text-muted-foreground">{title}</div>
-      </CardContent>
-    </Card>
-  );
+  const handleUpdateAccount = () => {
+    navigate('/update-account');
+  };
 
-  const onSubmit = async (data: any) => {
-    setUploading(true);
-    try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) throw new Error('لم يتم العثور على المستخدم');
-      const user = userData.user;
-      const idFrontFile = data.idFront[0];
-      const idBackFile = data.idBack[0];
-      let idFrontUrl = '';
-      let idBackUrl = '';
-      if (idFrontFile) {
-        const frontPath = `${user.id}/front-${Date.now()}-${idFrontFile.name}`;
-        const { data: frontData, error: frontError } = await supabase.storage.from('id-photos').upload(frontPath, idFrontFile);
-        if (frontError) throw frontError;
-        idFrontUrl = supabase.storage.from('id-photos').getPublicUrl(frontData.path).data.publicUrl;
-      }
-      if (idBackFile) {
-        const backPath = `${user.id}/back-${Date.now()}-${idBackFile.name}`;
-        const { data: backData, error: backError } = await supabase.storage.from('id-photos').upload(backPath, idBackFile);
-        if (backError) throw backError;
-        idBackUrl = supabase.storage.from('id-photos').getPublicUrl(backData.path).data.publicUrl;
-      }
-      const { error } = await supabase.from('user_info').insert([
-        {
-          user_uid: user.id,
-          email: user.email,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          phone: data.phone,
-          wallet: data.wallet,
-          id_front_url: idFrontUrl,
-          id_back_url: idBackUrl,
-          role: 'user',
-        },
-      ]);
-      if (error) throw error;
-
-      // Process referral if pending
-      const pendingReferralCode = localStorage.getItem('pendingReferralCode');
-      if (pendingReferralCode) {
-        await processReferral(user.id, pendingReferralCode);
-        localStorage.removeItem('pendingReferralCode');
-      }
-      toast({ title: t('common.success'), description: 'تم حفظ البيانات بنجاح' });
-      form.reset();
-    } catch (err: any) {
-      toast({ title: t('common.error'), description: err.message || 'حدث خطأ أثناء الحفظ' });
-    } finally {
-      setUploading(false);
+  const getProfilePhotoUrl = () => {
+    if (userInfo?.profile_photo_url) {
+      return getImageUrl('profile');
     }
+    return null;
   };
+
+  const getAvatarFallback = () => {
+    return userInfo?.first_name?.slice(0, 1).toUpperCase() || 
+           userInfo?.last_name?.slice(0, 1).toUpperCase() || 
+           userInfo?.email?.slice(0, 2).toUpperCase() ||
+           'U';
+  };
+
+  if (loadingUserInfo) {
+    return (
+      <div className="min-h-screen py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasUserInfo) {
+    return (
+      <div className="min-h-screen py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <Card className="shadow-glow">
+              <CardContent className="pt-6">
+                <h2 className="text-2xl font-bold mb-4">{t('profile.noData') || 'No Profile Data'}</h2>
+                <p className="text-muted-foreground mb-6">
+                  {t('profile.noDataDesc') || 'Please complete your account information to view your profile.'}
+                </p>
+                <Button onClick={handleUpdateAccount} className="w-full">
+                  {t('profile.updateAccount') || 'Update Account Information'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Profile Header */}
-          <Card className="mb-8 shadow-glow">
-            <CardContent className="pt-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* User Info Card */}
+          <Card className="shadow-glow">
+            <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                <Avatar className="w-24 h-24">
-                  <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                    {userInfo ? (
-                      userInfo.first_name
-                        ? userInfo.first_name.split(' ').map((n: string) => n[0]).join('')
-                        : userInfo.email
-                          ? userInfo.email[0].toUpperCase()
-                          : userInfo.user_uid?.slice(0, 2).toUpperCase()
-                    ) : ''}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="w-24 h-24">
+                    {getProfilePhotoUrl() ? (
+                      <img 
+                        src={getProfilePhotoUrl()!} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <AvatarFallback className="text-2xl">
+                        {getAvatarFallback()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <Button
+                    onClick={handleUpdateAccount}
+                    variant="outline"
+                    size="sm"
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                </div>
                 
                 <div className="flex-1 text-center md:text-right">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -194,115 +203,165 @@ export default function Profile() {
           </Card>
 
           {/* Gamification: Level and Badges */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-2">Level: {userInfo?.level || 1}</h2>
-            <div className="flex flex-wrap gap-4">
-              {userBadges.length === 0 ? (
-                <span className="text-muted-foreground">No badges earned yet.</span>
-              ) : (
-                userBadges.map(badge => (
-                  <div key={badge.id} className="flex flex-col items-center p-2 bg-muted rounded-lg shadow" style={{ minWidth: 100 }}>
-                    <img src={badge.icon_url || '/public/placeholder.svg'} alt={badge.name} style={{ width: 48, height: 48, marginBottom: 8 }} />
-                    <div className="font-semibold">{badge.name}</div>
-                    <div className="text-xs text-muted-foreground text-center">{badge.description}</div>
+          <Card className="shadow-glow">
+            <CardHeader>
+              <CardTitle>{t('profile.achievements') || 'Achievements'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Level */}
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">{t('profile.level') || 'Level'}</h3>
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {userInfo?.level || 1}
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t('profile.levelDesc') || 'Your current level'}
+                  </p>
+                </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <StatCard title={t('profile.totalEarnings')} value={userInfo?.stats?.totalEarnings || 0} color="text-success" />
-            <StatCard title={t('profile.teamEarnings')} value={userInfo?.stats?.teamEarnings || 0} />
-            <StatCard title={t('profile.capital')} value={userInfo?.stats?.capital || 0} />
-            <StatCard title={t('profile.personalEarnings')} value={userInfo?.stats?.personalEarnings || 0} />
-            <StatCard title={t('profile.bonuses')} value={userInfo?.stats?.bonuses || 0} />
-          </div>
+                {/* Badges */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">{t('profile.badges') || 'Badges'}</h3>
+                  {userBadges.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {userBadges.map((badge: any, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {badge.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {t('profile.noBadges') || 'No badges earned yet'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* New User Info Form */}
-          {!loadingUserInfo && !hasUserInfo && (
-            <Card className="mt-8 shadow-glow">
-              <CardHeader>
-                <CardTitle>{t('profile.updateAccountInfo') || 'تحديث بيانات الحساب'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label>{t('profile.firstName') || 'الاسم الأول'}</label>
-                      <Input type="text" placeholder={t('profile.firstNamePlaceholder') || ''} {...form.register('firstName', { required: true })} />
-                    </div>
-                    <div>
-                      <label>{t('profile.lastName') || 'اسم العائلة'}</label>
-                      <Input type="text" placeholder={t('profile.lastNamePlaceholder') || ''} {...form.register('lastName', { required: true })} />
-                    </div>
+          {/* Account Information */}
+          <Card className="shadow-glow">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>{t('profile.accountInfo') || 'Account Information'}</CardTitle>
+                <Button onClick={handleUpdateAccount} variant="outline" size="sm">
+                  {t('profile.edit') || 'Edit'}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      {t('profile.firstName')}
+                    </label>
+                    <p className="text-sm">{userInfo?.first_name || '-'}</p>
                   </div>
                   <div>
-                    <label>{t('profile.phone') || 'رقم الهاتف'}</label>
-                    <Input type="text" placeholder={t('profile.phonePlaceholder') || ''} {...form.register('phone', { required: true })} />
-                  </div>
-                  <div>
-                    <label>{t('profile.wallet') || 'المحفظة الإلكترونية'}</label>
-                    <Select {...form.register('wallet', { required: true })} onValueChange={val => form.setValue('wallet', val)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('profile.selectWallet') || 'اختر المحفظة'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="vodafone cash">{t('profile.walletVodafone') || 'فودافون كاش'}</SelectItem>
-                        <SelectItem value="orange cash">{t('profile.walletOrange') || 'أورنج كاش'}</SelectItem>
-                        <SelectItem value="we pay">{t('profile.walletWePay') || 'وي باي'}</SelectItem>
-                        <SelectItem value="etisalate cash">{t('profile.walletEtisalat') || 'اتصالات كاش'}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label>{t('profile.idFront') || 'صورة الهوية - الوجه الأمامي'}</label>
-                      <Input type="file" accept="image/*" {...form.register('idFront', { required: true })} />
-                    </div>
-                    <div>
-                      <label>{t('profile.idBack') || 'صورة الهوية - الوجه الخلفي'}</label>
-                      <Input type="file" accept="image/*" {...form.register('idBack', { required: true })} />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={uploading}>
-                    {uploading ? t('profile.saving') || 'جاري الحفظ...' : t('profile.save') || 'حفظ البيانات'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Optionally, display user info if exists */}
-          {!loadingUserInfo && hasUserInfo && userInfo && (
-            <Card className="mt-8 shadow-glow">
-              <CardHeader>
-                <CardTitle>بياناتك المحفوظة</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div>الاسم الأول: {userInfo.first_name}</div>
-                  <div>اسم العائلة: {userInfo.last_name}</div>
-                  <div>رقم الهاتف: {userInfo.phone}</div>
-                  <div>المحفظة الإلكترونية: {userInfo.wallet}</div>
-                  <div>
-                    صورة الهوية - الوجه الأمامي: 
-                    <button type="button" className="text-primary underline" onClick={() => { setModalImageUrl(getImageUrl('front')); setShowImageModal(true); }}>عرض</button>
-                  </div>
-                  <div>
-                    صورة الهوية - الوجه الخلفي: 
-                    <button type="button" className="text-primary underline" onClick={() => { setModalImageUrl(getImageUrl('back')); setShowImageModal(true); }}>عرض</button>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      {t('profile.lastName')}
+                    </label>
+                    <p className="text-sm">{userInfo?.last_name || '-'}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    {t('profile.phone')}
+                  </label>
+                  <p className="text-sm">{userInfo?.phone || '-'}</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    {t('profile.wallet')}
+                  </label>
+                  <p className="text-sm">{userInfo?.wallet || '-'}</p>
+                </div>
+
+                {/* Profile Photo */}
+                {userInfo?.profile_photo_url && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      {t('profile.profilePhoto') || 'Profile Photo'}
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16">
+                        <img 
+                          src={getProfilePhotoUrl()!} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      </Avatar>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setModalImageUrl(getProfilePhotoUrl()!);
+                          setShowImageModal(true);
+                        }}
+                      >
+                        {t('profile.view') || 'View'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ID Photos */}
+                {(userInfo?.id_front_url || userInfo?.id_back_url) && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      {t('profile.idPhotos') || 'ID Photos'}
+                    </label>
+                    <div className="flex gap-4">
+                      {userInfo?.id_front_url && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {t('profile.idFront') || 'Front'}
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setModalImageUrl(getImageUrl('front'));
+                              setShowImageModal(true);
+                            }}
+                          >
+                            {t('profile.view') || 'View'}
+                          </Button>
+                        </div>
+                      )}
+                      {userInfo?.id_back_url && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {t('profile.idBack') || 'Back'}
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setModalImageUrl(getImageUrl('back'));
+                              setShowImageModal(true);
+                            }}
+                          >
+                            {t('profile.view') || 'View'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Image Modal */}
           <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
             <DialogContent>
-              <img src={modalImageUrl} alt="ID Photo" className="max-w-full max-h-[80vh] mx-auto" />
+              <img src={modalImageUrl} alt="Photo" className="max-w-full max-h-[80vh] mx-auto" />
             </DialogContent>
           </Dialog>
 
@@ -312,201 +371,8 @@ export default function Profile() {
               <ReferralCode userUid={userUid} isVerified={userInfo?.verified || false} />
             </div>
           )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Recent Activity */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>{t('profile.recentActivity')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {userInfo?.recentActivity?.map((activity, index) => (
-                    <div key={index} className="flex justify-between items-center p-4 rounded-lg bg-accent/20">
-                      <div>
-                        <p className="font-medium">{activity.description}</p>
-                        <p className="text-sm text-muted-foreground">{activity.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-success">
-                          +${activity.amount}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Account Status */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>{t('profile.accountStatus')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.emailVerification')}</span>
-                    <Badge className="bg-success">{t('profile.completed')}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.phoneVerification')}</span>
-                    <Badge className="bg-success">{t('profile.completed')}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.identityVerification')}</span>
-                    <Badge className="bg-success">{t('profile.completed')}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>{t('profile.accountLevel')}</span>
-                    <Badge className="bg-primary">{t('profile.advanced')}</Badge>
-                  </div>
-                </div>
-
-                <div className="mt-6 p-4 rounded-lg gradient-card">
-                  <h4 className="font-semibold mb-2">{t('profile.withdrawalStatus')}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {t('profile.withdrawalEligible')}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
   );
-}
-
-async function processReferral(newUserId: string, referralCode: string) {
-  console.log('processReferral called', newUserId, referralCode);
-  try {
-    // Get referrer info
-    const { data: referrerData, error: referrerError } = await supabase
-      .from('user_info')
-      .select('user_uid, referral_count, total_referral_points, email')
-      .eq('referral_code', referralCode)
-      .single();
-    console.log('referrerData', referrerData, referrerError);
-    if (referrerError || !referrerData) {
-      console.error('Error getting referrer data:', referrerError);
-      toast({ title: 'Referral Error', description: 'Referrer not found or error', variant: 'destructive' });
-      return;
-    }
-
-    // Get referral settings
-    const { data: settingsData, error: settingsError } = await supabase
-      .from('referral_settings')
-      .select('level1_points')
-      .eq('id', 1)
-      .single();
-    console.log('settingsData', settingsData, settingsError);
-    if (settingsError || !settingsData) {
-      console.error('Error getting referral settings:', settingsError);
-      toast({ title: 'Referral Error', description: 'Settings not found or error', variant: 'destructive' });
-      return;
-    }
-
-    const pointsToAward = settingsData.level1_points || 100;
-
-    // Update referrer's stats
-    const newReferralCount = (referrerData.referral_count || 0) + 1;
-    const newTotalPoints = (referrerData.total_referral_points || 0) + pointsToAward;
-    const { error: updateError } = await supabase
-      .from('user_info')
-      .update({
-        referral_count: newReferralCount,
-        total_referral_points: newTotalPoints
-      })
-      .eq('user_uid', referrerData.user_uid);
-    console.log('updateError', updateError);
-    if (updateError) {
-      console.error('Error updating referrer stats:', updateError);
-      toast({ title: 'Referral Error', description: 'Failed to update referrer stats', variant: 'destructive' });
-      return;
-    }
-
-    // Gamification: Award badges for referrals
-    // Award Referral Star badge (5 referrals)
-    if (newReferralCount === 5) {
-      const { data: badge } = await supabase
-        .from('badges')
-        .select('id')
-        .eq('name', 'Referral Star')
-        .single();
-      if (badge) {
-        const { data: userBadge } = await supabase
-          .from('user_badges')
-          .select('id')
-          .eq('user_uid', referrerData.user_uid)
-          .eq('badge_id', badge.id);
-        if (!userBadge || userBadge.length === 0) {
-          await supabase.from('user_badges').insert([
-            { user_uid: referrerData.user_uid, badge_id: badge.id }
-          ]);
-        }
-      }
-    }
-    // Award Referral Champion badge (20 referrals)
-    if (newReferralCount === 20) {
-      const { data: badge } = await supabase
-        .from('badges')
-        .select('id')
-        .eq('name', 'Referral Champion')
-        .single();
-      if (badge) {
-        const { data: userBadge } = await supabase
-          .from('user_badges')
-          .select('id')
-          .eq('user_uid', referrerData.user_uid)
-          .eq('badge_id', badge.id);
-        if (!userBadge || userBadge.length === 0) {
-          await supabase.from('user_badges').insert([
-            { user_uid: referrerData.user_uid, badge_id: badge.id }
-          ]);
-        }
-      }
-    }
-    // Update referrer's level based on badge count
-    const { count } = await supabase
-      .from('user_badges')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_uid', referrerData.user_uid);
-    const newLevel = Math.max(1, Math.floor((count || 0) / 2));
-    await supabase.from('user_info').update({ level: newLevel }).eq('user_uid', referrerData.user_uid);
-
-    // Record the referral
-    const { error: insertError } = await supabase
-      .from('referrals')
-      .insert([{
-        referrer_uid: referrerData.user_uid,
-        referred_uid: newUserId,
-        level: 1,
-        points_earned: pointsToAward,
-        referral_code: referralCode
-      }]);
-    console.log('insertError', insertError);
-    if (insertError) {
-      console.error('Error inserting referral record:', insertError);
-      toast({ title: 'Referral Error', description: 'Failed to record referral', variant: 'destructive' });
-      return;
-    }
-
-    // Update new user's referred_by field
-    const { error: updateNewUserError } = await supabase
-      .from('user_info')
-      .update({ referred_by: referralCode })
-      .eq('user_uid', newUserId);
-    console.log('updateNewUserError', updateNewUserError);
-    if (updateNewUserError) {
-      console.error('Error updating new user referred_by:', updateNewUserError);
-      toast({ title: 'Referral Error', description: 'Failed to update new user', variant: 'destructive' });
-      return;
-    }
-
-    toast({ title: 'Referral Success', description: `Referral processed for ${referrerData.email}` });
-  } catch (error) {
-    console.error('Error processing referral:', error);
-    toast({ title: 'Referral Error', description: 'Unexpected error', variant: 'destructive' });
-  }
 }

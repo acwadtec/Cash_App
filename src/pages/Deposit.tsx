@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { AlertTriangle } from 'lucide-react';
 
 export default function Deposit() {
   const { t } = useLanguage();
@@ -20,6 +22,7 @@ export default function Deposit() {
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [history, setHistory] = useState([]);
   const [user, setUser] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
 
   // Check authentication and fetch data
   useEffect(() => {
@@ -36,6 +39,27 @@ export default function Deposit() {
         }
         
         setUser(userData.user);
+        
+        // Check if user is admin
+        const isAdmin = await checkIfUserIsAdmin(userData.user.id);
+        
+        // Only check user_info for non-admin users
+        if (!isAdmin) {
+          const { data: userInfo } = await supabase
+            .from('user_info')
+            .select('user_uid')
+            .eq('user_uid', userData.user.id)
+            .single();
+          
+          if (!userInfo) {
+            // Show alert before redirecting
+            setShowAlert(true);
+            setTimeout(() => {
+              navigate('/update-account');
+            }, 3000); // Redirect after 3 seconds
+            return;
+          }
+        }
         
         // Fetch deposit numbers
         const { data: numbersData, error: numbersError } = await supabase.from('deposit_numbers').select('number');
@@ -282,6 +306,18 @@ export default function Deposit() {
 
   return (
     <div className="min-h-screen py-20">
+      {/* Alert for incomplete account information */}
+      {showAlert && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              {t('common.completeProfile') || 'Please complete your account information to make deposits. Redirecting to profile setup...'}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
           <Card className="shadow-glow">

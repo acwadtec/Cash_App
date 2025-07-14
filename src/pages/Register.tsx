@@ -140,7 +140,10 @@ export default function Register() {
       title: t('common.success'),
       description: t('register.success'),
     });
-    navigate('/login');
+    
+    // Set login status and redirect to update account page to complete profile
+    localStorage.setItem('cash-logged-in', 'true');
+    navigate('/update-account');
   };
 
   const processReferral = async (newUserId: string, referralCode: string) => {

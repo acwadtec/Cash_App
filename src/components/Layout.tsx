@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLocation } from 'react-router-dom';
 import { NotificationBanner } from './NotificationBanner';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 
 export function Layout() {
   const { isRTL } = useLanguage();
@@ -19,12 +19,8 @@ export function Layout() {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
       if (user) {
-        const { data: userInfo } = await supabase
-          .from('user_info')
-          .select('role')
-          .eq('user_uid', user.id)
-          .single();
-        setIsAdmin(userInfo?.role === 'admin');
+        const isAdminUser = await checkIfUserIsAdmin(user.id);
+        setIsAdmin(isAdminUser);
       }
     };
     checkAdmin();
@@ -38,8 +34,8 @@ export function Layout() {
       <main className="pt-16">
         <Outlet />
       </main>
-      {/* Show chat button for logged-in users (not on home page or admin pages) */}
-      {isLoggedIn && !isHome && !isAdmin && <ChatButton />}
+      {/* Show chat button for logged-in users (not on admin pages) */}
+      {isLoggedIn && !isAdmin && <ChatButton />}
     </div>
   );
 }

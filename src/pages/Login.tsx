@@ -1,29 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { Link } from 'react-router-dom';
 
 export default function Login() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (localStorage.getItem('cash-logged-in')) {
-      navigate('/profile');
-    }
-  }, [navigate]);
-
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false,
   });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,119 +34,105 @@ export default function Login() {
       return;
     }
 
-    // Supabase Auth login
-    const { error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
-    if (error) {
+    setLoading(true);
+
+    try {
+      // Supabase Auth login
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      if (error) {
+        toast({
+          title: t('common.error'),
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check if user is admin using new admins table
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      
+      if (user) {
+        const isAdmin = await checkIfUserIsAdmin(user.id);
+        
+        toast({
+          title: t('common.success'),
+          description: t('login.success'),
+        });
+        
+        localStorage.setItem('cash-logged-in', 'true');
+        
+        // Don't redirect admins automatically - let them use the toggle button
+        // Check if user has user_info data (for non-admin users)
+        const { data: userInfo } = await supabase
+          .from('user_info')
+          .select('user_uid')
+          .eq('user_uid', user.id)
+          .single();
+        
+        if (userInfo) {
+          // User has info, go to home page
+          navigate('/');
+        } else {
+          // User doesn't have info, go to update account
+          navigate('/update-account');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: t('common.error'),
-        description: error.message,
+        description: 'An unexpected error occurred',
         variant: 'destructive',
       });
-      return;
-    }
-    // Fetch user_info to check role
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-    let role = 'user';
-    if (user) {
-      const { data: userInfo } = await supabase
-        .from('user_info')
-        .select('role')
-        .eq('user_uid', user.id)
-        .single();
-      if (userInfo && userInfo.role === 'admin') {
-        role = 'admin';
-      }
-    }
-    toast({
-      title: t('common.success'),
-      description: t('login.success'),
-    });
-    localStorage.setItem('cash-logged-in', 'true');
-    if (role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/profile');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen py-20">
-      <div className="container mx-auto px-4">
-        <Card className="max-w-md mx-auto shadow-glow">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold gradient-primary bg-clip-text text-transparent">
-              {t('login.title')}
-            </CardTitle>
-            <p className="text-muted-foreground mt-2">
-              {t('login.subtitle')}
-            </p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('login.email')}</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="h-12"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('login.password')}</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  className="h-12"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="rememberMe"
-                    checked={formData.rememberMe}
-                    onCheckedChange={(checked) => 
-                      setFormData(prev => ({ ...prev, rememberMe: checked as boolean }))
-                    }
-                  />
-                  <Label htmlFor="rememberMe" className="text-sm">
-                    {t('login.rememberMe')}
-                  </Label>
-                </div>
-                <a href="#" className="text-sm text-primary hover:underline">
-                  {t('login.forgotPassword')}
-                </a>
-              </div>
-
-              <Button type="submit" className="w-full h-12 text-lg shadow-glow">
-                {t('login.submit')}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-muted-foreground">
-                {t('login.noAccount')}{' '}
-                <a href="/register" className="text-primary hover:underline font-medium">
-                  {t('login.createAccount')}
-                </a>
-              </p>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center">{t('login.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Input
+                type="email"
+                name="email"
+                placeholder={t('login.email')}
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div>
+              <Input
+                type="password"
+                name="password"
+                placeholder={t('login.password')}
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? t('common.loading') : t('login.submit')}
+            </Button>
+          </form>
+          <div className="mt-4 text-center">
+            <Link to="/register" className="text-primary hover:underline">
+              {t('login.noAccount')}
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
