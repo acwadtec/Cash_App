@@ -661,7 +661,46 @@ const translations = {
     'updateAccount.success': 'تم حفظ البيانات بنجاح',
     'updateAccount.error': 'حدث خطأ أثناء الحفظ',
     // Withdrawal Page
-    'withdrawal.completeProfileAlert': 'يرجى إكمال بيانات حسابك لإجراء السحب. سيتم تحويلك لإعداد الحساب...'
+    'withdrawal.completeProfileAlert': 'يرجى إكمال بيانات حسابك لإجراء السحب. سيتم تحويلك لإعداد الحساب...',
+    // Deposit Page Additional (missing keys)
+    'deposit.error.amountInvalid': 'Please enter a valid amount',
+    'deposit.error.phoneInvalid': 'Please enter a valid phone number',
+    'deposit.error.loginRequired': 'Please login to submit deposit',
+    'deposit.error.uploadFailed': 'Failed to upload screenshot. Please try again.',
+    'deposit.error.submitFailed': 'Failed to submit deposit request. Please try again.',
+    'deposit.error.historyFailed': 'Failed to load deposit history',
+    'deposit.error.numbersFailed': 'Failed to load deposit numbers',
+    'deposit.error.noNumbers': 'No deposit numbers available',
+    'deposit.error.fileSize': 'File size must be less than 5MB',
+
+
+
+    // Admin Dashboard Additional
+    'admin.editBadge': 'تعديل الشارة',
+    'admin.createBadge': 'إنشاء شارة',
+    'admin.badgeName': 'اسم الشارة',
+    'admin.badgeDescription': 'وصف الشارة',
+    'admin.badgeType': 'نوع الشارة',
+    'admin.badgeRequirement': 'المتطلب',
+    'admin.badgePoints': 'النقاط الممنوحة',
+    'admin.editLevel': 'تعديل المستوى',
+    'admin.createLevel': 'إنشاء مستوى',
+    'admin.levelNumber': 'رقم المستوى',
+    'admin.levelRequirement': 'النقاط المطلوبة',
+    'admin.levelName': 'اسم المستوى',
+    'admin.editUserBadge': 'تعديل شارة المستخدم',
+    'admin.assignBadge': 'تعيين شارة',
+    'admin.userBadges': 'إحصائيات شارات المستخدمين',
+    'admin.user': 'المستخدم',
+    'admin.badge': 'شارة',
+    'admin.earnedAt': 'تم الحصول عليها في',
+    'admin.points': 'النقاط',
+    'admin.confirmDelete': 'تأكيد الحذف',
+    'admin.deleteWarning': 'هل أنت متأكد أنك تريد حذف',
+    'admin.deleteWarning2': 'لا يمكن التراجع عن هذا الإجراء.',
+    'admin.noLevels': 'لا توجد مستويات',
+    'offers.loading': 'جاري تحميل العروض...',
+
   },
   en: {
     // Navigation
@@ -1323,6 +1362,33 @@ const translations = {
     'home.cta.title': 'Start Your Journey with Cash Today',
     'home.cta.subtitle': 'Join thousands of users who trust Cash platform to manage their earnings',
     'home.cta.button': 'Create Free Account',
+
+    // Admin Dashboard Additional
+    'admin.editBadge': 'Edit Badge',
+    'admin.createBadge': 'Create Badge',
+    'admin.badgeName': 'Badge Name',
+    'admin.badgeDescription': 'Description',
+    'admin.badgeType': 'Type',
+    'admin.badgeRequirement': 'Requirement',
+    'admin.badgePoints': 'Points Awarded',
+    'admin.editLevel': 'Edit Level',
+    'admin.createLevel': 'Create Level',
+    'admin.levelNumber': 'Level Number',
+    'admin.levelRequirement': 'Points Required',
+    'admin.levelName': 'Level Name',
+    'admin.editUserBadge': 'Edit User Badge',
+    'admin.assignBadge': 'Assign Badge',
+    'admin.userBadges': 'User Badges Statistics',
+    'admin.user': 'User',
+    'admin.badge': 'Badge',
+    'admin.earnedAt': 'Earned At',
+    'admin.points': 'Points',
+    'admin.confirmDelete': 'Confirm Delete',
+    'admin.deleteWarning': 'Are you sure you want to delete',
+    'admin.deleteWarning2': 'This action cannot be undone.',
+    'admin.noLevels': 'No levels found',
+    'offers.loading': 'Loading offers...',
+    
   }
 };
 
