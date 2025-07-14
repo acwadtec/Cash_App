@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,6 +93,51 @@ export default function AdminDashboard() {
   });
   const [topReferrers, setTopReferrers] = useState([]);
   const [loadingReferrers, setLoadingReferrers] = useState(false);
+
+  // Gamification state
+  const [badges, setBadges] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [gamificationSettings, setGamificationSettings] = useState<{
+    points_multiplier?: { deposit?: number; referral?: number; withdrawal?: number };
+    badge_auto_award?: boolean;
+    level_auto_update?: boolean;
+  }>({});
+  const [userBadges, setUserBadges] = useState([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
+  const [loadingLevels, setLoadingLevels] = useState(false);
+  const [loadingGamification, setLoadingGamification] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState(null);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [badgeForm, setBadgeForm] = useState({
+    name: '',
+    description: '',
+    type: 'achievement',
+    requirement: 1,
+    points_awarded: 0,
+    is_active: true
+  });
+
+  // Enhanced gamification state for better edit/delete functionality
+  const [editingBadgeId, setEditingBadgeId] = useState(null);
+  const [editingLevelId, setEditingLevelId] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteItem, setDeleteItem] = useState({ type: '', id: null, name: '' });
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState(null);
+  const [levelForm, setLevelForm] = useState({
+    level: 1,
+    name: '',
+    description: '',
+    requirement: 100,
+    benefits: ''
+  });
+  const [showUserBadgeModal, setShowUserBadgeModal] = useState(false);
+  const [selectedUserBadge, setSelectedUserBadge] = useState(null);
+  const [userBadgeForm, setUserBadgeForm] = useState({
+    user_id: '',
+    badge_id: '',
+    points_earned: 0
+  });
 
   // Mock data
   const stats = {
@@ -660,6 +705,10 @@ export default function AdminDashboard() {
     fetchUserCount();
     fetchPendingVerifications();
     fetchActiveOffers();
+    fetchBadges();
+    fetchLevels();
+    fetchGamificationSettings();
+    fetchUserBadges();
   }, []);
 
   useEffect(() => {
@@ -1176,6 +1225,351 @@ export default function AdminDashboard() {
     fetchSettings();
   };
 
+  // Gamification functions
+  const fetchBadges = async () => {
+    setLoadingBadges(true);
+    try {
+      const { data, error } = await supabase
+        .from('badges')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setBadges(data || []);
+    } catch (error) {
+      console.error('Error fetching badges:', error);
+      toast({ title: t('common.error'), description: 'Failed to load badges', variant: 'destructive' });
+    } finally {
+      setLoadingBadges(false);
+    }
+  };
+
+  const fetchLevels = async () => {
+    setLoadingLevels(true);
+    try {
+      const { data, error } = await supabase
+        .from('levels')
+        .select('*')
+        .order('level', { ascending: true });
+      
+      if (error) throw error;
+      setLevels(data || []);
+    } catch (error) {
+      console.error('Error fetching levels:', error);
+      toast({ title: t('common.error'), description: 'Failed to load levels', variant: 'destructive' });
+    } finally {
+      setLoadingLevels(false);
+    }
+  };
+
+  const fetchGamificationSettings = async () => {
+    setLoadingGamification(true);
+    try {
+      const { data, error } = await supabase
+        .from('gamification_settings')
+        .select('*');
+      
+      if (error) throw error;
+      
+      const settings = {};
+      data?.forEach(setting => {
+        settings[setting.key] = setting.value;
+      });
+      setGamificationSettings(settings);
+    } catch (error) {
+      console.error('Error fetching gamification settings:', error);
+      toast({ title: t('common.error'), description: 'Failed to load gamification settings', variant: 'destructive' });
+    } finally {
+      setLoadingGamification(false);
+    }
+  };
+
+  const fetchUserBadges = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_badges')
+        .select(`
+          *,
+          badge:badge_id(*),
+          user:user_uid(email, first_name, last_name)
+        `)
+        .order('earned_at', { ascending: false });
+      
+      if (error) throw error;
+      setUserBadges(data || []);
+    } catch (error) {
+      console.error('Error fetching user badges:', error);
+    }
+  };
+
+  const handleCreateBadge = async () => {
+    try {
+      if (selectedBadge) {
+        // Update existing badge
+        const { error } = await supabase
+          .from('badges')
+          .update(badgeForm)
+          .eq('id', selectedBadge.id);
+        
+        if (error) throw error;
+        
+        toast({ title: t('common.success'), description: 'Badge updated successfully' });
+      } else {
+        // Create new badge
+        const { error } = await supabase
+          .from('badges')
+          .insert([badgeForm]);
+        
+        if (error) throw error;
+        
+        toast({ title: t('common.success'), description: 'Badge created successfully' });
+      }
+      
+      setShowBadgeModal(false);
+      setSelectedBadge(null);
+      setBadgeForm({
+        name: '',
+        description: '',
+        type: 'achievement',
+        requirement: 1,
+        points_awarded: 0,
+        is_active: true
+      });
+      fetchBadges();
+    } catch (error) {
+      console.error('Error creating/updating badge:', error);
+      toast({ title: t('common.error'), description: 'Failed to save badge', variant: 'destructive' });
+    }
+  };
+
+  const handleUpdateBadge = async (badgeId, updates) => {
+    try {
+      const { error } = await supabase
+        .from('badges')
+        .update(updates)
+        .eq('id', badgeId);
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'Badge updated successfully' });
+      fetchBadges();
+    } catch (error) {
+      console.error('Error updating badge:', error);
+      toast({ title: t('common.error'), description: 'Failed to update badge', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteBadge = async (badgeId) => {
+    try {
+      const { error } = await supabase
+        .from('badges')
+        .delete()
+        .eq('id', badgeId);
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'Badge deleted successfully' });
+      fetchBadges();
+      setShowDeleteConfirm(false);
+      setDeleteItem({ type: '', id: null, name: '' });
+    } catch (error) {
+      console.error('Error deleting badge:', error);
+      toast({ title: t('common.error'), description: 'Failed to delete badge', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteLevel = async (levelId) => {
+    try {
+      const { error } = await supabase
+        .from('levels')
+        .delete()
+        .eq('id', levelId);
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'Level deleted successfully' });
+      fetchLevels();
+      setShowDeleteConfirm(false);
+      setDeleteItem({ type: '', id: null, name: '' });
+    } catch (error) {
+      console.error('Error deleting level:', error);
+      toast({ title: t('common.error'), description: 'Failed to delete level', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteUserBadge = async (userBadgeId) => {
+    try {
+      const { error } = await supabase
+        .from('user_badges')
+        .delete()
+        .eq('id', userBadgeId);
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'User badge removed successfully' });
+      fetchUserBadges();
+      setShowDeleteConfirm(false);
+      setDeleteItem({ type: '', id: null, name: '' });
+    } catch (error) {
+      console.error('Error deleting user badge:', error);
+      toast({ title: t('common.error'), description: 'Failed to remove user badge', variant: 'destructive' });
+    }
+  };
+
+  const confirmDelete = (type, id, name) => {
+    setDeleteItem({ type, id, name });
+    setShowDeleteConfirm(true);
+  };
+
+  const handleGamificationDelete = async () => {
+    switch (deleteItem.type) {
+      case 'badge':
+        await handleDeleteBadge(deleteItem.id);
+        break;
+      case 'level':
+        await handleDeleteLevel(deleteItem.id);
+        break;
+      case 'userBadge':
+        await handleDeleteUserBadge(deleteItem.id);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleCreateLevel = async () => {
+    try {
+      if (selectedLevel) {
+        // Update existing level
+        const { error } = await supabase
+          .from('levels')
+          .update(levelForm)
+          .eq('id', selectedLevel.id);
+        
+        if (error) throw error;
+        
+        toast({ title: t('common.success'), description: 'Level updated successfully' });
+      } else {
+        // Create new level
+        const { error } = await supabase
+          .from('levels')
+          .insert([levelForm]);
+        
+        if (error) throw error;
+        
+        toast({ title: t('common.success'), description: 'Level created successfully' });
+      }
+      
+      setShowLevelModal(false);
+      setSelectedLevel(null);
+      setLevelForm({
+        level: 1,
+        name: '',
+        description: '',
+        requirement: 100,
+        benefits: ''
+      });
+      fetchLevels();
+    } catch (error) {
+      console.error('Error creating/updating level:', error);
+      toast({ title: t('common.error'), description: 'Failed to save level', variant: 'destructive' });
+    }
+  };
+
+  const handleUpdateLevel = async (levelId, updates) => {
+    try {
+      const { error } = await supabase
+        .from('levels')
+        .update(updates)
+        .eq('id', levelId);
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'Level updated successfully' });
+      fetchLevels();
+    } catch (error) {
+      console.error('Error updating level:', error);
+      toast({ title: t('common.error'), description: 'Failed to update level', variant: 'destructive' });
+    }
+  };
+
+  const handleCreateUserBadge = async () => {
+    try {
+      if (selectedUserBadge) {
+        // Update existing user badge
+        const { error } = await supabase
+          .from('user_badges')
+          .update({
+            user_id: userBadgeForm.user_id,
+            badge_id: userBadgeForm.badge_id,
+            points_earned: userBadgeForm.points_earned
+          })
+          .eq('id', selectedUserBadge.id);
+        
+        if (error) throw error;
+        
+        toast({ title: t('common.success'), description: 'User badge updated successfully' });
+      } else {
+        // Create new user badge
+        const { error } = await supabase
+          .from('user_badges')
+          .insert([{
+            ...userBadgeForm,
+            earned_at: new Date().toISOString()
+          }]);
+        
+        if (error) throw error;
+        
+        toast({ title: t('common.success'), description: 'User badge assigned successfully' });
+      }
+      
+      setShowUserBadgeModal(false);
+      setSelectedUserBadge(null);
+      setUserBadgeForm({
+        user_id: '',
+        badge_id: '',
+        points_earned: 0
+      });
+      fetchUserBadges();
+    } catch (error) {
+      console.error('Error creating/updating user badge:', error);
+      toast({ title: t('common.error'), description: 'Failed to save user badge', variant: 'destructive' });
+    }
+  };
+
+  const handleUpdateUserBadge = async (userBadgeId, updates) => {
+    try {
+      const { error } = await supabase
+        .from('user_badges')
+        .update(updates)
+        .eq('id', userBadgeId);
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'User badge updated successfully' });
+      fetchUserBadges();
+    } catch (error) {
+      console.error('Error updating user badge:', error);
+      toast({ title: t('common.error'), description: 'Failed to update user badge', variant: 'destructive' });
+    }
+  };
+
+  const handleUpdateGamificationSettings = async (key, value) => {
+    try {
+      const { error } = await supabase
+        .from('gamification_settings')
+        .upsert({ key, value: JSON.stringify(value) });
+      
+      if (error) throw error;
+      
+      toast({ title: t('common.success'), description: 'Settings updated successfully' });
+      fetchGamificationSettings();
+    } catch (error) {
+      console.error('Error updating gamification settings:', error);
+      toast({ title: t('common.error'), description: 'Failed to update settings', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -1304,6 +1698,15 @@ export default function AdminDashboard() {
               <TabsTrigger value="adminChat" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-xs">{t('admin.supportChat') || 'Support Chat'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="gamification" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+                <Award className="h-4 w-4" />
+                <span className="text-xs">{t('admin.gamification') || 'Gamification'}</span>
+                {badges.length > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-5">
+                    {badges.length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -2069,6 +2472,352 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Gamification Tab */}
+            <TabsContent value="gamification">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Badges Management */}
+                <Card className="shadow-card">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5" />
+                      {t('admin.badges') || 'Badges Management'}
+                    </CardTitle>
+                    <Button onClick={() => setShowBadgeModal(true)} size="sm">
+                      {t('admin.createBadge') || 'Create Badge'}
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingBadges ? (
+                      <div className="text-center py-4">{t('admin.loading')}</div>
+                    ) : badges.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">{t('admin.noBadges')}</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {badges.map((badge) => (
+                          <div key={badge.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                                <Award className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{badge.name}</p>
+                                <p className="text-sm text-muted-foreground">{badge.description}</p>
+                                <div className="flex gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {badge.type}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">
+                                    {badge.requirement} req
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">
+                                    {badge.points_awarded} pts
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedBadge(badge);
+                                  setBadgeForm({
+                                    name: badge.name,
+                                    description: badge.description,
+                                    type: badge.type,
+                                    requirement: badge.requirement,
+                                    points_awarded: badge.points_awarded,
+                                    is_active: badge.is_active
+                                  });
+                                  setShowBadgeModal(true);
+                                }}
+                              >
+                                {t('admin.edit') || 'Edit'}
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => confirmDelete('badge', badge.id, badge.name)}
+                              >
+                                {t('admin.delete') || 'Delete'}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Levels Management */}
+                <Card className="shadow-card">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5" />
+                      {t('admin.levels') || 'Levels Management'}
+                    </CardTitle>
+                    <Button onClick={() => setShowLevelModal(true)} size="sm">
+                      {t('admin.createLevel') || 'Create Level'}
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingLevels ? (
+                      <div className="text-center py-4">{t('admin.loading')}</div>
+                    ) : levels.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">{t('admin.noLevels')}</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {levels.map((level) => (
+                          <div key={level.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                                {level.level}
+                              </div>
+                              <div>
+                                <p className="font-medium">{level.name}</p>
+                                <p className="text-sm text-muted-foreground">{level.description}</p>
+                                <p className="text-xs text-muted-foreground">{level.requirement} points required</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                                {level.benefits}
+                              </Badge>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedLevel(level);
+                                    setLevelForm({
+                                      level: level.level,
+                                      name: level.name,
+                                      description: level.description,
+                                      requirement: level.requirement,
+                                      benefits: level.benefits
+                                    });
+                                    setShowLevelModal(true);
+                                  }}
+                                >
+                                  {t('admin.edit') || 'Edit'}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  onClick={() => confirmDelete('level', level.id, level.name)}
+                                >
+                                  {t('admin.delete') || 'Delete'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Gamification Settings */}
+              <Card className="shadow-card mt-6">
+                <CardHeader>
+                  <CardTitle>{t('admin.gamificationSettings') || 'Gamification Settings'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">{t('admin.pointsMultiplier') || 'Points Multiplier'}</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Deposit</Label>
+                          <Input
+                            type="number"
+                            value={gamificationSettings.points_multiplier?.deposit || 1}
+                            onChange={(e) => {
+                              const newSettings = { ...gamificationSettings };
+                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
+                              newSettings.points_multiplier.deposit = parseFloat(e.target.value) || 1;
+                              setGamificationSettings(newSettings);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Referral</Label>
+                          <Input
+                            type="number"
+                            value={gamificationSettings.points_multiplier?.referral || 2}
+                            onChange={(e) => {
+                              const newSettings = { ...gamificationSettings };
+                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
+                              newSettings.points_multiplier.referral = parseFloat(e.target.value) || 2;
+                              setGamificationSettings(newSettings);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Withdrawal</Label>
+                          <Input
+                            type="number"
+                            value={gamificationSettings.points_multiplier?.withdrawal || 1.5}
+                            onChange={(e) => {
+                              const newSettings = { ...gamificationSettings };
+                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
+                              newSettings.points_multiplier.withdrawal = parseFloat(e.target.value) || 1.5;
+                              setGamificationSettings(newSettings);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => handleUpdateGamificationSettings('points_multiplier', gamificationSettings.points_multiplier)}
+                        className="w-full"
+                      >
+                        {t('admin.updateSettings') || 'Update Settings'}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">{t('admin.automation') || 'Automation Settings'}</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Auto Award Badges</Label>
+                          <Select
+                            value={gamificationSettings.badge_auto_award ? 'true' : 'false'}
+                            onValueChange={(value) => {
+                              const newSettings = { ...gamificationSettings };
+                              newSettings.badge_auto_award = value === 'true';
+                              setGamificationSettings(newSettings);
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Enabled</SelectItem>
+                              <SelectItem value="false">Disabled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Auto Update Levels</Label>
+                          <Select
+                            value={gamificationSettings.level_auto_update ? 'true' : 'false'}
+                            onValueChange={(value) => {
+                              const newSettings = { ...gamificationSettings };
+                              newSettings.level_auto_update = value === 'true';
+                              setGamificationSettings(newSettings);
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Enabled</SelectItem>
+                              <SelectItem value="false">Disabled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          handleUpdateGamificationSettings('badge_auto_award', gamificationSettings.badge_auto_award);
+                          handleUpdateGamificationSettings('level_auto_update', gamificationSettings.level_auto_update);
+                        }}
+                        className="w-full"
+                      >
+                        {t('admin.updateSettings') || 'Update Settings'}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* User Badges Statistics */}
+              <Card className="shadow-card mt-6">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>{t('admin.userBadges') || 'User Badges Statistics'}</CardTitle>
+                  <Button onClick={() => setShowUserBadgeModal(true)} size="sm">
+                    {t('admin.assignBadge') || 'Assign Badge'}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('admin.user') || 'User'}</TableHead>
+                        <TableHead>{t('admin.badge') || 'Badge'}</TableHead>
+                        <TableHead>{t('admin.earnedAt') || 'Earned At'}</TableHead>
+                        <TableHead>{t('admin.points') || 'Points'}</TableHead>
+                        <TableHead>{t('admin.actions') || 'Actions'}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userBadges.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            {t('admin.noUserBadges') || 'No badges earned yet'}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        userBadges.map((userBadge) => (
+                          <TableRow key={userBadge.id}>
+                            <TableCell>
+                              {userBadge.user?.first_name} {userBadge.user?.last_name}
+                              <br />
+                              <span className="text-sm text-muted-foreground">{userBadge.user?.email}</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Award className="h-4 w-4 text-primary" />
+                                {userBadge.badge?.name}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(userBadge.earned_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {userBadge.badge?.points_awarded || 0} pts
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedUserBadge(userBadge);
+                                    setUserBadgeForm({
+                                      user_id: userBadge.user_id,
+                                      badge_id: userBadge.badge_id,
+                                      points_earned: userBadge.points_earned || 0
+                                    });
+                                    setShowUserBadgeModal(true);
+                                  }}
+                                >
+                                  {t('admin.edit') || 'Edit'}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  onClick={() => confirmDelete('userBadge', userBadge.id, `${userBadge.user?.first_name} ${userBadge.user?.last_name} - ${userBadge.badge?.name}`)}
+                                >
+                                  {t('admin.delete') || 'Delete'}
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
@@ -2087,6 +2836,255 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Badge Creation/Edit Modal */}
+      <Dialog open={showBadgeModal} onOpenChange={setShowBadgeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              {selectedBadge ? t('admin.editBadge') || 'Edit Badge' : t('admin.createBadge') || 'Create Badge'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="badgeName">{t('admin.badgeName') || 'Badge Name'}</Label>
+              <Input
+                id="badgeName"
+                value={badgeForm.name}
+                onChange={(e) => setBadgeForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter badge name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="badgeDescription">{t('admin.badgeDescription') || 'Description'}</Label>
+              <Input
+                id="badgeDescription"
+                value={badgeForm.description}
+                onChange={(e) => setBadgeForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter badge description"
+              />
+            </div>
+            <div>
+              <Label htmlFor="badgeType">{t('admin.badgeType') || 'Type'}</Label>
+              <Select value={badgeForm.type} onValueChange={(value) => setBadgeForm(prev => ({ ...prev, type: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="achievement">Achievement</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="deposit">Deposit</SelectItem>
+                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                  <SelectItem value="profile">Profile</SelectItem>
+                  <SelectItem value="verification">Verification</SelectItem>
+                  <SelectItem value="special">Special</SelectItem>
+                  <SelectItem value="loyalty">Loyalty</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="badgeRequirement">{t('admin.badgeRequirement') || 'Requirement'}</Label>
+                <Input
+                  id="badgeRequirement"
+                  type="number"
+                  value={badgeForm.requirement}
+                  onChange={(e) => setBadgeForm(prev => ({ ...prev, requirement: parseInt(e.target.value) || 1 }))}
+                  placeholder="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="badgePoints">{t('admin.badgePoints') || 'Points Awarded'}</Label>
+                <Input
+                  id="badgePoints"
+                  type="number"
+                  value={badgeForm.points_awarded}
+                  onChange={(e) => setBadgeForm(prev => ({ ...prev, points_awarded: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="badgeActive"
+                checked={badgeForm.is_active}
+                onChange={(e) => setBadgeForm(prev => ({ ...prev, is_active: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="badgeActive">{t('admin.badgeActive') || 'Active'}</Label>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateBadge} className="flex-1">
+                {selectedBadge ? t('admin.update') || 'Update' : t('admin.create') || 'Create'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowBadgeModal(false)} className="flex-1">
+                {t('admin.cancel') || 'Cancel'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Level Creation/Edit Modal */}
+      <Dialog open={showLevelModal} onOpenChange={setShowLevelModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              {selectedLevel ? t('admin.editLevel') || 'Edit Level' : t('admin.createLevel') || 'Create Level'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="levelNumber">{t('admin.levelNumber') || 'Level Number'}</Label>
+                <Input
+                  id="levelNumber"
+                  type="number"
+                  value={levelForm.level}
+                  onChange={(e) => setLevelForm(prev => ({ ...prev, level: parseInt(e.target.value) || 1 }))}
+                  placeholder="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="levelRequirement">{t('admin.levelRequirement') || 'Points Required'}</Label>
+                <Input
+                  id="levelRequirement"
+                  type="number"
+                  value={levelForm.requirement}
+                  onChange={(e) => setLevelForm(prev => ({ ...prev, requirement: parseInt(e.target.value) || 100 }))}
+                  placeholder="100"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="levelName">{t('admin.levelName') || 'Level Name'}</Label>
+              <Input
+                id="levelName"
+                value={levelForm.name}
+                onChange={(e) => setLevelForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter level name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="levelDescription">{t('admin.levelDescription') || 'Description'}</Label>
+              <Input
+                id="levelDescription"
+                value={levelForm.description}
+                onChange={(e) => setLevelForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter level description"
+              />
+            </div>
+            <div>
+              <Label htmlFor="levelBenefits">{t('admin.levelBenefits') || 'Benefits'}</Label>
+              <Input
+                id="levelBenefits"
+                value={levelForm.benefits}
+                onChange={(e) => setLevelForm(prev => ({ ...prev, benefits: e.target.value }))}
+                placeholder="Enter level benefits"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateLevel} className="flex-1">
+                {selectedLevel ? t('admin.update') || 'Update' : t('admin.create') || 'Create'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowLevelModal(false)} className="flex-1">
+                {t('admin.cancel') || 'Cancel'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Badge Assignment Modal */}
+      <Dialog open={showUserBadgeModal} onOpenChange={setShowUserBadgeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              {selectedUserBadge ? t('admin.editUserBadge') || 'Edit User Badge' : t('admin.assignBadge') || 'Assign Badge'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="userBadgeUser">{t('admin.user') || 'User'}</Label>
+              <Select value={userBadgeForm.user_id} onValueChange={(value) => setUserBadgeForm(prev => ({ ...prev, user_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.first_name} {user.last_name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="userBadgeBadge">{t('admin.badge') || 'Badge'}</Label>
+              <Select value={userBadgeForm.badge_id} onValueChange={(value) => setUserBadgeForm(prev => ({ ...prev, badge_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select badge" />
+                </SelectTrigger>
+                <SelectContent>
+                  {badges.map((badge) => (
+                    <SelectItem key={badge.id} value={badge.id}>
+                      {badge.name} ({badge.points_awarded} pts)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="userBadgePoints">{t('admin.pointsEarned') || 'Points Earned'}</Label>
+              <Input
+                id="userBadgePoints"
+                type="number"
+                value={userBadgeForm.points_earned}
+                onChange={(e) => setUserBadgeForm(prev => ({ ...prev, points_earned: parseInt(e.target.value) || 0 }))}
+                placeholder="0"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateUserBadge} className="flex-1">
+                {selectedUserBadge ? t('admin.update') || 'Update' : t('admin.assign') || 'Assign'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowUserBadgeModal(false)} className="flex-1">
+                {t('admin.cancel') || 'Cancel'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              {t('admin.confirmDelete') || 'Confirm Delete'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              {t('admin.deleteWarning') || 'Are you sure you want to delete'} <strong>{deleteItem.name}</strong>? 
+              {t('admin.deleteWarning2') || 'This action cannot be undone.'}
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={handleGamificationDelete} variant="destructive" className="flex-1">
+                {t('admin.delete') || 'Delete'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1">
+                {t('admin.cancel') || 'Cancel'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Export Modal */}
       <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
