@@ -9,14 +9,14 @@
 @layer base {
   :root {
     /* Light Mode - Cash Green Theme */
-    --background: 0 0% 98%;
-    --foreground: 210 11% 15%;
+    --background: 0 0% 96%;
+    --foreground: 210 15% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 11% 15%;
+    --card-foreground: 210 15% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 11% 15%;
+    --popover-foreground: 210 15% 10%;
 
     /* Cash Brand Green */
     --primary: 150 80% 35%;
@@ -24,13 +24,13 @@
     --primary-glow: 150 70% 45%;
     --primary-light: 150 60% 90%;
 
-    --secondary: 150 30% 96%;
+    --secondary: 150 30% 92%;
     --secondary-foreground: 150 80% 25%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 210 10% 50%;
+    --muted: 210 15% 90%;
+    --muted-foreground: 210 10% 40%;
 
-    --accent: 150 50% 92%;
+    --accent: 150 50% 88%;
     --accent-foreground: 150 80% 30%;
 
     --success: 140 70% 40%;
@@ -42,13 +42,13 @@
     --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 94%;
+    --border: 210 20% 85%;
+    --input: 210 20% 92%;
     --ring: 150 80% 35%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 0 0% 96%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
 

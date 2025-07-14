@@ -234,20 +234,20 @@ export default function HelpCenter() {
           <Card className="mt-8 gradient-card shadow-glow">
             <CardContent className="pt-8">
               <div className="text-center">
-                <div className="w-16 h-16 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Info className="w-8 h-8 text-primary-foreground" />
+                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Info className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-primary-foreground">
+                <h3 className="text-2xl font-bold mb-4 text-primary">
                   {t('help.needMoreHelp')}
                 </h3>
-                <p className="text-primary-foreground/80 mb-6">
+                <p className="text-foreground mb-6">
                   {t('help.supportMessage')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Badge className="bg-primary-foreground/20 text-primary-foreground px-4 py-2 text-base">
+                  <Badge className="bg-accent text-primary px-4 py-2 text-base">
                     {t('help.emailSupport')}
                   </Badge>
-                  <Badge className="bg-primary-foreground/20 text-primary-foreground px-4 py-2 text-base">
+                  <Badge className="bg-accent text-primary px-4 py-2 text-base">
                     {t('help.liveChat')}
                   </Badge>
                 </div>
