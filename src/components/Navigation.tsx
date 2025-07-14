@@ -47,6 +47,7 @@ export function Navigation() {
     { href: '/deposit', label: t('nav.deposit') },
     { href: '/withdrawal', label: t('nav.withdrawal') },
     { href: '/help', label: t('nav.help') },
+    { href: '/referral-network', label: 'Team' },
   ];
 
   const isActive = (href: string) => location.pathname === href;

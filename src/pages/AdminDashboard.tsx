@@ -1862,31 +1862,31 @@ export default function AdminDashboard() {
                         </TableRow>
                       ) : (
                         paginatedUsers.map((user) => (
-                          <TableRow key={user.id}>
+                        <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>{user.phone}</TableCell>
-                            <TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.phone}</TableCell>
+                          <TableCell>
                               <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
                                 {user.verified ? 'Verified' : 'Pending'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleView(user)}>
                                   {t('admin.view')}
-                                </Button>
+                              </Button>
                                 {!user.verified && (
                                   <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
                                     {t('admin.verify')}
-                                  </Button>
-                                )}
+                                </Button>
+                              )}
                                 <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
                                   {t('admin.remove')}
                                 </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                         ))
                       )}
                     </TableBody>
@@ -1971,20 +1971,20 @@ export default function AdminDashboard() {
                     Object.entries(groupedWithdrawals).map(([day, list]) => (
                       <div key={day} className="mb-8">
                         <h3 className="font-semibold mb-2">{day}</h3>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('admin.withdrawals.user')}</TableHead>
                               <TableHead>{t('profile.phone')}</TableHead>
                               <TableHead>{t('admin.withdrawals.wallet')}</TableHead>
-                              <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                        <TableHead>{t('admin.withdrawals.amount')}</TableHead>
                               <TableHead>{t('offers.title')}</TableHead>
                               <TableHead>{t('admin.withdrawals.status')}</TableHead>
-                              <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                              <TableHead>{t('admin.users.actions')}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
+                        <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                        <TableHead>{t('admin.users.actions')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                             {list.map(w => (
                               <TableRow key={w.id}>
                                 <TableCell>{w.user_name}</TableCell>
@@ -1994,7 +1994,7 @@ export default function AdminDashboard() {
                                 <TableCell>{w.package_id}</TableCell>
                                 <TableCell>{w.status}</TableCell>
                                 <TableCell>{w.created_at.split('T')[0]}</TableCell>
-                                <TableCell>
+                          <TableCell>
                                   {w.status === 'pending' && (
                                     <>
                                       <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
@@ -2004,7 +2004,7 @@ export default function AdminDashboard() {
                                   {w.status === 'paid' && w.proof_image_url && (
                                     <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
                                   )}
-                                </TableCell>
+                          </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -2081,8 +2081,8 @@ export default function AdminDashboard() {
                       <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder="End Hour" className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
                       <Button size="sm" className="bg-success text-white dark:bg-green-700" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
                         {t('common.save') || 'Add'}
-                      </Button>
-                    </div>
+                              </Button>
+                            </div>
                     <div className="mb-2 text-xs text-muted-foreground">Current Time Slots:</div>
                     <ul className="list-disc ml-5 mb-2">
                       {timeSlots.map((slot, idx) => {
@@ -2137,14 +2137,14 @@ export default function AdminDashboard() {
                             <TableCell>
                               <Button size="xs" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
                               <Button size="xs" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                         {Object.keys(packageLimits).length === 0 && (
                           <TableRow><TableCell colSpan={5} className="text-muted-foreground">None set</TableCell></TableRow>
                         )}
-                      </TableBody>
-                    </Table>
+                    </TableBody>
+                  </Table>
                     <div className="flex gap-2">
                       <Button onClick={handleSavePackageLimits} className="mt-2" disabled={Object.keys(packageLimits).length === 0}>{t('admin.savePackageLimits')}</Button>
                       <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
@@ -2587,7 +2587,7 @@ export default function AdminDashboard() {
                         {topReferrers.reduce((sum, r) => sum + (r.referral_count || 0), 0)}
                       </p>
                       <p className="text-sm text-muted-foreground">{t('admin.totalReferrals')}</p>
-                    </div>
+                      </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
                       <p className="text-2xl font-bold text-green-600">
                         {topReferrers.reduce((sum, r) => sum + (r.total_referral_points || 0), 0)}

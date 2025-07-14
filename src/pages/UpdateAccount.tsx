@@ -324,10 +324,10 @@ export default function UpdateAccount() {
 async function processReferral(newUserId: string, referralCode: string) {
   console.log('processReferral called', newUserId, referralCode);
   try {
-    // Get referrer info
+    // Get referrer info (Level 1)
     const { data: referrerData, error: referrerError } = await supabase
       .from('user_info')
-      .select('user_uid, referral_count, total_referral_points, email')
+      .select('user_uid, referral_count, total_referral_points, referred_by, email')
       .eq('referral_code', referralCode)
       .single();
     console.log('referrerData', referrerData, referrerError);
@@ -340,7 +340,7 @@ async function processReferral(newUserId: string, referralCode: string) {
     // Get referral settings
     const { data: settingsData, error: settingsError } = await supabase
       .from('referral_settings')
-      .select('level1_points')
+      .select('level1_points, level2_points, level3_points')
       .eq('id', 1)
       .single();
     console.log('settingsData', settingsData, settingsError);
@@ -350,81 +350,112 @@ async function processReferral(newUserId: string, referralCode: string) {
       return;
     }
 
-    const pointsToAward = settingsData.level1_points || 100;
-
-    // Update referrer's stats
-    const newReferralCount = (referrerData.referral_count || 0) + 1;
-    const newTotalPoints = (referrerData.total_referral_points || 0) + pointsToAward;
-    const { error: updateError } = await supabase
+    // Award Level 1 points
+    const pointsToAwardL1 = settingsData.level1_points || 100;
+    const newReferralCountL1 = (referrerData.referral_count || 0) + 1;
+    const newTotalPointsL1 = (referrerData.total_referral_points || 0) + pointsToAwardL1;
+    const { error: updateErrorL1 } = await supabase
       .from('user_info')
       .update({
-        referral_count: newReferralCount,
-        total_referral_points: newTotalPoints
+        referral_count: newReferralCountL1,
+        total_referral_points: newTotalPointsL1
       })
       .eq('user_uid', referrerData.user_uid);
-    console.log('updateError', updateError);
-    if (updateError) {
-      console.error('Error updating referrer stats:', updateError);
+    console.log('updateErrorL1', updateErrorL1);
+    if (updateErrorL1) {
+      console.error('Error updating referrer stats:', updateErrorL1);
       toast({ title: 'Referral Error', description: 'Failed to update referrer stats', variant: 'destructive' });
       return;
     }
 
-    // Check for badge awards
-    const { data: badges } = await supabase
-      .from('badges')
-      .select('*')
-      .eq('type', 'referral');
-
-    if (badges) {
-      for (const badge of badges) {
-        if (newReferralCount >= badge.requirement) {
-          // Check if user already has this badge
-          const { data: existingBadge } = await supabase
-            .from('user_badges')
-            .select('*')
-            .eq('user_uid', referrerData.user_uid)
-            .eq('badge_id', badge.id)
-            .single();
-
-          if (!existingBadge) {
-            // Award the badge
-            await supabase.from('user_badges').insert([
-              { user_uid: referrerData.user_uid, badge_id: badge.id }
-            ]);
-          }
-        }
-      }
-    }
-
-    // Update user level based on total referral points
-    const { data: levelData } = await supabase
-      .from('levels')
-      .select('*')
-      .lte('requirement', newTotalPoints)
-      .order('requirement', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (levelData) {
-      const newLevel = levelData.level;
-      await supabase.from('user_info').update({ level: newLevel }).eq('user_uid', referrerData.user_uid);
-    }
-
-    // Record the referral
-    const { error: insertError } = await supabase
+    // Record the Level 1 referral
+    const { error: insertErrorL1 } = await supabase
       .from('referrals')
       .insert([{
         referrer_uid: referrerData.user_uid,
         referred_uid: newUserId,
         level: 1,
-        points_earned: pointsToAward,
+        points_earned: pointsToAwardL1,
         referral_code: referralCode
       }]);
-    console.log('insertError', insertError);
-    if (insertError) {
-      console.error('Error inserting referral record:', insertError);
+    console.log('insertErrorL1', insertErrorL1);
+    if (insertErrorL1) {
+      console.error('Error inserting referral record:', insertErrorL1);
       toast({ title: 'Referral Error', description: 'Failed to record referral', variant: 'destructive' });
       return;
+    }
+
+    // Award Level 2 points if the direct referrer was also referred by someone
+    if (referrerData.referred_by) {
+      // Get Level 2 referrer info
+      const { data: referrer2Data, error: referrer2Error } = await supabase
+        .from('user_info')
+        .select('user_uid, referral_count, total_referral_points, referred_by, email')
+        .eq('referral_code', referrerData.referred_by)
+        .single();
+      console.log('referrer2Data', referrer2Data, referrer2Error);
+      if (!referrer2Error && referrer2Data) {
+        const pointsToAwardL2 = settingsData.level2_points || 50;
+        const newReferralCountL2 = (referrer2Data.referral_count || 0) + 1;
+        const newTotalPointsL2 = (referrer2Data.total_referral_points || 0) + pointsToAwardL2;
+        const { error: updateErrorL2 } = await supabase
+          .from('user_info')
+          .update({
+            referral_count: newReferralCountL2,
+            total_referral_points: newTotalPointsL2
+          })
+          .eq('user_uid', referrer2Data.user_uid);
+        console.log('updateErrorL2', updateErrorL2);
+        if (!updateErrorL2) {
+          // Record the Level 2 referral
+          const { error: insertErrorL2 } = await supabase
+            .from('referrals')
+            .insert([{
+              referrer_uid: referrer2Data.user_uid,
+              referred_uid: newUserId,
+              level: 2,
+              points_earned: pointsToAwardL2,
+              referral_code: referrerData.referred_by
+            }]);
+          console.log('insertErrorL2', insertErrorL2);
+        }
+
+        // Award Level 3 points if Level 2 referrer was also referred by someone
+        if (referrer2Data.referred_by) {
+          const { data: referrer3Data, error: referrer3Error } = await supabase
+            .from('user_info')
+            .select('user_uid, referral_count, total_referral_points, email')
+            .eq('referral_code', referrer2Data.referred_by)
+            .single();
+          console.log('referrer3Data', referrer3Data, referrer3Error);
+          if (!referrer3Error && referrer3Data) {
+            const pointsToAwardL3 = settingsData.level3_points || 25;
+            const newReferralCountL3 = (referrer3Data.referral_count || 0) + 1;
+            const newTotalPointsL3 = (referrer3Data.total_referral_points || 0) + pointsToAwardL3;
+            const { error: updateErrorL3 } = await supabase
+              .from('user_info')
+              .update({
+                referral_count: newReferralCountL3,
+                total_referral_points: newTotalPointsL3
+              })
+              .eq('user_uid', referrer3Data.user_uid);
+            console.log('updateErrorL3', updateErrorL3);
+            if (!updateErrorL3) {
+              // Record the Level 3 referral
+              const { error: insertErrorL3 } = await supabase
+                .from('referrals')
+                .insert([{
+                  referrer_uid: referrer3Data.user_uid,
+                  referred_uid: newUserId,
+                  level: 3,
+                  points_earned: pointsToAwardL3,
+                  referral_code: referrer2Data.referred_by
+                }]);
+              console.log('insertErrorL3', insertErrorL3);
+            }
+          }
+        }
+      }
     }
 
     // Update new user's referred_by field

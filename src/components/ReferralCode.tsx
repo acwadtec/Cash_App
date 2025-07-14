@@ -10,9 +10,12 @@ import { Copy, Share2, Trophy } from 'lucide-react';
 interface ReferralCodeProps {
   userUid: string;
   isVerified: boolean;
+  level1Count?: number;
+  level2Count?: number;
+  level3Count?: number;
 }
 
-export default function ReferralCode({ userUid, isVerified }: ReferralCodeProps) {
+export default function ReferralCode({ userUid, isVerified, level1Count = 0, level2Count = 0, level3Count = 0 }: ReferralCodeProps) {
   const [referralCode, setReferralCode] = useState('');
   const [referralStats, setReferralStats] = useState({
     totalReferrals: 0,
@@ -125,6 +128,8 @@ export default function ReferralCode({ userUid, isVerified }: ReferralCodeProps)
     }
   };
 
+  const totalReferrals = level1Count + level2Count + level3Count;
+
   if (!isVerified) {
     return (
       <Card className="shadow-card">
@@ -194,20 +199,12 @@ export default function ReferralCode({ userUid, isVerified }: ReferralCodeProps)
         {/* Referral Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{referralStats.totalReferrals}</div>
+            <div className="text-2xl font-bold text-blue-600">{totalReferrals}</div>
             <div className="text-sm text-muted-foreground">Total Referrals</div>
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{referralStats.totalPoints}</div>
             <div className="text-sm text-muted-foreground">Points Earned</div>
-          </div>
-          <div className="text-center p-4 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{referralStats.level1Referrals}</div>
-            <div className="text-sm text-muted-foreground">Level 1</div>
-          </div>
-          <div className="text-center p-4 bg-orange-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">{referralStats.level2Referrals + referralStats.level3Referrals}</div>
-            <div className="text-sm text-muted-foreground">Level 2+3</div>
           </div>
         </div>
 

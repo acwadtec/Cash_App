@@ -148,10 +148,10 @@ export default function Register() {
 
   const processReferral = async (newUserId: string, referralCode: string) => {
     try {
-      // Get referrer info
+      // Get referrer info (Level 1)
       const { data: referrerData, error: referrerError } = await supabase
         .from('user_info')
-        .select('user_uid, referral_count, total_referral_points')
+        .select('user_uid, referral_count, total_referral_points, referred_by')
         .eq('referral_code', referralCode)
         .single();
 
@@ -163,7 +163,7 @@ export default function Register() {
       // Get referral settings
       const { data: settingsData, error: settingsError } = await supabase
         .from('referral_settings')
-        .select('level1_points')
+        .select('level1_points, level2_points, level3_points')
         .eq('id', 1)
         .single();
 
@@ -172,30 +172,90 @@ export default function Register() {
         return;
       }
 
-      const pointsToAward = settingsData.level1_points || 100;
-
-      // Update referrer's stats
-      const newReferralCount = (referrerData.referral_count || 0) + 1;
-      const newTotalPoints = (referrerData.total_referral_points || 0) + pointsToAward;
-
+      // Award Level 1 points
+      const pointsToAwardL1 = settingsData.level1_points || 100;
+      const newReferralCountL1 = (referrerData.referral_count || 0) + 1;
+      const newTotalPointsL1 = (referrerData.total_referral_points || 0) + pointsToAwardL1;
       await supabase
         .from('user_info')
         .update({
-          referral_count: newReferralCount,
-          total_referral_points: newTotalPoints
+          referral_count: newReferralCountL1,
+          total_referral_points: newTotalPointsL1
         })
         .eq('user_uid', referrerData.user_uid);
-
-      // Record the referral
+      // Record the Level 1 referral
       await supabase
         .from('referrals')
         .insert([{
           referrer_uid: referrerData.user_uid,
           referred_uid: newUserId,
           level: 1,
-          points_earned: pointsToAward,
+          points_earned: pointsToAwardL1,
           referral_code: referralCode
         }]);
+
+      // Award Level 2 points if the direct referrer was also referred by someone
+      if (referrerData.referred_by) {
+        // Get Level 2 referrer info
+        const { data: referrer2Data, error: referrer2Error } = await supabase
+          .from('user_info')
+          .select('user_uid, referral_count, total_referral_points, referred_by')
+          .eq('referral_code', referrerData.referred_by)
+          .single();
+        if (!referrer2Error && referrer2Data) {
+          const pointsToAwardL2 = settingsData.level2_points || 50;
+          const newReferralCountL2 = (referrer2Data.referral_count || 0) + 1;
+          const newTotalPointsL2 = (referrer2Data.total_referral_points || 0) + pointsToAwardL2;
+          await supabase
+            .from('user_info')
+            .update({
+              referral_count: newReferralCountL2,
+              total_referral_points: newTotalPointsL2
+            })
+            .eq('user_uid', referrer2Data.user_uid);
+          // Record the Level 2 referral
+          await supabase
+            .from('referrals')
+            .insert([{
+              referrer_uid: referrer2Data.user_uid,
+              referred_uid: newUserId,
+              level: 2,
+              points_earned: pointsToAwardL2,
+              referral_code: referrerData.referred_by
+            }]);
+
+          // Award Level 3 points if Level 2 referrer was also referred by someone
+          if (referrer2Data.referred_by) {
+            const { data: referrer3Data, error: referrer3Error } = await supabase
+              .from('user_info')
+              .select('user_uid, referral_count, total_referral_points')
+              .eq('referral_code', referrer2Data.referred_by)
+              .single();
+            if (!referrer3Error && referrer3Data) {
+              const pointsToAwardL3 = settingsData.level3_points || 25;
+              const newReferralCountL3 = (referrer3Data.referral_count || 0) + 1;
+              const newTotalPointsL3 = (referrer3Data.total_referral_points || 0) + pointsToAwardL3;
+              await supabase
+                .from('user_info')
+                .update({
+                  referral_count: newReferralCountL3,
+                  total_referral_points: newTotalPointsL3
+                })
+                .eq('user_uid', referrer3Data.user_uid);
+              // Record the Level 3 referral
+              await supabase
+                .from('referrals')
+                .insert([{
+                  referrer_uid: referrer3Data.user_uid,
+                  referred_uid: newUserId,
+                  level: 3,
+                  points_earned: pointsToAwardL3,
+                  referral_code: referrer2Data.referred_by
+                }]);
+            }
+          }
+        }
+      }
 
       // Update new user's referred_by field
       await supabase

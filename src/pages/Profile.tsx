@@ -21,6 +21,9 @@ export default function Profile() {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [userUid, setUserUid] = useState<string | null>(null);
   const [userBadges, setUserBadges] = useState([]);
+  const [level1Referrals, setLevel1Referrals] = useState<any[]>([]);
+  const [level2Referrals, setLevel2Referrals] = useState<any[]>([]);
+  const [level3Referrals, setLevel3Referrals] = useState<any[]>([]);
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -64,6 +67,204 @@ export default function Profile() {
     };
     fetchBadges();
   }, [userUid]);
+
+  useEffect(() => {
+    if (userInfo?.referral_code) {
+      fetchReferralLevels(userInfo.referral_code);
+    }
+  }, [userInfo?.referral_code]);
+
+  const fetchReferralLevels = async (myReferralCode: string) => {
+    // Level 1: Direct referrals
+    const { data: level1, error: l1err } = await supabase
+      .from('user_info')
+      .select('user_uid, first_name, last_name, email, referral_code')
+      .eq('referred_by', myReferralCode);
+    setLevel1Referrals(level1 || []);
+
+    // Level 2: Indirect referrals
+    const level1Codes = (level1 || []).map(u => u.referral_code);
+    let level2: any[] = [];
+    let level2Codes: string[] = [];
+    if (level1Codes.length > 0) {
+      const { data: l2, error: l2err } = await supabase
+        .from('user_info')
+        .select('user_uid, first_name, last_name, email, referral_code')
+        .in('referred_by', level1Codes);
+      level2 = l2 || [];
+      setLevel2Referrals(level2);
+      level2Codes = (level2 || []).map(u => u.referral_code);
+    } else {
+      setLevel2Referrals([]);
+    }
+
+    // Level 3: Third-level referrals
+    let level3: any[] = [];
+    if (level2Codes.length > 0) {
+      const { data: l3, error: l3err } = await supabase
+        .from('user_info')
+        .select('user_uid, first_name, last_name, email, referral_code')
+        .in('referred_by', level2Codes);
+      level3 = l3 || [];
+    }
+    setLevel3Referrals(level3);
+  };
+
+  async function processReferral(newUserId: string, referralCode: string) {
+    console.log('processReferral called', newUserId, referralCode);
+    try {
+      // Get direct referrer info (Level 1)
+      const { data: referrerData, error: referrerError } = await supabase
+        .from('user_info')
+        .select('user_uid, referral_count, total_referral_points, email, referred_by')
+        .eq('referral_code', referralCode)
+        .single();
+      console.log('referrerData', referrerData, referrerError);
+      if (referrerError || !referrerData) {
+        console.error('Error getting referrer data:', referrerError);
+        toast({ title: 'Referral Error', description: 'Referrer not found or error', variant: 'destructive' });
+        return;
+      }
+
+      // Get referral settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('referral_settings')
+        .select('level1_points, level2_points, level3_points')
+        .eq('id', 1)
+        .single();
+      console.log('settingsData', settingsData, settingsError);
+      if (settingsError || !settingsData) {
+        console.error('Error getting referral settings:', settingsError);
+        toast({ title: 'Referral Error', description: 'Settings not found or error', variant: 'destructive' });
+        return;
+      }
+
+      // Award Level 1 points
+      const pointsToAwardL1 = settingsData.level1_points || 100;
+      const newReferralCountL1 = (referrerData.referral_count || 0) + 1;
+      const newTotalPointsL1 = (referrerData.total_referral_points || 0) + pointsToAwardL1;
+      const { error: updateErrorL1 } = await supabase
+        .from('user_info')
+        .update({
+          referral_count: newReferralCountL1,
+          total_referral_points: newTotalPointsL1
+        })
+        .eq('user_uid', referrerData.user_uid);
+      console.log('updateErrorL1', updateErrorL1);
+      if (updateErrorL1) {
+        console.error('Error updating referrer stats:', updateErrorL1);
+        toast({ title: 'Referral Error', description: 'Failed to update referrer stats', variant: 'destructive' });
+        return;
+      }
+
+      // Record the Level 1 referral
+      const { error: insertErrorL1 } = await supabase
+        .from('referrals')
+        .insert([{
+          referrer_uid: referrerData.user_uid,
+          referred_uid: newUserId,
+          level: 1,
+          points_earned: pointsToAwardL1,
+          referral_code: referralCode
+        }]);
+      console.log('insertErrorL1', insertErrorL1);
+      if (insertErrorL1) {
+        console.error('Error inserting referral record:', insertErrorL1);
+        toast({ title: 'Referral Error', description: 'Failed to record referral', variant: 'destructive' });
+        return;
+      }
+
+      // Award Level 2 points if the direct referrer was also referred by someone
+      if (referrerData.referred_by) {
+        // Get Level 2 referrer info
+        const { data: referrer2Data, error: referrer2Error } = await supabase
+          .from('user_info')
+          .select('user_uid, referral_count, total_referral_points, referred_by, email')
+          .eq('referral_code', referrerData.referred_by)
+          .single();
+        console.log('referrer2Data', referrer2Data, referrer2Error);
+        if (!referrer2Error && referrer2Data) {
+          const pointsToAwardL2 = settingsData.level2_points || 50;
+          const newReferralCountL2 = (referrer2Data.referral_count || 0) + 1;
+          const newTotalPointsL2 = (referrer2Data.total_referral_points || 0) + pointsToAwardL2;
+          const { error: updateErrorL2 } = await supabase
+            .from('user_info')
+            .update({
+              referral_count: newReferralCountL2,
+              total_referral_points: newTotalPointsL2
+            })
+            .eq('user_uid', referrer2Data.user_uid);
+          console.log('updateErrorL2', updateErrorL2);
+          if (!updateErrorL2) {
+            // Record the Level 2 referral
+            const { error: insertErrorL2 } = await supabase
+              .from('referrals')
+              .insert([{
+                referrer_uid: referrer2Data.user_uid,
+                referred_uid: newUserId,
+                level: 2,
+                points_earned: pointsToAwardL2,
+                referral_code: referrerData.referred_by
+              }]);
+            console.log('insertErrorL2', insertErrorL2);
+          }
+
+          // Award Level 3 points if Level 2 referrer was also referred by someone
+          if (referrer2Data.referred_by) {
+            const { data: referrer3Data, error: referrer3Error } = await supabase
+              .from('user_info')
+              .select('user_uid, referral_count, total_referral_points, email')
+              .eq('referral_code', referrer2Data.referred_by)
+              .single();
+            console.log('referrer3Data', referrer3Data, referrer3Error);
+            if (!referrer3Error && referrer3Data) {
+              const pointsToAwardL3 = settingsData.level3_points || 25;
+              const newReferralCountL3 = (referrer3Data.referral_count || 0) + 1;
+              const newTotalPointsL3 = (referrer3Data.total_referral_points || 0) + pointsToAwardL3;
+              const { error: updateErrorL3 } = await supabase
+                .from('user_info')
+                .update({
+                  referral_count: newReferralCountL3,
+                  total_referral_points: newTotalPointsL3
+                })
+                .eq('user_uid', referrer3Data.user_uid);
+              console.log('updateErrorL3', updateErrorL3);
+              if (!updateErrorL3) {
+                // Record the Level 3 referral
+                const { error: insertErrorL3 } = await supabase
+                  .from('referrals')
+                  .insert([{
+                    referrer_uid: referrer3Data.user_uid,
+                    referred_uid: newUserId,
+                    level: 3,
+                    points_earned: pointsToAwardL3,
+                    referral_code: referrer2Data.referred_by
+                  }]);
+                console.log('insertErrorL3', insertErrorL3);
+              }
+            }
+          }
+        }
+      }
+
+      // Update new user's referred_by field
+      const { error: updateNewUserError } = await supabase
+        .from('user_info')
+        .update({ referred_by: referralCode })
+        .eq('user_uid', newUserId);
+      console.log('updateNewUserError', updateNewUserError);
+      if (updateNewUserError) {
+        console.error('Error updating new user referred_by:', updateNewUserError);
+        toast({ title: 'Referral Error', description: 'Failed to update new user', variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: 'Referral Success', description: `Referral processed for ${referrerData.email}` });
+    } catch (error) {
+      console.error('Error processing referral:', error);
+      toast({ title: 'Referral Error', description: 'Unexpected error', variant: 'destructive' });
+    }
+  }
 
   // Helper to get image URL from storage path
   const getImageUrl = (type: 'front' | 'back' | 'profile') => {
@@ -136,8 +337,8 @@ export default function Profile() {
                 <Button onClick={handleUpdateAccount} className="w-full">
                   {t('profile.updateAccount') || 'Update Account Information'}
                 </Button>
-              </CardContent>
-            </Card>
+      </CardContent>
+    </Card>
           </div>
         </div>
       </div>
@@ -153,7 +354,7 @@ export default function Profile() {
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <div className="relative">
-                  <Avatar className="w-24 h-24">
+                <Avatar className="w-24 h-24">
                     {getProfilePhotoUrl() ? (
                       <img 
                         src={getProfilePhotoUrl()!} 
@@ -163,9 +364,9 @@ export default function Profile() {
                     ) : (
                       <AvatarFallback className="text-2xl">
                         {getAvatarFallback()}
-                      </AvatarFallback>
+                  </AvatarFallback>
                     )}
-                  </Avatar>
+                </Avatar>
                   <Button
                     onClick={handleUpdateAccount}
                     variant="outline"
@@ -204,10 +405,10 @@ export default function Profile() {
 
           {/* Gamification: Level and Badges */}
           <Card className="shadow-glow">
-            <CardHeader>
+              <CardHeader>
               <CardTitle>{t('profile.achievements') || 'Achievements'}</CardTitle>
-            </CardHeader>
-            <CardContent>
+              </CardHeader>
+              <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Level */}
                 <div className="text-center">
@@ -221,7 +422,7 @@ export default function Profile() {
                 </div>
 
                 {/* Badges */}
-                <div>
+                    <div>
                   <h3 className="text-lg font-semibold mb-4">{t('profile.badges') || 'Badges'}</h3>
                   {userBadges.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
@@ -236,8 +437,8 @@ export default function Profile() {
                       {t('profile.noBadges') || 'No badges earned yet'}
                     </p>
                   )}
-                </div>
-              </div>
+                    </div>
+                  </div>
             </CardContent>
           </Card>
 
@@ -275,16 +476,16 @@ export default function Profile() {
                   <p className="text-sm">{userInfo?.phone || '-'}</p>
                 </div>
                 
-                <div>
+                    <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     {t('profile.wallet')}
                   </label>
                   <p className="text-sm">{userInfo?.wallet || '-'}</p>
-                </div>
+                    </div>
 
                 {/* Profile Photo */}
                 {userInfo?.profile_photo_url && (
-                  <div>
+                    <div>
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">
                       {t('profile.profilePhoto') || 'Profile Photo'}
                     </label>
@@ -332,10 +533,10 @@ export default function Profile() {
                           >
                             {t('profile.view') || 'View'}
                           </Button>
-                        </div>
+                  </div>
                       )}
                       {userInfo?.id_back_url && (
-                        <div>
+                  <div>
                           <p className="text-xs text-muted-foreground mb-1">
                             {t('profile.idBack') || 'Back'}
                           </p>
@@ -354,9 +555,9 @@ export default function Profile() {
                     </div>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
 
           {/* Image Modal */}
           <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
@@ -368,9 +569,16 @@ export default function Profile() {
           {/* Referral Code Section */}
           {userUid && (
             <div className="mb-8">
-              <ReferralCode userUid={userUid} isVerified={userInfo?.verified || false} />
-            </div>
+              <ReferralCode
+                userUid={userUid}
+                isVerified={userInfo?.verified || false}
+                level1Count={level1Referrals.length}
+                level2Count={level2Referrals.length}
+                level3Count={level3Referrals.length}
+              />
+                      </div>
           )}
+
         </div>
       </div>
     </div>
