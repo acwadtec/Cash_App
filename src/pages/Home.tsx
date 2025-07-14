@@ -86,19 +86,39 @@ export default function Home() {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 gradient-primary bg-clip-text text-transparent">
+          <h1
+            className="text-4xl md:text-6xl font-extrabold font-arabic mb-6 text-primary drop-shadow-md tracking-tight leading-tight text-center"
+            style={{
+              letterSpacing: '0.01em',
+              lineHeight: '1.15',
+            }}
+          >
             {t('home.hero.title')}
-            </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          </h1>
+          <p
+            className="text-lg md:text-2xl font-arabic font-light mb-8 max-w-2xl mx-auto text-muted-foreground text-center"
+            style={{
+              lineHeight: '1.7',
+            }}
+          >
             {t('home.hero.subtitle')}
-            </p>
+          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8 py-3 shadow-glow">
+            <Button
+              asChild
+              size="lg"
+              className="text-lg px-8 py-3 shadow-glow font-arabic font-bold transition-colors duration-200 bg-primary text-primary-foreground hover:bg-primary-glow focus:ring-2 focus:ring-primary focus:outline-none"
+            >
               <Link to="/register">{t('home.hero.cta')}</Link>
-              </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-3">
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="text-lg px-8 py-3 font-arabic font-bold border-2 border-primary text-primary bg-transparent hover:bg-primary/10 hover:text-primary-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors duration-200 shadow-sm"
+            >
               <Link to="/offers">{t('home.hero.learnMore')}</Link>
-              </Button>
+            </Button>
           </div>
         </div>
       </section>

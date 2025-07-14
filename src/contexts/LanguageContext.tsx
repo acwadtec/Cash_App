@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+// --- Context Types and Setup ---
 type Language = 'ar' | 'en';
 
 interface LanguageContextType {
@@ -11,7 +12,49 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Translation object
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  // Load language from localStorage if available, otherwise default to Arabic
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('cash-language');
+    return (saved === 'ar' || saved === 'en') ? saved : 'ar';
+  });
+  // Wrap setLanguage to also update localStorage
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('cash-language', lang);
+  };
+  const isRTL = language === 'ar';
+
+  const t = (key: string): string => {
+    return translations[language][key as keyof typeof translations[typeof language]] || key;
+  };
+
+  useEffect(() => {
+    // Apply direction to document
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+    // Apply font class based on language
+    document.body.className = document.body.className.replace(/font-(arabic|english)/, '');
+    document.body.classList.add(language === 'ar' ? 'font-arabic' : 'font-english');
+  }, [language, isRTL]);
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, isRTL, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
+
+// --- Translations ---
+// (No duplicate keys, grouped by language, and only one set of each key)
 const translations = {
   ar: {
     // Navigation
@@ -1391,36 +1434,3 @@ const translations = {
     
   }
 };
-
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>('ar'); // Default to Arabic
-  const isRTL = language === 'ar';
-
-  const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations[typeof language]] || key;
-  };
-
-  useEffect(() => {
-    // Apply direction to document
-    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-    
-    // Apply font class based on language
-    document.body.className = document.body.className.replace(/font-(arabic|english)/, '');
-    document.body.classList.add(language === 'ar' ? 'font-arabic' : 'font-english');
-  }, [language, isRTL]);
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, isRTL, t }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
-export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
-}
