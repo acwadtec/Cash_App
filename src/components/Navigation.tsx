@@ -7,6 +7,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Moon, Sun, Menu, X, Settings, Home } from 'lucide-react';
 import { NotificationInbox } from './NotificationInbox';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import DarkLogo from '@/../public/Dark_mode.png';
+import LightLogo from '@/../public/Light_mode.png';
 
 export function Navigation() {
   const { language, setLanguage, t, isRTL } = useLanguage();
@@ -88,28 +90,36 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
-            Cash App
+          <Link to="/" className="flex items-center h-12 flex-shrink-0 mr-4">
+            <img
+              src={theme === 'dark' ? DarkLogo : LightLogo}
+              alt="Cash App Logo"
+              className="h-10 w-auto"
+              style={{ maxWidth: 160 }}
+            />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
+          {/* Navigation Links and Actions */}
+          <div className="flex-1 flex items-center justify-center">
             {isLoggedIn && !isAdmin && (
-              <>
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
+              <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
                     className={`text-sm font-medium transition-colors hover:text-primary ${
                       isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              </>
-          )}
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
 
+          {/* Actions (Theme, Language, Profile, etc.) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Admin Switch View Button */}
             {isAdminUser && (
               <Button
@@ -186,26 +196,16 @@ export function Navigation() {
               <div className="flex items-center space-x-2">
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/login">{t('nav.login')}</Link>
-              </Button>
+                </Button>
                 <Button asChild size="sm">
                   <Link to="/register">{t('nav.register')}</Link>
-              </Button>
+                </Button>
               </div>
             )}
           </div>
-
-            {/* Mobile Menu Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-            className="md:hidden"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation remains unchanged */}
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t">
             {isLoggedIn && !isAdmin && (
