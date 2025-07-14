@@ -173,6 +173,56 @@ export default function AdminDashboard() {
   const [exportFormat, setExportFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
 
+  // Time Slot Editor State
+  const [newTimeSlotDay, setNewTimeSlotDay] = useState('');
+  const [newTimeSlotStart, setNewTimeSlotStart] = useState('');
+  const [newTimeSlotEnd, setNewTimeSlotEnd] = useState('');
+  const handleAddTimeSlot = () => {
+    if (newTimeSlotDay && newTimeSlotStart && newTimeSlotEnd && Number(newTimeSlotEnd) > Number(newTimeSlotStart)) {
+      setTimeSlots([...timeSlots, `${newTimeSlotDay}:${newTimeSlotStart}:${newTimeSlotEnd}`]);
+      setNewTimeSlotDay(''); setNewTimeSlotStart(''); setNewTimeSlotEnd('');
+    }
+  };
+  const handleRemoveTimeSlot = (idx) => {
+    setTimeSlots(timeSlots.filter((_, i) => i !== idx));
+  };
+
+  // Package Limit Editor State
+  const [packageFormName, setPackageFormName] = useState('');
+  const [packageFormMin, setPackageFormMin] = useState('');
+  const [packageFormMax, setPackageFormMax] = useState('');
+  const [packageFormDaily, setPackageFormDaily] = useState('');
+  const [packageEditIndex, setPackageEditIndex] = useState(null);
+  const handleAddOrUpdatePackageLimit = (e) => {
+    e.preventDefault();
+    if (!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily) return;
+    setPackageLimits(prev => ({
+      ...prev,
+      [packageFormName]: {
+        min: Number(packageFormMin),
+        max: Number(packageFormMax),
+        daily: Number(packageFormDaily)
+      }
+    }));
+    setPackageFormName(''); setPackageFormMin(''); setPackageFormMax(''); setPackageFormDaily(''); setPackageEditIndex(null);
+  };
+  const handleEditPackageLimit = (pkg, vals, idx) => {
+    setPackageFormName(pkg);
+    setPackageFormMin(vals.min);
+    setPackageFormMax(vals.max);
+    setPackageFormDaily(vals.daily);
+    setPackageEditIndex(idx);
+  };
+  const handleCancelEditPackageLimit = (e) => {
+    e.preventDefault();
+    setPackageFormName(''); setPackageFormMin(''); setPackageFormMax(''); setPackageFormDaily(''); setPackageEditIndex(null);
+  };
+  const handleRemovePackageLimit = (pkg) => {
+    const newLimits = { ...packageLimits };
+    delete newLimits[pkg];
+    setPackageLimits(newLimits);
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1915,24 +1965,26 @@ export default function AdminDashboard() {
                 <CardContent>
                   {loadingWithdrawals ? (
                     <div>Loading...</div>
+                  ) : Object.keys(groupedWithdrawals).length === 0 ? (
+                    <div>{t('admin.withdrawals.noRequests')}</div>
                   ) : (
                     Object.entries(groupedWithdrawals).map(([day, list]) => (
                       <div key={day} className="mb-8">
                         <h3 className="font-semibold mb-2">{day}</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t('admin.withdrawals.user')}</TableHead>
                               <TableHead>{t('profile.phone')}</TableHead>
-                              <TableHead>{t('profile.wallet')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.wallet')}</TableHead>
+                              <TableHead>{t('admin.withdrawals.amount')}</TableHead>
                               <TableHead>{t('offers.title')}</TableHead>
                               <TableHead>{t('admin.withdrawals.status')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                        <TableHead>{t('admin.users.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                              <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                              <TableHead>{t('admin.users.actions')}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
                             {list.map(w => (
                               <TableRow key={w.id}>
                                 <TableCell>{w.user_name}</TableCell>
@@ -1942,7 +1994,7 @@ export default function AdminDashboard() {
                                 <TableCell>{w.package_id}</TableCell>
                                 <TableCell>{w.status}</TableCell>
                                 <TableCell>{w.created_at.split('T')[0]}</TableCell>
-                          <TableCell>
+                                <TableCell>
                                   {w.status === 'pending' && (
                                     <>
                                       <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
@@ -1952,11 +2004,11 @@ export default function AdminDashboard() {
                                   {w.status === 'paid' && w.proof_image_url && (
                                     <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
                                   )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     ))
                   )}
@@ -2007,16 +2059,96 @@ export default function AdminDashboard() {
                 <CardHeader>
                                   <CardTitle>{t('admin.settings')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                  <Label>{t('admin.timeSlots')}</Label>
-                    <Input value={timeSlots.join(',')} onChange={e => setTimeSlots(e.target.value.split(','))} />
-                  <Button onClick={handleSaveTimeSlots} className="mt-2">{t('admin.saveTimeSlots')}</Button>
+                <CardContent className="bg-background text-foreground">
+                  {/* Withdrawal Time Slots Visual Editor */}
+                  <div className="mb-8">
+                    <Label className="text-base font-semibold flex items-center gap-2 text-foreground">
+                      <span>{t('admin.timeSlots')}</span>
+                      <span className="text-xs text-muted-foreground" title="Set allowed withdrawal times (day, start hour, end hour)">🛈</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-4 items-end mb-2 mt-2">
+                      <select value={newTimeSlotDay} onChange={e => setNewTimeSlotDay(e.target.value)} className="border border-border rounded px-2 py-1 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">
+                        <option value="">Day</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                      </select>
+                      <input type="number" min="0" max="23" value={newTimeSlotStart} onChange={e => setNewTimeSlotStart(e.target.value)} placeholder="Start Hour" className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
+                      <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder="End Hour" className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
+                      <Button size="sm" className="bg-success text-white dark:bg-green-700" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
+                        {t('common.save') || 'Add'}
+                      </Button>
+                    </div>
+                    <div className="mb-2 text-xs text-muted-foreground">Current Time Slots:</div>
+                    <ul className="list-disc ml-5 mb-2">
+                      {timeSlots.map((slot, idx) => {
+                        const [day, start, end] = slot.split(':');
+                        return (
+                          <li key={idx} className="flex items-center gap-2">
+                            <span><b>{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][day]}</b>: {start}:00 - {end}:00</span>
+                            <Button size="xs" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete') || 'Delete'}</Button>
+                          </li>
+                        );
+                      })}
+                      {timeSlots.length === 0 && <li className="text-muted-foreground">None set</li>}
+                    </ul>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveTimeSlots} className="mt-2" disabled={timeSlots.some(slot => !/^\d+:\d+:\d+$/.test(slot))}>{t('admin.saveTimeSlots')}</Button>
+                      <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
+                    </div>
                   </div>
+                  <hr className="my-6 border-muted" />
+                  {/* Package Withdrawal Limits Visual Editor */}
                   <div>
-                  <Label>{t('admin.packageLimits')}</Label>
-                    <Input value={JSON.stringify(packageLimits)} onChange={e => setPackageLimits(JSON.parse(e.target.value))} />
-                  <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.savePackageLimits')}</Button>
+                    <Label className="text-base font-semibold flex items-center gap-2">
+                      <span>{t('admin.packageLimits')}</span>
+                      <span className="text-xs text-muted-foreground" title="Set withdrawal limits for each package">🛈</span>
+                    </Label>
+                    <form className="flex flex-wrap gap-2 items-end mt-2 mb-2" onSubmit={handleAddOrUpdatePackageLimit}>
+                      <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder="Package Name" className="w-32" />
+                      <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder="Min" className="w-20" />
+                      <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder="Max" className="w-20" />
+                      <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder="Daily" className="w-20" />
+                      <Button size="sm" className="bg-success" type="submit" disabled={!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily}>{packageEditIndex === null ? (t('common.save') || 'Add') : (t('common.edit') || 'Edit')}</Button>
+                      {packageEditIndex !== null && <Button size="sm" variant="outline" onClick={handleCancelEditPackageLimit}>{t('common.cancel') || 'Cancel'}</Button>}
+                    </form>
+                    <div className="mb-2 text-xs text-muted-foreground">Current Package Limits:</div>
+                    <Table className="mb-2">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Package</TableHead>
+                          <TableHead>Min</TableHead>
+                          <TableHead>Max</TableHead>
+                          <TableHead>Daily</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(packageLimits).map(([pkg, vals], idx) => (
+                          <TableRow key={pkg}>
+                            <TableCell>{pkg}</TableCell>
+                            <TableCell>{vals.min}</TableCell>
+                            <TableCell>{vals.max}</TableCell>
+                            <TableCell>{vals.daily}</TableCell>
+                            <TableCell>
+                              <Button size="xs" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
+                              <Button size="xs" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {Object.keys(packageLimits).length === 0 && (
+                          <TableRow><TableCell colSpan={5} className="text-muted-foreground">None set</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSavePackageLimits} className="mt-2" disabled={Object.keys(packageLimits).length === 0}>{t('admin.savePackageLimits')}</Button>
+                      <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
