@@ -2128,20 +2128,6 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-<<<<<<< HEAD
-                        {Object.entries(packageLimits).map(([pkg, vals], idx) => (
-                          <TableRow key={pkg}>
-                            <TableCell>{pkg}</TableCell>
-                            <TableCell>{vals.min}</TableCell>
-                            <TableCell>{vals.max}</TableCell>
-                            <TableCell>{vals.daily}</TableCell>
-                            <TableCell>
-                              <Button size="xs" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
-                              <Button size="xs" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-=======
                         {Object.entries(packageLimits).map(([pkg, vals], idx) => {
                           const { min, max, daily } = vals as { min: number; max: number; daily: number };
                           return (
@@ -2157,7 +2143,6 @@ export default function AdminDashboard() {
                             </TableRow>
                           );
                         })}
->>>>>>> 2ad35e7b793fe8d2ca519b481b1ed2637d185d10
                         {Object.keys(packageLimits).length === 0 && (
                           <TableRow><TableCell colSpan={5} className="text-muted-foreground">None set</TableCell></TableRow>
                         )}
