@@ -25,6 +25,9 @@ const translations = {
     'nav.logout': 'تسجيل الخروج',
     'nav.deposit': 'إيداع',
     'nav.help': 'مركز المساعدة',
+    'nav.website': 'الموقع',
+    'nav.dashboard': 'لوحة التحكم',
+    'nav.register': 'تسجيل',
     
     // Login Page
     'login.title': 'تسجيل الدخول',
@@ -672,6 +675,9 @@ const translations = {
     'nav.logout': 'Logout',
     'nav.deposit': 'Deposit',
     'nav.help': 'Help Center',
+    'nav.website': 'Website',
+    'nav.dashboard': 'Dashboard',
+    'nav.register': 'Register',
     
     // Login Page
     'login.title': 'Login',
