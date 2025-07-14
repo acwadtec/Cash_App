@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
@@ -96,6 +96,9 @@ export default function UpdateAccount() {
       const user = userData?.user;
       if (!user) throw new Error('User not found');
 
+      // Check if user is admin
+      const isAdmin = await checkIfUserIsAdmin(user.id);
+
       // Upload profile photo if provided
       let profilePhotoUrl = '';
       if (data.profilePhoto && data.profilePhoto[0]) {
@@ -143,7 +146,6 @@ export default function UpdateAccount() {
           profile_photo_url: profilePhotoUrl,
           id_front_url: idFrontUrl,
           id_back_url: idBackUrl,
-          role: 'user',
         },
       ]);
       if (error) throw error;
