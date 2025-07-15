@@ -700,6 +700,8 @@ const translations = {
     'profile.bonuses': 'المكافآت',
     'profile.capital': 'رأس المال',
     // ... existing code ...
+    'admin.accept': 'قبول',
+    'admin.reject': 'رفض',
 
   },
   en: {
@@ -1333,6 +1335,8 @@ const translations = {
     'profile.bonuses': 'Bonuses',
     'profile.capital': 'Capital',
     // ... existing code ...
+    'admin.accept': 'Accept',
+    'admin.reject': 'Reject',
 
   }
 };

@@ -17,6 +17,44 @@ export default function Transactions() {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAlert, setShowAlert] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true);
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      // Fetch deposit requests
+      const { data: deposits, error: depositError } = await supabase
+        .from('deposit_requests')
+        .select('*')
+        .eq('user_uid', user.id)
+        .order('created_at', { ascending: false });
+      // TODO: Fetch withdrawals and other types if needed
+      let txns = [];
+      if (deposits) {
+        txns = deposits.map((item) => ({
+          id: `DEP${item.id}`,
+          type: 'deposit',
+          amount: item.amount,
+          status: item.status === 'approved' ? 'completed' : item.status, // show 'completed' if approved
+          date: new Date(item.created_at).toLocaleDateString(),
+          description: t('transactions.desc.capitalDeposit'),
+          method: t('transactions.method.bankTransfer'),
+          rejectionReason: item.status === 'rejected' ? t('transactions.invalidBankDetails') : null,
+          adminNote: item.status === 'approved' ? t('transactions.paymentProcessed') : null,
+        }));
+      }
+      setTransactions(txns);
+      setLoading(false);
+    };
+    fetchTransactions();
+  }, [t]);
 
   // Check if user has user_info data
   useEffect(() => {
@@ -48,76 +86,6 @@ export default function Transactions() {
     };
     checkUserInfo();
   }, [navigate]);
-
-  // Mock transactions data
-  const transactions = [
-    {
-      id: 'TXN001',
-      type: 'withdrawal',
-      amount: 500,
-      status: 'completed',
-      date: '2024-07-01',
-      description: t('transactions.desc.personalEarningsWithdrawal'),
-      method: t('transactions.method.bank'),
-      rejectionReason: null,
-      adminNote: t('transactions.paymentProcessed'),
-    },
-    {
-      id: 'TXN002',
-      type: 'bonus',
-      amount: 50,
-      status: 'completed',
-      date: '2024-06-30',
-      description: t('transactions.desc.friendReferralBonus'),
-      method: t('transactions.method.wallet'),
-      rejectionReason: null,
-      adminNote: null,
-    },
-    {
-      id: 'TXN003',
-      type: 'earning',
-      amount: 200,
-      status: 'pending',
-      date: '2024-06-29',
-      description: t('transactions.desc.teamEarnings'),
-      method: t('transactions.method.wallet'),
-      rejectionReason: null,
-      adminNote: null,
-    },
-    {
-      id: 'TXN004',
-      type: 'withdrawal',
-      amount: 300,
-      status: 'rejected',
-      date: '2024-06-28',
-      description: t('transactions.desc.bonusWithdrawal'),
-      method: t('transactions.method.bank'),
-      rejectionReason: t('transactions.invalidBankDetails'),
-      adminNote: null,
-    },
-    {
-      id: 'TXN005',
-      type: 'deposit',
-      amount: 1000,
-      status: 'completed',
-      date: '2024-06-25',
-      description: t('transactions.desc.capitalDeposit'),
-      method: t('transactions.method.bankTransfer'),
-      rejectionReason: null,
-      adminNote: null,
-    },
-    {
-      id: 'TXN006',
-      type: 'withdrawal',
-      amount: 750,
-      status: 'approved',
-      date: '2024-07-02',
-      description: t('transactions.desc.teamEarningsWithdrawal'),
-      method: t('transactions.method.cryptocurrency'),
-      rejectionReason: null,
-      adminNote: t('transactions.approvedForProcessing'),
-    },
-  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -188,8 +156,10 @@ export default function Transactions() {
           </Card>
 
           {/* Transactions List */}
-          <div className="space-y-4">
-            {filteredTransactions.map((transaction) => (
+          {loading ? (
+            <div className="text-center py-12">{t('common.loading')}</div>
+          ) : (
+            filteredTransactions.map((transaction) => (
               <Card key={transaction.id} className="shadow-card hover:shadow-glow transition-all duration-300">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -231,10 +201,9 @@ export default function Transactions() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          {filteredTransactions.length === 0 && (
+            ))
+          )}
+          {filteredTransactions.length === 0 && !loading && (
             <Card className="shadow-card">
               <CardContent className="pt-8 text-center">
                 <p className="text-muted-foreground text-lg">{t('transactions.noResults')}</p>

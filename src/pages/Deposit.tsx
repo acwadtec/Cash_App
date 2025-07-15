@@ -390,48 +390,6 @@ export default function Deposit() {
           </Card>
         </div>
       </div>
-      
-      {/* Deposit History */}
-      {history.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">{t('deposit.history')}</h2>
-          <div className="space-y-4">
-            {history.map((item) => (
-              <Card key={item.id} className="shadow-card">
-                <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6">
-                  <div className="flex-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div><b>{t('deposit.amount')}:</b> {item.amount}</div>
-                      <div><b>{t('deposit.userNumber')}:</b> {item.user_number}</div>
-                      <div><b>{t('deposit.targetNumber')}:</b> {item.target_number}</div>
-                      <div><b>{t('deposit.date')}:</b> {new Date(item.created_at).toLocaleDateString()}</div>
-                    </div>
-                    <div className="mt-2">
-                      <Badge variant={item.status === 'approved' ? 'default' : item.status === 'pending' ? 'secondary' : 'destructive'}>
-                        {item.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {item.screenshot_url && (
-                    <div className="flex-shrink-0">
-                      <a href={item.screenshot_url} target="_blank" rel="noopener noreferrer" className="block">
-                        <img 
-                          src={item.screenshot_url} 
-                          alt={t('deposit.screenshot')} 
-                          className="w-24 h-24 object-cover rounded border"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                    </a>
-                  </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

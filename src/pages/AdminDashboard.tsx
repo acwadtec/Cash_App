@@ -303,6 +303,7 @@ export default function AdminDashboard() {
       setExportFormat(format);
       performExport(type, format);
     } else {
+      setExportFormat('csv'); // Always default to CSV
       setShowExportModal(true);
     }
   };
@@ -2345,7 +2346,7 @@ export default function AdminDashboard() {
                             <span className="text-sm text-primary-foreground">{t('common.chooseFile') || 'Choose File'}</span>
                           </label>
                           {notificationData.imageUrl && (
-                            <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-2 rounded-lg border border-border shadow" />
+                            <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] max-h-[40px] object-contain mt-3 rounded-lg border border-border shadow truncate overflow-x-auto" />
                           )}
                         </div>
                         <Button onClick={handleSendNotification} className="w-full shadow-glow text-lg py-3">
@@ -2369,7 +2370,7 @@ export default function AdminDashboard() {
                               {notificationData.scheduledAt && <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
                       </div>
                             {notificationData.imageUrl && (
-                              <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] mt-3 rounded-lg border border-border shadow" />
+                              <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] max-h-[40px] object-contain mt-3 rounded-lg border border-border shadow truncate overflow-x-auto" />
                             )}
                     </div>
                         </CardContent>
@@ -2405,7 +2406,7 @@ export default function AdminDashboard() {
                                 <TableCell className="text-foreground">{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
                                 <TableCell className="text-foreground">{notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}</TableCell>
                                 <TableCell>
-                                  {notif.image_url && <img src={notif.image_url} alt="notif" className="max-w-[60px] rounded-lg border border-border shadow" />}
+                                  {notif.image_url && <img src={notif.image_url} alt="notif" className="max-w-[60px] max-h-[40px] object-contain rounded-lg border border-border shadow truncate overflow-x-auto" />}
                                 </TableCell>
                                 <TableCell>
                                   <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
@@ -2430,7 +2431,12 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4 flex gap-2">
-                    <Input value={newNumber} onChange={e => setNewNumber(e.target.value)} placeholder={t('deposit.userNumber') || 'Mobile Number'} />
+                    <Input 
+                      value={newNumber} 
+                      onChange={e => setNewNumber(e.target.value)} 
+                      placeholder={t('deposit.userNumber') || 'Mobile Number'} 
+                      className="max-w-xs truncate overflow-x-auto" 
+                    />
                     <Button onClick={handleAddNumber} disabled={depositNumbers.length >= 10}>{t('common.save') || 'Add'}</Button>
                   </div>
                   {loadingDepositNumbers ? (
@@ -2439,7 +2445,11 @@ export default function AdminDashboard() {
                     <ul className="space-y-2">
                       {depositNumbers.map((num) => (
                         <li key={num.id} className="flex items-center gap-2">
-                          <Input value={num.number} onChange={e => handleUpdateNumber(num.id, e.target.value)} />
+                          <Input 
+                            value={num.number} 
+                            onChange={e => handleUpdateNumber(num.id, e.target.value)} 
+                            className="max-w-xs truncate overflow-x-auto" 
+                          />
                           <Button variant="destructive" onClick={() => handleRemoveNumber(num.id)}>{t('common.delete') || 'Remove'}</Button>
                         </li>
                       ))}
@@ -2490,10 +2500,10 @@ export default function AdminDashboard() {
                               {req.status === 'pending' && (
                                 <div className="flex space-x-2">
                                   <Button size="sm" className="bg-success" onClick={() => handleApproveDeposit(req)}>
-                                    {t('common.save') || 'Approve'}
+                                    {t('admin.accept') || 'Accept'}
                                   </Button>
                                   <Button size="sm" variant="destructive" onClick={() => handleRejectDeposit(req.id)}>
-                                    {t('common.delete') || 'Reject'}
+                                    {t('admin.reject') || 'Reject'}
                                   </Button>
                                 </div>
                               )}
@@ -3269,15 +3279,9 @@ export default function AdminDashboard() {
             </div>
             <div>
               <Label htmlFor="exportFormat">{t('admin.export.format')}</Label>
-              <Select value={exportFormat} onValueChange={setExportFormat}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder={t('admin.export.selectFormat')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="csv">CSV</SelectItem>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="mt-2 p-3 bg-muted rounded-lg">
+                <p className="font-medium">CSV</p>
+              </div>
             </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button 
@@ -3288,7 +3292,7 @@ export default function AdminDashboard() {
                 {t('common.cancel')}
               </Button>
               <Button 
-                onClick={() => performExport(exportType, exportFormat)}
+                onClick={() => performExport(exportType, 'csv')}
                 disabled={exporting}
                 className="min-w-[100px]"
               >
