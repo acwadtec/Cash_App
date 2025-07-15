@@ -10,7 +10,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import ReferralCode from '@/components/ReferralCode';
 import { Camera, Edit } from 'lucide-react';
-import { useUserBalances } from '@/hooks/useUserBalance';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -25,11 +24,6 @@ export default function Profile() {
   const [level1Referrals, setLevel1Referrals] = useState<any[]>([]);
   const [level2Referrals, setLevel2Referrals] = useState<any[]>([]);
   const [level3Referrals, setLevel3Referrals] = useState<any[]>([]);
-  const { balances, loading: loadingBalances } = useUserBalances();
-  // Calculate capital as the sum of personal_earnings, team_earnings, and bonuses
-  const capital = balances
-    ? balances.personal_earnings + balances.team_earnings + balances.bonuses
-    : 0;
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -413,32 +407,28 @@ export default function Profile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <Card className="bg-muted/40 border border-muted-foreground/10">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">{balances ? `$${balances.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
-                <span className="mt-2 text-sm text-muted-foreground">إجمالي الإيرادات</span>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/40 border border-muted-foreground/10">
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">{balances ? `$${balances.personal_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
+                <span className="text-3xl font-bold text-green-500">$0</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.rewards') || 'Rewards'}</span>
               </CardContent>
             </Card>
             <Card className="bg-muted/40 border border-muted-foreground/10">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">{balances ? `$${balances.team_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
+                <span className="text-3xl font-bold text-green-500">$0</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.personalEarnings') || 'Personal Earnings'}</span>
               </CardContent>
             </Card>
             <Card className="bg-muted/40 border border-muted-foreground/10">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500 break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">{balances ? `$${balances.bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
-                <span className="mt-2 text-sm text-muted-foreground">{t('profile.bonuses') || 'Bonuses'}</span>
+                <span className="text-3xl font-bold text-green-500 break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">
+                  {typeof userInfo?.balance === 'number' ? `$${userInfo.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}
+                </span>
+                <span className="mt-2 text-sm text-muted-foreground">{t('profile.capital') || 'Capital'}</span>
               </CardContent>
             </Card>
             <Card className="bg-muted/40 border border-muted-foreground/10">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500 break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">{balances ? `$${balances.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}</span>
-                <span className="mt-2 text-sm text-muted-foreground">رأس المال</span>
+                <span className="text-3xl font-bold text-green-500">$0</span>
+                <span className="mt-2 text-sm text-muted-foreground">{t('profile.teamEarnings') || 'Team Earnings'}</span>
               </CardContent>
             </Card>
             <Card className="bg-muted/40 border border-muted-foreground/10">

@@ -1245,14 +1245,52 @@ export default function AdminDashboard() {
     if (proofImage) {
       const fileExt = proofImage.name.split('.').pop();
       const fileName = `${selectedWithdrawal.id}_${Date.now()}.${fileExt}`;
-      const filePath = `withdrawal-proofs/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from('withdrawal-proofs').upload(filePath, proofImage);
+      // Upload to the bucket with just the file name as the path
+      const { error: uploadError } = await supabase.storage.from('withdrawal-proofs').upload(fileName, proofImage);
       if (!uploadError) {
-        const { data: urlData } = supabase.storage.from('withdrawal-proofs').getPublicUrl(filePath);
+        const { data: urlData } = supabase.storage.from('withdrawal-proofs').getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
+      } else {
+        toast({ title: t('common.error'), description: uploadError.message, variant: 'destructive' });
+        return;
       }
     }
-    await supabase.from('withdrawal_requests').update({ status: 'paid', admin_note: adminNote, proof_image_url: imageUrl, updated_at: new Date().toISOString() }).eq('id', selectedWithdrawal.id);
+    // Only proceed if status is pending
+    if (selectedWithdrawal.status !== 'pending') {
+      toast({ title: t('common.error'), description: t('admin.withdrawals.alreadyProcessed'), variant: 'destructive' });
+      return;
+    }
+    // Update withdrawal status to paid
+    const { error: updateError } = await supabase.from('withdrawal_requests').update({ status: 'paid', admin_note: adminNote, proof_image_url: imageUrl, updated_at: new Date().toISOString() }).eq('id', selectedWithdrawal.id);
+    if (updateError) {
+      toast({ title: t('common.error'), description: updateError.message, variant: 'destructive' });
+      return;
+    }
+    // Deduct from the correct user_info balance
+    const typeToField = {
+      capital: 'balance',
+      personal: 'personal_earnings',
+      team: 'team_earnings',
+      bonuses: 'bonuses',
+    };
+    const field = typeToField[selectedWithdrawal.type];
+    if (field) {
+      // Fetch current balance
+      const { data: userInfo, error: userInfoError } = await supabase.from('user_info').select(field).eq('user_uid', selectedWithdrawal.user_uid).single();
+      if (!userInfoError && userInfo && typeof userInfo[field] === 'number') {
+        const newBalance = userInfo[field] - Number(selectedWithdrawal.amount);
+        const { error: balanceError } = await supabase.from('user_info').update({ [field]: newBalance }).eq('user_uid', selectedWithdrawal.user_uid);
+        if (balanceError) {
+          toast({ title: t('common.error'), description: balanceError.message, variant: 'destructive' });
+        } else {
+          toast({ title: t('common.success'), description: t('admin.withdrawals.paidAndDeducted') });
+        }
+      } else {
+        toast({ title: t('common.error'), description: t('admin.withdrawals.balanceFetchError'), variant: 'destructive' });
+      }
+    } else {
+      toast({ title: t('common.error'), description: t('admin.withdrawals.unknownType'), variant: 'destructive' });
+    }
     setShowPayModal(false);
     setAdminNote('');
     setProofImage(null);
@@ -1650,6 +1688,45 @@ export default function AdminDashboard() {
       toast({ title: t('common.error'), description: 'Failed to update settings', variant: 'destructive' });
     }
   };
+
+  // Quick responses for admin notes
+  const approvalQuickResponses = [
+    'Withdrawal approved. Please check your account.',
+    'Payment processed successfully.',
+    'Your withdrawal has been completed.'
+  ];
+  const rejectionQuickResponses = [
+    'Withdrawal rejected due to incorrect account details.',
+    'Insufficient balance for withdrawal.',
+    'Withdrawal request does not meet the requirements.'
+  ];
+
+  // Helper: Convert 24-hour to 12-hour AM/PM
+  function toAmPm(hour) {
+    const h = hour % 12 || 12;
+    const ampm = hour < 12 ? 'AM' : 'PM';
+    return { hour: h, ampm };
+  }
+  // Helper: Convert 12-hour AM/PM to 24-hour
+  function fromAmPm(hour, ampm) {
+    let h = parseInt(hour, 10);
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return h;
+  }
+  const daysOfWeek = [
+    { value: 0, label: t('common.day.sunday') || 'Sunday' },
+    { value: 1, label: t('common.day.monday') || 'Monday' },
+    { value: 2, label: t('common.day.tuesday') || 'Tuesday' },
+    { value: 3, label: t('common.day.wednesday') || 'Wednesday' },
+    { value: 4, label: t('common.day.thursday') || 'Thursday' },
+    { value: 5, label: t('common.day.friday') || 'Friday' },
+    { value: 6, label: t('common.day.saturday') || 'Saturday' },
+  ];
+  const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  const ampmOptions = ['AM', 'PM'];
+  // State for new slot
+  const [newSlot, setNewSlot] = useState({ day: 0, startHour: 9, startAmPm: 'AM', endHour: 5, endAmPm: 'PM' });
 
   return (
     <div className="min-h-screen py-20">
@@ -2054,6 +2131,12 @@ export default function AdminDashboard() {
                     <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
                       <Label>{t('admin.adminNote')}</Label>
+                      {/* Quick responses for approval */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {approvalQuickResponses.map((msg, idx) => (
+                          <Button key={idx} size="sm" variant="outline" onClick={() => setAdminNote(msg)}>{msg}</Button>
+                        ))}
+                      </div>
                       <Input value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                     </div>
                     <div className="mb-2">
@@ -2076,6 +2159,12 @@ export default function AdminDashboard() {
                     <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
                       <Label>{t('admin.rejectionReason')}</Label>
+                      {/* Quick responses for rejection */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {rejectionQuickResponses.map((msg, idx) => (
+                          <Button key={idx} size="sm" variant="outline" onClick={() => setRejectionReason(msg)}>{msg}</Button>
+                        ))}
+                      </div>
                       <Input value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} />
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -2170,15 +2259,15 @@ export default function AdminDashboard() {
                               <TableCell>
                                 <Button size="sm" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
                                 <Button size="sm" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
-                              </TableCell>
-                            </TableRow>
+                          </TableCell>
+                        </TableRow>
                           );
                         })}
                         {Object.keys(packageLimits).length === 0 && (
                           <TableRow><TableCell colSpan={5} className="text-muted-foreground">{t('common.noneSet')}</TableCell></TableRow>
                         )}
-                      </TableBody>
-                    </Table>
+                    </TableBody>
+                  </Table>
                     <div className="flex gap-2">
                       <Button onClick={handleSavePackageLimits} className="mt-2" disabled={Object.keys(packageLimits).length === 0}>{t('admin.savePackageLimits')}</Button>
                       <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
@@ -3305,3 +3394,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+

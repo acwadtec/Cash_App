@@ -312,6 +312,7 @@ const translations = {
     'withdrawal.rejectionReason': 'سبب الرفض',
     'withdrawal.adminNote': 'ملاحظة المدير',
     'withdrawal.packageLimits': 'حدود الحزمة: الحد الأدنى ${min}، الحد الأقصى ${max}، الحد اليومي ${daily}',
+    'withdrawal.noDetails': 'لا توجد تفاصيل إضافية',
     
     // Registration
     'register.title': 'إنشاء حساب جديد',
@@ -1068,6 +1069,7 @@ const translations = {
     'withdrawal.rejectionReason': 'Rejection Reason',
     'withdrawal.adminNote': 'Admin Note',
     'withdrawal.packageLimits': 'Package Limits: Min ${min}, Max ${max}, Daily ${daily}',
+    'withdrawal.noDetails': 'No additional details',
     
     // Registration
     'register.title': 'Create New Account',
