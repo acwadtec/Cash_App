@@ -1445,6 +1445,8 @@ const translations = {
     // ... existing code ...
     'admin.accept': 'Accept',
     'admin.reject': 'Reject',
+    'admin.edit': 'Edit',
+    'admin.delete': 'Delete',
     'home.hero.title': 'Welcome to Cash',
     'home.hero.subtitle': 'Smart trading platform to manage your earnings securely',
     'home.hero.cta': 'Get Started',
@@ -1518,9 +1520,6 @@ const translations = {
     'common.min': 'Min',
     'common.max': 'Max',
     'common.daily': 'Daily',
-    // --- MISSING KEYS ADDED AUTOMATICALLY BELOW ---
-    // If you see these, please provide the correct translation!
-    // Example: 'some.key': 'TODO_EN',
-    // (Add actual missing keys here)
+
   }
 };
