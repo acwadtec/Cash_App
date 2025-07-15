@@ -71,6 +71,9 @@ export default function Withdrawal() {
     { value: 'crypto', label: t('withdrawal.crypto') },
   ];
 
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+
   // Check if current time is within allowed time slots
   const isWithinTimeSlot = () => {
     if (settings.timeSlots.length === 0) return true; // If no time slots set, allow all times
@@ -123,6 +126,17 @@ export default function Withdrawal() {
     return { valid: true, message: '' };
   };
 
+  // Helper to map withdrawal fields
+  function mapWithdrawalFields(w) {
+    return {
+      ...w,
+      adminNote: w.admin_note,
+      rejectionReason: w.rejection_reason,
+      proofImageUrl: w.proof_image_url,
+      createdAt: w.created_at,
+    };
+  }
+
   // Load settings and withdrawal history
   useEffect(() => {
     const loadData = async () => {
@@ -168,18 +182,15 @@ export default function Withdrawal() {
         // Fetch withdrawal history from the database
         if (user) {
           const { data: withdrawalData, error: withdrawalError } = await supabase
-            .from('withdrawals')
+            .from('withdrawal_requests')
             .select('*')
             .eq('user_uid', user.id)
             .order('created_at', { ascending: false });
           if (withdrawalError) {
             throw withdrawalError;
           }
-          setWithdrawalHistory(withdrawalData || []);
+          setWithdrawalHistory((withdrawalData || []).map(mapWithdrawalFields));
         }
-        // Remove/comment out the mock data section
-        // const mockHistory: WithdrawalRequest[] = [ ... ];
-        // setWithdrawalHistory(mockHistory);
       } catch (error) {
         console.error('Error loading withdrawal data:', error);
         toast({
@@ -212,7 +223,7 @@ export default function Withdrawal() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.type || !formData.amount || !formData.method) {
@@ -257,24 +268,65 @@ export default function Withdrawal() {
       return;
     }
 
-    // Submit withdrawal request
-    const newWithdrawal: WithdrawalRequest = {
-      id: Date.now().toString(),
-      type: formData.type,
-      amount: amount,
-      method: formData.method,
-      accountDetails: formData.accountDetails,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    setWithdrawalHistory(prev => [newWithdrawal, ...prev]);
-
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      toast({
+        title: t('common.error'),
+        description: 'User not authenticated',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Fetch user info
+    const { data: userInfo } = await supabase
+      .from('user_info')
+      .select('first_name, last_name, phone, wallet')
+      .eq('user_uid', user.id)
+      .single();
+    // Fetch available offers (customize as needed)
+    const { data: offersData } = await supabase
+      .from('offers')
+      .select('title')
+      .eq('active', true);
+    const availableOffers = offersData ? offersData.map(o => o.title).join(', ') : '';
+    const { error: insertError } = await supabase
+      .from('withdrawal_requests')
+      .insert([
+        {
+          user_uid: user.id,
+          user_name: userInfo ? `${userInfo.first_name} ${userInfo.last_name}` : '',
+          phone_number: userInfo?.phone || '',
+          wallet_type: userInfo?.wallet || '',
+          available_offers: availableOffers,
+          type: formData.type,
+          amount: parseFloat(formData.amount),
+          method: formData.method,
+          account_details: formData.accountDetails,
+          status: 'pending',
+        },
+      ]);
+    if (insertError) {
+      toast({
+        title: t('common.error'),
+        description: insertError.message,
+        variant: 'destructive',
+      });
+      return;
+    }
     toast({
       title: t('common.success'),
       description: t('withdrawal.success.message'),
     });
-
+    // Refresh withdrawal history
+    const { data: withdrawalData, error: withdrawalError } = await supabase
+      .from('withdrawal_requests')
+      .select('*')
+      .eq('user_uid', user.id)
+      .order('created_at', { ascending: false });
+    if (!withdrawalError) {
+      setWithdrawalHistory((withdrawalData || []).map(mapWithdrawalFields));
+    }
     // Reset form
     setFormData({
       type: '',
@@ -560,15 +612,28 @@ export default function Withdrawal() {
                               {new Date(withdrawal.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              {withdrawal.status === 'rejected' && withdrawal.rejectionReason && (
-                                <div className="text-sm text-red-600">
+                              {withdrawal.rejectionReason && (
+                                <div className="text-sm text-red-600 mb-1">
                                   <strong>{t('withdrawal.rejectionReason')}:</strong> {withdrawal.rejectionReason}
                                 </div>
                               )}
-                              {withdrawal.status === 'paid' && withdrawal.adminNote && (
-                                <div className="text-sm text-green-600">
+                              {withdrawal.adminNote && (
+                                <div className="text-sm text-green-600 mb-1">
                                   <strong>{t('withdrawal.adminNote')}:</strong> {withdrawal.adminNote}
                                 </div>
+                              )}
+                              {withdrawal.status === 'paid' && withdrawal.proofImageUrl && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="mt-1"
+                                  onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
+                                >
+                                  {t('withdrawal.viewProof') || 'View Proof'}
+                                </Button>
+                              )}
+                              {!withdrawal.rejectionReason && !withdrawal.adminNote && !(withdrawal.status === 'paid' && withdrawal.proofImageUrl) && (
+                                <span className="text-muted-foreground">{t('withdrawal.noDetails') || 'No additional details'}</span>
                               )}
                             </TableCell>
                           </TableRow>
@@ -582,6 +647,16 @@ export default function Withdrawal() {
           </Tabs>
         </div>
       </div>
+
+      {/* Modal for proof image */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-background p-4 rounded shadow-lg max-w-lg w-full flex flex-col items-center">
+            <img src={modalImageUrl} alt="Proof" className="max-h-[70vh] max-w-full mb-4 rounded" />
+            <Button onClick={() => setShowImageModal(false)}>{t('common.close') || 'Close'}</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

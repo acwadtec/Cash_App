@@ -61,6 +61,71 @@ A modern React + Vite + TypeScript web app for managing user deposits, withdrawa
 - Move all business logic (balances, approvals, etc.) to the backend
 - Add real authentication and security
 
+## Settings Table
+
+The `settings` table is used to store application-wide configuration values, such as withdrawal time slots and package withdrawal limits. This allows you to change business rules without redeploying code.
+
+### How to Create the Table
+
+Run this SQL in your Supabase SQL editor:
+
+```sql
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL
+);
+```
+
+### Recommended RLS Policies
+
+Enable RLS on the table:
+
+```sql
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+```
+
+Allow all authenticated users to read settings:
+
+```sql
+CREATE POLICY "Allow all authenticated users to read settings"
+ON settings
+FOR SELECT
+USING (
+  auth.role() = 'authenticated'
+);
+```
+
+Allow only admins to update/insert/delete settings (if you have an `admins` table):
+
+```sql
+CREATE POLICY "Allow only admins to update settings"
+ON settings
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM admins WHERE admins.user_uid = auth.uid()
+  )
+);
+
+CREATE POLICY "Allow only admins to insert settings"
+ON settings
+FOR INSERT
+USING (
+  EXISTS (
+    SELECT 1 FROM admins WHERE admins.user_uid = auth.uid()
+  )
+);
+
+CREATE POLICY "Allow only admins to delete settings"
+ON settings
+FOR DELETE
+USING (
+  EXISTS (
+    SELECT 1 FROM admins WHERE admins.user_uid = auth.uid()
+  )
+);
+```
+
 ---
 
 **This project is for demo/prototyping only. Do not use as-is in production.**
