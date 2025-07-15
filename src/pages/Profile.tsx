@@ -25,15 +25,12 @@ export default function Profile() {
   const [level1Referrals, setLevel1Referrals] = useState<any[]>([]);
   const [level2Referrals, setLevel2Referrals] = useState<any[]>([]);
   const [level3Referrals, setLevel3Referrals] = useState<any[]>([]);
-<<<<<<< Updated upstream
   const { balances, loading: loadingBalances } = useUserBalances();
   // Calculate capital as the sum of personal_earnings, team_earnings, and bonuses
   const capital = balances
     ? balances.personal_earnings + balances.team_earnings + balances.bonuses
     : 0;
-=======
   const [levels, setLevels] = useState<any[]>([]);
->>>>>>> Stashed changes
 
   useEffect(() => {
     const checkUserInfo = async () => {
