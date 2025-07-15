@@ -28,6 +28,7 @@ import { toast } from '@/hooks/use-toast';
 // Services
 import { supabase } from '@/lib/supabase';
 import { checkIfUserIsAdmin } from '@/lib/supabase';
+import { checkAndAwardAllBadges } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -3221,6 +3222,24 @@ export default function AdminDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Button
+        className="mb-4"
+        onClick={async () => {
+          toast({ title: 'Syncing badges for all users...', description: 'This may take a moment.' });
+          const { data: users, error } = await supabase.from('user_info').select('user_uid');
+          if (error) {
+            toast({ title: 'Error', description: 'Failed to fetch users', variant: 'destructive' });
+            return;
+          }
+          for (const user of users) {
+            await checkAndAwardAllBadges(user.user_uid);
+          }
+          toast({ title: 'Success', description: 'All badges have been synced for all users!' });
+        }}
+      >
+        Sync Badges for All Users
+      </Button>
     </div>
   );
 }
