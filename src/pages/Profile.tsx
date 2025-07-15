@@ -403,6 +403,16 @@ export default function Profile() {
             </CardContent>
           </Card>
 
+          {/* User Balance Card */}
+          <Card className="shadow-glow">
+            <CardContent className="p-6 flex items-center justify-between">
+              <span className="text-lg font-semibold">{t('profile.balance')}</span>
+              <span className="text-2xl font-bold text-primary">
+                {typeof userInfo?.balance === 'number' ? userInfo.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+              </span>
+            </CardContent>
+          </Card>
+
           {/* Gamification: Level and Badges */}
           <Card className="shadow-glow">
               <CardHeader>

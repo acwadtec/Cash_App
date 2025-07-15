@@ -210,10 +210,6 @@ const translations = {
     
     // Profile Page
     'profile.totalEarnings': 'إجمالي الأرباح',
-    'profile.teamEarnings': 'أرباح الفريق',
-    'profile.capital': 'رأس المال',
-    'profile.personalEarnings': 'الأرباح الشخصية',
-    'profile.bonuses': 'المكافآت',
     'profile.recentActivity': 'النشاط الأخير',
     'profile.accountStatus': 'حالة الحساب',
     'profile.emailVerification': 'التحقق من البريد الإلكتروني',
@@ -698,79 +694,12 @@ const translations = {
     'profile.view': 'عرض',
     'profile.idFrontLabel': 'الوجه الأمامي',
     'profile.idBackLabel': 'الوجه الخلفي',
-    // Update Account Page
-    'updateAccount.title': 'تحديث بيانات الحساب',
-    'updateAccount.subtitle': 'يرجى إكمال بيانات حسابك للمتابعة',
-    'updateAccount.submit': 'إكمال التسجيل',
-    'updateAccount.success': 'تم حفظ البيانات بنجاح',
-    'updateAccount.error': 'حدث خطأ أثناء الحفظ',
-    // Withdrawal Page
-    'withdrawal.completeProfileAlert': 'يرجى إكمال بيانات حسابك لإجراء السحب. سيتم تحويلك لإعداد الحساب...',
-    // Deposit Page Additional (missing keys)
-    'deposit.error.amountInvalid': 'Please enter a valid amount',
-    'deposit.error.phoneInvalid': 'Please enter a valid phone number',
-    'deposit.error.loginRequired': 'Please login to submit deposit',
-    'deposit.error.uploadFailed': 'Failed to upload screenshot. Please try again.',
-    'deposit.error.submitFailed': 'Failed to submit deposit request. Please try again.',
-    'deposit.error.historyFailed': 'Failed to load deposit history',
-    'deposit.error.numbersFailed': 'Failed to load deposit numbers',
-    'deposit.error.noNumbers': 'No deposit numbers available',
-    'deposit.error.fileSize': 'File size must be less than 5MB',
-
-
-
-    // Admin Dashboard Additional
-    'admin.editBadge': 'تعديل الشارة',
-    'admin.createBadge': 'إنشاء شارة',
-    'admin.badgeName': 'اسم الشارة',
-    'admin.badgeDescription': 'وصف الشارة',
-    'admin.badgeType': 'نوع الشارة',
-    'admin.badgeRequirement': 'المتطلب',
-    'admin.badgePoints': 'النقاط الممنوحة',
-    'admin.editLevel': 'تعديل المستوى',
-    'admin.createLevel': 'إنشاء مستوى',
-    'admin.levelNumber': 'رقم المستوى',
-    'admin.levelRequirement': 'النقاط المطلوبة',
-    'admin.levelName': 'اسم المستوى',
-    'admin.editUserBadge': 'تعديل شارة المستخدم',
-    'admin.assignBadge': 'تعيين شارة',
-    'admin.userBadges': 'إحصائيات شارات المستخدمين',
-    'admin.user': 'المستخدم',
-    'admin.badge': 'شارة',
-    'admin.earnedAt': 'تم الحصول عليها في',
-    'admin.points': 'النقاط',
-    'admin.confirmDelete': 'تأكيد الحذف',
-    'admin.deleteWarning': 'هل أنت متأكد أنك تريد حذف',
-    'admin.deleteWarning2': 'لا يمكن التراجع عن هذا الإجراء.',
-    'admin.noLevels': 'لا توجد مستويات',
-    'offers.loading': 'جاري تحميل العروض...',
-
-    // Admin Gamification
-    'admin.gamification': 'نظام التحفيز',
-    'admin.badges': 'إدارة الشارات',
-    'admin.levels': 'إدارة المستويات',
-    'admin.gamificationSettings': 'إعدادات نظام التحفيز',
-    'admin.pointsMultiplier': 'مضاعف النقاط',
-    'admin.badgeActive': 'نشط',
-    'admin.levelDescription': 'الوصف',
-    'admin.levelBenefits': 'المزايا',
-    'admin.pointsEarned': 'النقاط المكتسبة',
-    'admin.noUserBadges': 'لم يتم الحصول على شارات بعد',
-    'admin.automation': 'إعدادات الأتمتة',
-    'admin.update': 'تحديث',
-    'admin.create': 'إنشاء',
-    'admin.cancel': 'إلغاء',
-    'admin.assign': 'تعيين',
-    'admin.actions': 'الإجراءات',
-    'common.chooseFile': 'اختر ملف',
-
-    // Referral Network Page
-    'referral.networkTitle': 'شبكة الإحالة',
-    'referral.level2': 'المستوى 2 (غير مباشر)',
-    'referral.level3': 'المستوى 3',
-    'referral.level1List': 'إحالات المستوى 1:',
-    'referral.level2List': 'إحالات المستوى 2:',
-    'referral.level3List': 'إحالات المستوى 3:',
+    'profile.balance': 'الرصيد الحالي',
+    'profile.personalEarnings': 'الأرباح الشخصية',
+    'profile.teamEarnings': 'أرباح الفريق',
+    'profile.bonuses': 'المكافآت',
+    'profile.capital': 'رأس المال',
+    // ... existing code ...
 
   },
   en: {
@@ -928,10 +857,6 @@ const translations = {
     
     // Profile Page
     'profile.totalEarnings': 'Total Earnings',
-    'profile.teamEarnings': 'Team Earnings',
-    'profile.capital': 'Capital',
-    'profile.personalEarnings': 'Personal Earnings',
-    'profile.bonuses': 'Bonuses',
     'profile.recentActivity': 'Recent Activity',
     'profile.accountStatus': 'Account Status',
     'profile.emailVerification': 'Email Verification',
@@ -1402,91 +1327,12 @@ const translations = {
     'profile.view': 'View',
     'profile.idFrontLabel': 'Front',
     'profile.idBackLabel': 'Back',
-    // Update Account Page
-    'updateAccount.title': 'Update Account Information',
-    'updateAccount.subtitle': 'Please complete your account information to continue',
-    'updateAccount.submit': 'Complete Registration',
-    'updateAccount.success': 'Data saved successfully',
-    'updateAccount.error': 'An error occurred while saving',
-    // Withdrawal Page
-    'withdrawal.completeProfileAlert': 'Please complete your account information to make withdrawals. Redirecting to profile setup...',
-    // Deposit Page Additional (missing keys)
-    'deposit.error.amountInvalid': 'Please enter a valid amount',
-    'deposit.error.phoneInvalid': 'Please enter a valid phone number',
-    'deposit.error.loginRequired': 'Please login to submit deposit',
-    'deposit.error.uploadFailed': 'Failed to upload screenshot. Please try again.',
-    'deposit.error.submitFailed': 'Failed to submit deposit request. Please try again.',
-    'deposit.error.historyFailed': 'Failed to load deposit history',
-    'deposit.error.numbersFailed': 'Failed to load deposit numbers',
-    'deposit.error.noNumbers': 'No deposit numbers available',
-    'deposit.error.fileSize': 'File size must be less than 5MB',
-
-    // Home Page Hero Section
-    'home.hero.title': 'Welcome to Cash',
-    'home.hero.subtitle': 'Smart trading platform to manage your earnings securely',
-    'home.hero.cta': 'Get Started',
-    'home.hero.learnMore': 'Learn More',
-
-    // Home Page Features Section
-    'home.features.title': 'Why Choose Cash?',
-
-    // Home Page CTA Section
-    'home.cta.title': 'Start Your Journey with Cash Today',
-    'home.cta.subtitle': 'Join thousands of users who trust Cash platform to manage their earnings',
-    'home.cta.button': 'Create Free Account',
-
-    // Admin Dashboard Additional
-    'admin.editBadge': 'Edit Badge',
-    'admin.createBadge': 'Create Badge',
-    'admin.badgeName': 'Badge Name',
-    'admin.badgeDescription': 'Description',
-    'admin.badgeType': 'Type',
-    'admin.badgeRequirement': 'Requirement',
-    'admin.badgePoints': 'Points Awarded',
-    'admin.editLevel': 'Edit Level',
-    'admin.createLevel': 'Create Level',
-    'admin.levelNumber': 'Level Number',
-    'admin.levelRequirement': 'Points Required',
-    'admin.levelName': 'Level Name',
-    'admin.editUserBadge': 'Edit User Badge',
-    'admin.assignBadge': 'Assign Badge',
-    'admin.userBadges': 'User Badges Statistics',
-    'admin.user': 'User',
-    'admin.badge': 'Badge',
-    'admin.earnedAt': 'Earned At',
-    'admin.points': 'Points',
-    'admin.confirmDelete': 'Confirm Delete',
-    'admin.deleteWarning': 'Are you sure you want to delete',
-    'admin.deleteWarning2': 'This action cannot be undone.',
-    'admin.noLevels': 'No levels found',
-    'offers.loading': 'Loading offers...',
-    
-    // Admin Gamification
-    'admin.gamification': 'Gamification',
-    'admin.badges': 'Badges Management',
-    'admin.levels': 'Levels Management',
-    'admin.gamificationSettings': 'Gamification Settings',
-    'admin.pointsMultiplier': 'Points Multiplier',
-    'admin.badgeActive': 'Active',
-    'admin.levelDescription': 'Description',
-    'admin.levelBenefits': 'Benefits',
-    'admin.pointsEarned': 'Points Earned',
-    'admin.noUserBadges': 'No badges earned yet',
-    'admin.automation': 'Automation Settings',
-    'admin.update': 'Update',
-    'admin.create': 'Create',
-    'admin.cancel': 'Cancel',
-    'admin.assign': 'Assign',
-    'admin.actions': 'Actions',
-    'common.chooseFile': 'Choose File',
-    
-    // Referral Network Page
-    'referral.networkTitle': 'Referral Network',
-    'referral.level2': 'Level 2 (Indirect)',
-    'referral.level3': 'Level 3',
-    'referral.level1List': 'Level 1 Referrals:',
-    'referral.level2List': 'Level 2 Referrals:',
-    'referral.level3List': 'Level 3 Referrals:',
+    'profile.balance': 'Current Balance',
+    'profile.personalEarnings': 'Personal Earnings',
+    'profile.teamEarnings': 'Team Earnings',
+    'profile.bonuses': 'Bonuses',
+    'profile.capital': 'Capital',
+    // ... existing code ...
 
   }
 };
