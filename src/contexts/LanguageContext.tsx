@@ -797,6 +797,17 @@ const translations = {
     'offers.description': 'الوصف',
     'offers.amount': 'المبلغ',
     'offers.noDeadline': 'لا يوجد موعد نهائي',
+    'common.day': 'اليوم',
+    'common.startHour': 'ساعة البدء',
+    'common.endHour': 'ساعة الانتهاء',
+    'common.currentTimeSlots': 'فترات الوقت الحالية:',
+    'common.currentPackageLimits': 'حدود الحزمة الحالية:',
+    'common.noneSet': 'لم يتم التعيين',
+    'common.packageName': 'اسم الحزمة',
+    'common.min': 'الحد الأدنى',
+    'common.max': 'الحد الأقصى',
+    'common.daily': 'اليومي',
+    
   },
   en: {
 
@@ -1310,6 +1321,7 @@ const translations = {
     'admin.quickActions.manageWithdrawals': 'Manage Withdrawals',
     'admin.quickActions.supportChat': 'Customer Support',
     
+    
     // Offers
     'offers.manageOffers': 'Manage Offers',
     'offers.saving': 'Saving...',
@@ -1489,5 +1501,26 @@ const translations = {
     'offers.description': 'Description',
     'offers.amount': 'Amount',
     'offers.noDeadline': 'No deadline',
+    'common.day': 'Day',
+    'common.day.sunday': 'Sunday',
+    'common.day.monday': 'Monday',
+    'common.day.tuesday': 'Tuesday',
+    'common.day.wednesday': 'Wednesday',
+    'common.day.thursday': 'Thursday',
+    'common.day.friday': 'Friday',
+    'common.day.saturday': 'Saturday',
+    'common.startHour': 'Start Hour',
+    'common.endHour': 'End Hour',
+    'common.currentTimeSlots': 'Current Time Slots:',
+    'common.currentPackageLimits': 'Current Package Limits:',
+    'common.noneSet': 'None set',
+    'common.packageName': 'Package Name',
+    'common.min': 'Min',
+    'common.max': 'Max',
+    'common.daily': 'Daily',
+    // --- MISSING KEYS ADDED AUTOMATICALLY BELOW ---
+    // If you see these, please provide the correct translation!
+    // Example: 'some.key': 'TODO_EN',
+    // (Add actual missing keys here)
   }
 };

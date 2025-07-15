@@ -1899,7 +1899,7 @@ export default function AdminDashboard() {
                           <TableCell>{user.phone}</TableCell>
                           <TableCell>
                               <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
-                                {user.verified ? 'Verified' : 'Pending'}
+                                {user.verified ? t('admin.users.verified') : t('admin.users.pending')}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -2099,33 +2099,33 @@ export default function AdminDashboard() {
                     </Label>
                     <div className="flex flex-wrap gap-4 items-end mb-2 mt-2">
                       <select value={newTimeSlotDay} onChange={e => setNewTimeSlotDay(e.target.value)} className="border border-border rounded px-2 py-1 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">
-                        <option value="">Day</option>
-                        <option value="0">Sunday</option>
-                        <option value="1">Monday</option>
-                        <option value="2">Tuesday</option>
-                        <option value="3">Wednesday</option>
-                        <option value="4">Thursday</option>
-                        <option value="5">Friday</option>
-                        <option value="6">Saturday</option>
+                        <option value="">{t('common.day')}</option>
+                        <option value="0">{t('common.day.sunday')}</option>
+                        <option value="1">{t('common.day.monday')}</option>
+                        <option value="2">{t('common.day.tuesday')}</option>
+                        <option value="3">{t('common.day.wednesday')}</option>
+                        <option value="4">{t('common.day.thursday')}</option>
+                        <option value="5">{t('common.day.friday')}</option>
+                        <option value="6">{t('common.day.saturday')}</option>
                       </select>
-                      <input type="number" min="0" max="23" value={newTimeSlotStart} onChange={e => setNewTimeSlotStart(e.target.value)} placeholder="Start Hour" className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
-                      <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder="End Hour" className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
+                      <input type="number" min="0" max="23" value={newTimeSlotStart} onChange={e => setNewTimeSlotStart(e.target.value)} placeholder={t('common.startHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
+                      <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder={t('common.endHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
                       <Button size="sm" className="bg-success text-white dark:bg-green-700" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
                         {t('common.save') || 'Add'}
                               </Button>
                             </div>
-                    <div className="mb-2 text-xs text-muted-foreground">Current Time Slots:</div>
+                    <div className="mb-2 text-xs text-muted-foreground">{t('common.currentTimeSlots')}</div>
                     <ul className="list-disc ml-5 mb-2">
                       {timeSlots.map((slot, idx) => {
                         const [day, start, end] = slot.split(':');
                         return (
                           <li key={idx} className="flex items-center gap-2">
-                            <span><b>{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][day]}</b>: {start}:00 - {end}:00</span>
-                            <Button size="sm" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete') || 'Delete'}</Button>
+                            <span><b>{t(`common.day.${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day]}`)}</b>: {start}:00 - {end}:00</span>
+                            <Button size="sm" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete')}</Button>
                           </li>
                         );
                       })}
-                      {timeSlots.length === 0 && <li className="text-muted-foreground">None set</li>}
+                      {timeSlots.length === 0 && <li className="text-muted-foreground">{t('common.noneSet')}</li>}
                     </ul>
                     <div className="flex gap-2">
                       <Button onClick={handleSaveTimeSlots} className="mt-2" disabled={timeSlots.some(slot => !/^\d+:\d+:\d+$/.test(slot))}>{t('admin.saveTimeSlots')}</Button>
@@ -2140,22 +2140,22 @@ export default function AdminDashboard() {
                       <span className="text-xs text-muted-foreground" title="Set withdrawal limits for each package">🛈</span>
                     </Label>
                     <form className="flex flex-wrap gap-2 items-end mt-2 mb-2" onSubmit={handleAddOrUpdatePackageLimit}>
-                      <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder="Package Name" className="w-32" />
-                      <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder="Min" className="w-20" />
-                      <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder="Max" className="w-20" />
-                      <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder="Daily" className="w-20" />
+                      <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder={t('common.packageName')} className="w-32" />
+                      <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder={t('common.min')} className="w-20" />
+                      <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder={t('common.max')} className="w-20" />
+                      <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder={t('common.daily')} className="w-20" />
                       <Button size="sm" className="bg-success" type="submit" disabled={!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily}>{packageEditIndex === null ? (t('common.save') || 'Add') : (t('common.edit') || 'Edit')}</Button>
                       {packageEditIndex !== null && <Button size="sm" variant="outline" onClick={handleCancelEditPackageLimit}>{t('common.cancel') || 'Cancel'}</Button>}
                     </form>
-                    <div className="mb-2 text-xs text-muted-foreground">Current Package Limits:</div>
+                    <div className="mb-2 text-xs text-muted-foreground">{t('common.currentPackageLimits')}</div>
                     <Table className="mb-2">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Package</TableHead>
-                          <TableHead>Min</TableHead>
-                          <TableHead>Max</TableHead>
-                          <TableHead>Daily</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead>{t('common.packageName')}</TableHead>
+                          <TableHead>{t('common.min')}</TableHead>
+                          <TableHead>{t('common.max')}</TableHead>
+                          <TableHead>{t('common.daily')}</TableHead>
+                          <TableHead>{t('common.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2175,7 +2175,7 @@ export default function AdminDashboard() {
                           );
                         })}
                         {Object.keys(packageLimits).length === 0 && (
-                          <TableRow><TableCell colSpan={5} className="text-muted-foreground">None set</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={5} className="text-muted-foreground">{t('common.noneSet')}</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
