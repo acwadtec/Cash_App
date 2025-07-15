@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass } from 'lucide-react';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useUserBalances } from '@/hooks/useUserBalance';
 
 interface WithdrawalSettings {
   timeSlots: string[];
@@ -51,12 +52,17 @@ export default function Withdrawal() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [userPackage, setUserPackage] = useState('basic'); // This should come from user profile
   const [showAlert, setShowAlert] = useState(false);
+  const { balances, loading: loadingBalances } = useUserBalances();
+  // Calculate capital as the sum of personal_earnings, team_earnings, and bonuses
+  const capital = balances
+    ? balances.personal_earnings + balances.team_earnings + balances.bonuses
+    : 0;
 
   const withdrawalTypes = [
-    { value: 'personal', label: t('profile.personalEarnings'), balance: 1230.75 },
-    { value: 'team', label: t('profile.teamEarnings'), balance: 2450.50 },
-    { value: 'bonuses', label: t('profile.bonuses'), balance: 890.25 },
-    { value: 'capital', label: t('profile.capital'), balance: 5000.00 },
+    { value: 'personal', label: t('profile.personalEarnings'), balance: balances?.personal_earnings ?? 0 },
+    { value: 'team', label: t('profile.teamEarnings'), balance: balances?.team_earnings ?? 0 },
+    { value: 'bonuses', label: t('profile.bonuses'), balance: balances?.bonuses ?? 0 },
+    { value: 'capital', label: t('profile.capital'), balance: balances?.balance ?? 0 },
   ];
 
   const withdrawalMethods = [
@@ -128,7 +134,6 @@ export default function Withdrawal() {
         if (user) {
           // Check if user is admin
           const isAdmin = await checkIfUserIsAdmin(user.id);
-          
           // Only check user_info for non-admin users
           if (!isAdmin) {
             const { data: userInfo } = await supabase
@@ -136,70 +141,45 @@ export default function Withdrawal() {
               .select('user_uid')
               .eq('user_uid', user.id)
               .single();
-            
             if (!userInfo) {
-              // Show alert before redirecting
               setShowAlert(true);
               setTimeout(() => {
                 navigate('/update-account');
-              }, 3000); // Redirect after 3 seconds
+              }, 3000);
               return;
             }
           }
         }
-        
         // Load withdrawal settings
         const { data: timeSlotsData } = await supabase
           .from('settings')
           .select('value')
           .eq('key', 'withdrawal_time_slots')
           .single();
-
         const { data: packageLimitsData } = await supabase
           .from('settings')
           .select('value')
           .eq('key', 'package_withdrawal_limits')
           .single();
-
         setSettings({
           timeSlots: timeSlotsData?.value || [],
           packageLimits: packageLimitsData?.value || {}
         });
-
-        // Load withdrawal history (mock data for now)
-        const mockHistory: WithdrawalRequest[] = [
-          {
-            id: '1',
-            type: 'personal',
-            amount: 500,
-            method: 'bank',
-            accountDetails: '1234567890',
-            status: 'paid',
-            createdAt: '2024-07-10T10:00:00Z',
-            adminNote: 'Payment processed successfully'
-          },
-          {
-            id: '2',
-            type: 'bonuses',
-            amount: 200,
-            method: 'wallet',
-            accountDetails: 'wallet123',
-            status: 'rejected',
-            createdAt: '2024-07-09T15:30:00Z',
-            rejectionReason: 'Invalid wallet address provided'
-          },
-          {
-            id: '3',
-            type: 'team',
-            amount: 1000,
-            method: 'crypto',
-            accountDetails: 'crypto_address_123',
-            status: 'pending',
-            createdAt: '2024-07-11T09:15:00Z'
+        // Fetch withdrawal history from the database
+        if (user) {
+          const { data: withdrawalData, error: withdrawalError } = await supabase
+            .from('withdrawals')
+            .select('*')
+            .eq('user_uid', user.id)
+            .order('created_at', { ascending: false });
+          if (withdrawalError) {
+            throw withdrawalError;
           }
-        ];
-
-        setWithdrawalHistory(mockHistory);
+          setWithdrawalHistory(withdrawalData || []);
+        }
+        // Remove/comment out the mock data section
+        // const mockHistory: WithdrawalRequest[] = [ ... ];
+        // setWithdrawalHistory(mockHistory);
       } catch (error) {
         console.error('Error loading withdrawal data:', error);
         toast({
@@ -211,7 +191,6 @@ export default function Withdrawal() {
         setLoading(false);
       }
     };
-
     loadData();
   }, [t, navigate]);
 
@@ -484,6 +463,10 @@ export default function Withdrawal() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 rounded-lg bg-accent/20">
+                          <span className="font-medium">إجمالي الإيرادات</span>
+                          <span className="font-bold text-primary">{balances ? `$${balances.balance.toLocaleString()}` : '$0'}</span>
+                        </div>
                         {withdrawalTypes.map((type) => (
                           <div key={type.value} className="flex justify-between items-center p-3 rounded-lg bg-accent/20">
                             <span className="font-medium">{type.label}</span>
