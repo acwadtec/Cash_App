@@ -25,11 +25,15 @@ export default function Profile() {
   const [level1Referrals, setLevel1Referrals] = useState<any[]>([]);
   const [level2Referrals, setLevel2Referrals] = useState<any[]>([]);
   const [level3Referrals, setLevel3Referrals] = useState<any[]>([]);
+<<<<<<< Updated upstream
   const { balances, loading: loadingBalances } = useUserBalances();
   // Calculate capital as the sum of personal_earnings, team_earnings, and bonuses
   const capital = balances
     ? balances.personal_earnings + balances.team_earnings + balances.bonuses
     : 0;
+=======
+  const [levels, setLevels] = useState<any[]>([]);
+>>>>>>> Stashed changes
 
   useEffect(() => {
     const checkUserInfo = async () => {
@@ -316,6 +320,18 @@ export default function Profile() {
            'U';
   };
 
+  // Fetch levels
+  useEffect(() => {
+    const fetchLevels = async () => {
+      const { data, error } = await supabase
+        .from('levels')
+        .select('*')
+        .order('requirement', { ascending: true });
+      if (!error && data) setLevels(data);
+    };
+    fetchLevels();
+  }, []);
+
   if (loadingUserInfo) {
     return (
       <div className="min-h-screen py-20">
@@ -460,8 +476,20 @@ export default function Profile() {
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-2">{t('profile.level') || 'Level'}</h3>
                   <div className="text-3xl font-bold text-primary mb-2">
-                    {userInfo?.level || 1}
+                    {userInfo?.current_level || 1}
                   </div>
+                  {(() => {
+                    const levelObj = levels.find(lvl => lvl.level === userInfo?.current_level);
+                    return levelObj ? (
+                      <>
+                        <div className="text-lg font-semibold mb-1">{levelObj.name}</div>
+                        <div className="text-sm text-muted-foreground mb-1">{levelObj.description}</div>
+                        {levelObj.benefits && (
+                          <div className="text-sm text-green-500">{levelObj.benefits}</div>
+                        )}
+                      </>
+                    ) : null;
+                  })()}
                   <p className="text-sm text-muted-foreground">
                     {t('profile.levelDesc') || 'Your current level'}
                   </p>

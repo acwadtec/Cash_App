@@ -1893,31 +1893,31 @@ export default function AdminDashboard() {
                         </TableRow>
                       ) : (
                         paginatedUsers.map((user) => (
-                        <TableRow key={user.id}>
+                          <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone}</TableCell>
-                          <TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{user.phone}</TableCell>
+                            <TableCell>
                               <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
                                 {user.verified ? t('admin.users.verified') : t('admin.users.pending')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleView(user)}>
                                   {t('admin.view')}
-                              </Button>
+                                </Button>
                                 {!user.verified && (
                                   <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
                                     {t('admin.verify')}
-                                </Button>
-                              )}
+                                  </Button>
+                                )}
                                 <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
                                   {t('admin.remove')}
                                 </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         ))
                       )}
                     </TableBody>
@@ -2170,15 +2170,15 @@ export default function AdminDashboard() {
                               <TableCell>
                                 <Button size="sm" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
                                 <Button size="sm" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
-                              </TableCell>
-                            </TableRow>
+                          </TableCell>
+                        </TableRow>
                           );
                         })}
                         {Object.keys(packageLimits).length === 0 && (
                           <TableRow><TableCell colSpan={5} className="text-muted-foreground">{t('common.noneSet')}</TableCell></TableRow>
                         )}
-                      </TableBody>
-                    </Table>
+                    </TableBody>
+                  </Table>
                     <div className="flex gap-2">
                       <Button onClick={handleSavePackageLimits} className="mt-2" disabled={Object.keys(packageLimits).length === 0}>{t('admin.savePackageLimits')}</Button>
                       <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
