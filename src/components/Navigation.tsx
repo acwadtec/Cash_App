@@ -163,7 +163,7 @@ export function Navigation() {
               onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
               className="w-9 h-9 p-0 text-xs font-medium"
             >
-              {language === 'en' ? 'عربي' : 'EN'}
+              {language === 'en' ? t('language.arabic') : t('language.english')}
             </Button>
 
             {/* Notifications */}
@@ -270,7 +270,7 @@ export function Navigation() {
                   onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
                   className="w-9 h-9 p-0 text-xs font-medium"
                 >
-                  {language === 'en' ? 'عربي' : 'EN'}
+                  {language === 'en' ? t('language.arabic') : t('language.english')}
                 </Button>
               </div>
 

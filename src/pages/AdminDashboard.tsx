@@ -2872,8 +2872,8 @@ export default function AdminDashboard() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="true">Enabled</SelectItem>
-                              <SelectItem value="false">Disabled</SelectItem>
+                              <SelectItem value="true">{t('admin.automation.enabled') || 'Enabled'}</SelectItem>
+                              <SelectItem value="false">{t('admin.automation.disabled') || 'Disabled'}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2891,8 +2891,8 @@ export default function AdminDashboard() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="true">Enabled</SelectItem>
-                              <SelectItem value="false">Disabled</SelectItem>
+                              <SelectItem value="true">{t('admin.automation.enabled') || 'Enabled'}</SelectItem>
+                              <SelectItem value="false">{t('admin.automation.disabled') || 'Disabled'}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -3047,14 +3047,14 @@ export default function AdminDashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="achievement">Achievement</SelectItem>
-                  <SelectItem value="referral">Referral</SelectItem>
-                  <SelectItem value="deposit">Deposit</SelectItem>
-                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                  <SelectItem value="profile">Profile</SelectItem>
-                  <SelectItem value="verification">Verification</SelectItem>
-                  <SelectItem value="special">Special</SelectItem>
-                  <SelectItem value="loyalty">Loyalty</SelectItem>
+                  <SelectItem value="achievement">{t('admin.badgeType.achievement') || 'Achievement'}</SelectItem>
+                  <SelectItem value="referral">{t('admin.badgeType.referral') || 'Referral'}</SelectItem>
+                  <SelectItem value="deposit">{t('admin.badgeType.deposit') || 'Deposit'}</SelectItem>
+                  <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal') || 'Withdrawal'}</SelectItem>
+                  <SelectItem value="profile">{t('admin.badgeType.profile') || 'Profile'}</SelectItem>
+                  <SelectItem value="verification">{t('admin.badgeType.verification') || 'Verification'}</SelectItem>
+                  <SelectItem value="special">{t('admin.badgeType.special') || 'Special'}</SelectItem>
+                  <SelectItem value="loyalty">{t('admin.badgeType.loyalty') || 'Loyalty'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
