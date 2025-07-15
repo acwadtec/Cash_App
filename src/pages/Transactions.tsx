@@ -220,7 +220,7 @@ export default function Transactions() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                 <div>
                   <div className="text-3xl font-bold text-success mb-2">
-                    ${transactions.filter(t => t.type !== 'withdrawal').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
+                    ${transactions.filter(t => t.type !== 'withdrawal' && t.status === 'completed').reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground">{t('transactions.totalIncome')}</div>
                 </div>
