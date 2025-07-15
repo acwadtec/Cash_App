@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin, checkAndAwardAllBadges } from '@/lib/supabase';
 import { AlertTriangle } from 'lucide-react';
 
 export default function Deposit() {
@@ -257,6 +257,8 @@ export default function Deposit() {
         console.error('Gamification error:', gamificationError);
         // Don't fail the deposit if gamification fails
       }
+      
+      await checkAndAwardAllBadges(user.id);
       
     } catch (error) {
       console.error('Submit error:', error);

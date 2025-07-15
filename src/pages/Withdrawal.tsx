@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass } from 'lucide-react';
-import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin, checkAndAwardAllBadges } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUserBalances } from '@/hooks/useUserBalance';
 

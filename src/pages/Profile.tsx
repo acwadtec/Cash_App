@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import ReferralCode from '@/components/ReferralCode';
 import { Camera, Edit } from 'lucide-react';
 import { useUserBalances } from '@/hooks/useUserBalance';
+import { checkAndAwardAllBadges } from '@/lib/supabase';
 
 export default function Profile() {
   const { t } = useLanguage();

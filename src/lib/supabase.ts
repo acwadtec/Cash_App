@@ -76,3 +76,63 @@ export const checkAndAwardReferralBadges = async (userUid: string) => {
     }
   }
 }; 
+
+// Helper to check and award all badge types
+export const checkAndAwardAllBadges = async (userUid) => {
+  // 1. Get user info
+  const { data: user, error: userError } = await supabase
+    .from('user_info')
+    .select('*')
+    .eq('user_uid', userUid)
+    .single();
+  if (userError || !user) return;
+
+  // 2. Get all active badges
+  const { data: badges } = await supabase.from('badges').select('*').eq('is_active', true);
+  if (!badges) return;
+
+  for (const badge of badges) {
+    let meetsRequirement = false;
+
+    if (badge.type === 'referral' && user.referral_count >= badge.requirement) meetsRequirement = true;
+
+    if (badge.type === 'deposit') {
+      const { count } = await supabase
+        .from('deposit_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_uid', userUid)
+        .eq('status', 'approved');
+      if (count >= badge.requirement) meetsRequirement = true;
+    }
+
+    if (badge.type === 'withdrawal') {
+      const { count } = await supabase
+        .from('withdrawal_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_uid', userUid)
+        .eq('status', 'approved');
+      if (count >= badge.requirement) meetsRequirement = true;
+    }
+
+    if (badge.type === 'profile' && user.verified) meetsRequirement = true;
+
+    // Add more types as needed
+
+    if (meetsRequirement) {
+      // Check if user already has badge
+      const { data: existing } = await supabase
+        .from('user_badges')
+        .select('id')
+        .eq('user_uid', userUid)
+        .eq('badge_id', badge.id)
+        .single();
+      if (!existing) {
+        await supabase.from('user_badges').insert({
+          user_uid: userUid,
+          badge_id: badge.id,
+          earned_at: new Date().toISOString(),
+        });
+      }
+    }
+  }
+}; 

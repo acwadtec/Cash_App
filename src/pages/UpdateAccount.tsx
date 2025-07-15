@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin, checkAndAwardAllBadges } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
@@ -149,6 +149,8 @@ export default function UpdateAccount() {
         },
       ]);
       if (error) throw error;
+
+      await checkAndAwardAllBadges(user.id);
 
       // Process referral if pending
       const pendingReferralCode = localStorage.getItem('pendingReferralCode');

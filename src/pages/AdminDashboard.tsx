@@ -1651,6 +1651,10 @@ export default function AdminDashboard() {
     }
   };
 
+  // Add state for editing user level
+  const [editingUserLevelId, setEditingUserLevelId] = useState(null);
+  const [editedLevel, setEditedLevel] = useState(null);
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -1876,6 +1880,7 @@ export default function AdminDashboard() {
                         <TableHead>{t('admin.users.phone')}</TableHead>
                         <TableHead>{t('admin.users.status')}</TableHead>
                         <TableHead>{t('admin.users.actions')}</TableHead>
+                        <TableHead>Level</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1916,6 +1921,37 @@ export default function AdminDashboard() {
                                   {t('admin.remove')}
                                 </Button>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              {editingUserLevelId === user.user_uid ? (
+                                <div className="flex items-center gap-2">
+                                  <select
+                                    value={editedLevel ?? user.current_level}
+                                    onChange={e => setEditedLevel(Number(e.target.value))}
+                                    className="border rounded px-2 py-1"
+                                  >
+                                    {levels.map(lvl => (
+                                      <option key={lvl.level} value={lvl.level}>
+                                        {lvl.level} - {lvl.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <Button size="sm" onClick={async () => {
+                                    await supabase.from('user_info').update({ current_level: editedLevel }).eq('user_uid', user.user_uid);
+                                    setEditingUserLevelId(null);
+                                    setEditedLevel(null);
+                                    // Optionally refresh users list here
+                                    const { data } = await supabase.from('user_info').select('*');
+                                    setUsers(data || []);
+                                  }}>Save</Button>
+                                  <Button size="sm" variant="outline" onClick={() => { setEditingUserLevelId(null); setEditedLevel(null); }}>Cancel</Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span>{user.current_level}</span>
+                                  <Button size="sm" variant="outline" onClick={() => { setEditingUserLevelId(user.user_uid); setEditedLevel(user.current_level); }}>Edit</Button>
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
@@ -2793,123 +2829,6 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Gamification Settings */}
-              <Card className="shadow-card mt-6">
-                <CardHeader>
-                  <CardTitle>{t('admin.gamificationSettings') || 'Gamification Settings'}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">{t('admin.pointsMultiplier') || 'Points Multiplier'}</h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Deposit</Label>
-                          <Input
-                            type="number"
-                            value={gamificationSettings.points_multiplier?.deposit || 1}
-                            onChange={(e) => {
-                              const newSettings = { ...gamificationSettings };
-                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
-                              newSettings.points_multiplier.deposit = parseFloat(e.target.value) || 1;
-                              setGamificationSettings(newSettings);
-                            }}
-                            className="w-20"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Referral</Label>
-                          <Input
-                            type="number"
-                            value={gamificationSettings.points_multiplier?.referral || 2}
-                            onChange={(e) => {
-                              const newSettings = { ...gamificationSettings };
-                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
-                              newSettings.points_multiplier.referral = parseFloat(e.target.value) || 2;
-                              setGamificationSettings(newSettings);
-                            }}
-                            className="w-20"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Withdrawal</Label>
-                          <Input
-                            type="number"
-                            value={gamificationSettings.points_multiplier?.withdrawal || 1.5}
-                            onChange={(e) => {
-                              const newSettings = { ...gamificationSettings };
-                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
-                              newSettings.points_multiplier.withdrawal = parseFloat(e.target.value) || 1.5;
-                              setGamificationSettings(newSettings);
-                            }}
-                            className="w-20"
-                          />
-                        </div>
-                      </div>
-                      <Button 
-                        onClick={() => handleUpdateGamificationSettings('points_multiplier', gamificationSettings.points_multiplier)}
-                        className="w-full"
-                      >
-                        {t('admin.updateSettings') || 'Update Settings'}
-                      </Button>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="font-semibold">{t('admin.automation') || 'Automation Settings'}</h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Auto Award Badges</Label>
-                          <Select
-                            value={gamificationSettings.badge_auto_award ? 'true' : 'false'}
-                            onValueChange={(value) => {
-                              const newSettings = { ...gamificationSettings };
-                              newSettings.badge_auto_award = value === 'true';
-                              setGamificationSettings(newSettings);
-                            }}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true">{t('admin.automation.enabled') || 'Enabled'}</SelectItem>
-                              <SelectItem value="false">{t('admin.automation.disabled') || 'Disabled'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Auto Update Levels</Label>
-                          <Select
-                            value={gamificationSettings.level_auto_update ? 'true' : 'false'}
-                            onValueChange={(value) => {
-                              const newSettings = { ...gamificationSettings };
-                              newSettings.level_auto_update = value === 'true';
-                              setGamificationSettings(newSettings);
-                            }}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true">{t('admin.automation.enabled') || 'Enabled'}</SelectItem>
-                              <SelectItem value="false">{t('admin.automation.disabled') || 'Disabled'}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <Button 
-                        onClick={() => {
-                          handleUpdateGamificationSettings('badge_auto_award', gamificationSettings.badge_auto_award);
-                          handleUpdateGamificationSettings('level_auto_update', gamificationSettings.level_auto_update);
-                        }}
-                        className="w-full"
-                      >
-                        {t('admin.updateSettings') || 'Update Settings'}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* User Badges Statistics */}
               <Card className="shadow-card mt-6">
