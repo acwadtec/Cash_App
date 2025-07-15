@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { checkAndAwardReferralBadges } from '@/lib/supabase';
 
 export default function Register() {
   const { t } = useLanguage();
@@ -183,6 +184,8 @@ export default function Register() {
           total_referral_points: newTotalPointsL1
         })
         .eq('user_uid', referrerData.user_uid);
+      // Award referral badge if requirement met
+      await checkAndAwardReferralBadges(referrerData.user_uid);
       // Record the Level 1 referral
       await supabase
         .from('referrals')
@@ -213,6 +216,8 @@ export default function Register() {
               total_referral_points: newTotalPointsL2
             })
             .eq('user_uid', referrer2Data.user_uid);
+          // Award referral badge if requirement met
+          await checkAndAwardReferralBadges(referrer2Data.user_uid);
           // Record the Level 2 referral
           await supabase
             .from('referrals')
@@ -242,6 +247,8 @@ export default function Register() {
                   total_referral_points: newTotalPointsL3
                 })
                 .eq('user_uid', referrer3Data.user_uid);
+              // Award referral badge if requirement met
+              await checkAndAwardReferralBadges(referrer3Data.user_uid);
               // Record the Level 3 referral
               await supabase
                 .from('referrals')

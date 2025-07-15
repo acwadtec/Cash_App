@@ -1970,31 +1970,31 @@ export default function AdminDashboard() {
                         </TableRow>
                       ) : (
                         paginatedUsers.map((user) => (
-                        <TableRow key={user.id}>
+                          <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone}</TableCell>
-                          <TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{user.phone}</TableCell>
+                            <TableCell>
                               <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
                                 {user.verified ? t('admin.users.verified') : t('admin.users.pending')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleView(user)}>
                                   {t('admin.view')}
-                              </Button>
+                                </Button>
                                 {!user.verified && (
                                   <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
                                     {t('admin.verify')}
-                                </Button>
-                              )}
+                                  </Button>
+                                )}
                                 <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
                                   {t('admin.remove')}
                                 </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         ))
                       )}
                     </TableBody>
