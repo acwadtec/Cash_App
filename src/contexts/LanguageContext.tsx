@@ -455,6 +455,9 @@ const translations = {
     'home.hero.subtitle': 'منصة التداول الذكية لإدارة أرباحك بأمان',
     'home.hero.cta': 'ابدأ الآن',
     'home.hero.learnMore': 'اعرف المزيد',
+    'home.hero.readMore': 'اقرأ المزيد',
+    'readmore.title': 'تعرف على المزيد عن تطبيق كاش',
+    'readmore.body': 'تطبيق كاش هو منصة مالية حديثة تتيح لك إدارة أموالك، الاستفادة من العروض، وكسب المكافآت من خلال نظام الإحالة والتحديات. استمتع بتجربة آمنة وسريعة مع دعم متكامل وميزات متقدمة.',
 
     // Home Page Features Section
     'home.features.title': 'لماذا تختار كاش؟',
@@ -1522,6 +1525,9 @@ const translations = {
     'common.min': 'Min',
     'common.max': 'Max',
     'common.daily': 'Daily',
+    'home.hero.readMore': 'Read More',
+    'readmore.title': 'Learn More About Cash App',
+    'readmore.body': 'Cash App is a modern financial platform that lets you manage your money, benefit from offers, and earn rewards through referrals and challenges. Enjoy a secure, fast experience with full support and advanced features.',
 
   }
 };

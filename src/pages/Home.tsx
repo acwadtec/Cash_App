@@ -113,11 +113,11 @@ export default function Home() {
             </Button>
             <Button
               asChild
-              variant="outline"
+              variant="secondary"
               size="lg"
-              className="text-lg px-8 py-3 font-arabic font-bold border-2 border-primary text-primary bg-transparent hover:bg-primary/10 hover:text-primary-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors duration-200 shadow-sm"
+              className="text-lg px-8 py-3 font-arabic font-bold border-2 border-primary text-primary bg-secondary hover:bg-primary/10 hover:text-primary-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors duration-200 shadow-sm"
             >
-              <Link to="/offers">{t('home.hero.learnMore')}</Link>
+              <Link to="/read-more">{t('home.hero.readMore')}</Link>
             </Button>
           </div>
         </div>

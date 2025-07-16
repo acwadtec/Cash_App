@@ -20,6 +20,7 @@ import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 import ManageOffers from './pages/ManageOffers';
 import ReferralNetwork from './pages/ReferralNetwork';
+import ReadMore from "./pages/ReadMore";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="help" element={<HelpCenter />} />
                 <Route path="manage-offers" element={<ManageOffers />} />
                 <Route path="referral-network" element={<ReferralNetwork />} />
+                <Route path="read-more" element={<ReadMore />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

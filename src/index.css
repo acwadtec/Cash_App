@@ -8,60 +8,53 @@
 
 @layer base {
   :root {
-    /* Light Mode - Cash Green Theme */
-    --background: 0 0% 96%;
-    --foreground: 210 15% 10%;
+    /* Light Mode - Cash Green Theme (softened) */
+    --background: 150 20% 94%; /* was 0 0% 96% */
+    --foreground: 210 20% 12%; /* was 210 15% 10% */
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 15% 10%;
+    --card: 0 0% 99%; /* was 0 0% 100% */
+    --card-foreground: 210 20% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 15% 10%;
+    --popover: 0 0% 99%; /* was 0 0% 100% */
+    --popover-foreground: 210 20% 12%;
 
-    /* Cash Brand Green */
-    --primary: 150 80% 35%;
+    /* Cash Brand Green - more contrast */
+    --primary: 150 80% 32%; /* was 150 80% 35% */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 150 70% 45%;
-    --primary-light: 150 60% 90%;
+    --primary-glow: 150 70% 40%; /* was 150 70% 45% */
+    --primary-light: 150 60% 85%; /* was 150 60% 90% */
 
-    --secondary: 150 30% 92%;
-    --secondary-foreground: 150 80% 25%;
+    --secondary: 150 20% 88%; /* was 150 30% 92% */
+    --secondary-foreground: 150 80% 22%; /* was 150 80% 25% */
 
-    --muted: 210 15% 90%;
-    --muted-foreground: 210 10% 40%;
+    --muted: 210 15% 88%; /* was 210 15% 90% */
+    --muted-foreground: 210 10% 38%; /* was 210 10% 40% */
 
-    --accent: 150 50% 88%;
-    --accent-foreground: 150 80% 30%;
+    --accent: 150 40% 82%; /* was 150 50% 88% */
+    --accent-foreground: 150 80% 28%; /* was 150 80% 30% */
 
-    --success: 140 70% 40%;
+    --success: 140 70% 38%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 90% 60%;
+    --warning: 45 90% 58%;
     --warning-foreground: 0 0% 10%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 75% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 85%;
-    --input: 210 20% 92%;
-    --ring: 150 80% 35%;
+    --border: 210 20% 80%; /* was 210 20% 85% */
+    --input: 210 20% 88%; /* was 210 20% 92% */
+    --ring: 150 80% 32%; /* was 150 80% 35% */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 96%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-background: 0 0% 94%; /* was 0 0% 96% */
+    --sidebar-foreground: 240 5.3% 22%; /* was 240 5.3% 26.1% */
+    --sidebar-primary: 240 5.9% 12%; /* was 240 5.9% 10% */
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
+    --sidebar-accent: 240 4.8% 93%; /* was 240 4.8% 95.9% */
+    --sidebar-accent-foreground: 240 5.9% 12%;
+    --sidebar-border: 220 13% 88%; /* was 220 13% 91% */
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
