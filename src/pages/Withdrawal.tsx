@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass } from 'lucide-react';
-import { supabase, checkIfUserIsAdmin, checkAndAwardAllBadges } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUserBalances } from '@/hooks/useUserBalance';
 
@@ -95,14 +95,16 @@ export default function Withdrawal() {
     if (amount < packageLimit.min) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.minAmount') 
+        message: t('withdrawal.error.minAmount')
+          .replace('${min}', `${packageLimit.min}`)
       };
     }
 
     if (amount > packageLimit.max) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.maxAmount') 
+        message: t('withdrawal.error.maxAmount')
+          .replace('${max}', `${packageLimit.max}`)
       };
     }
 
@@ -117,9 +119,13 @@ export default function Withdrawal() {
 
     const todayTotal = todayWithdrawals.reduce((sum, w) => sum + w.amount, 0);
     if (todayTotal + amount > packageLimit.daily) {
+      const remaining = packageLimit.daily - todayTotal;
       return { 
         valid: false, 
-        message: t('withdrawal.error.dailyLimit') 
+        message: t('withdrawal.error.dailyLimit')
+          .replace('${daily}', `${packageLimit.daily}`)
+          .replace('${used}', `${todayTotal}`)
+          .replace('${remaining}', `${remaining}`)
       };
     }
 
@@ -137,7 +143,7 @@ export default function Withdrawal() {
     };
   }
 
-  // Load settings and withdrawal history
+  // Fetch user info and package on mount
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -145,6 +151,7 @@ export default function Withdrawal() {
         // Check if user has user_info data
         const { data: userData } = await supabase.auth.getUser();
         const user = userData?.user;
+        let userPackageValue = 'basic';
         if (user) {
           // Check if user is admin
           const isAdmin = await checkIfUserIsAdmin(user.id);
@@ -152,7 +159,7 @@ export default function Withdrawal() {
           if (!isAdmin) {
             const { data: userInfo } = await supabase
               .from('user_info')
-              .select('user_uid')
+              .select('user_uid, package')
               .eq('user_uid', user.id)
               .single();
             if (!userInfo) {
@@ -161,6 +168,9 @@ export default function Withdrawal() {
                 navigate('/update-account');
               }, 3000);
               return;
+            }
+            if (userInfo.package) {
+              userPackageValue = userInfo.package;
             }
           }
         }
@@ -179,6 +189,7 @@ export default function Withdrawal() {
           timeSlots: timeSlotsData?.value || [],
           packageLimits: packageLimitsData?.value || {}
         });
+        setUserPackage(userPackageValue);
         // Fetch withdrawal history from the database
         if (user) {
           const { data: withdrawalData, error: withdrawalError } = await supabase
@@ -257,7 +268,7 @@ export default function Withdrawal() {
       return;
     }
 
-    // Check package limits
+    // Check package limits (use correct userPackage)
     const limitCheck = checkPackageLimits(amount);
     if (!limitCheck.valid) {
       toast({
@@ -418,7 +429,11 @@ export default function Withdrawal() {
                         <Alert className="mb-6 border-blue-200 bg-blue-50">
                           <Package className="h-4 w-4 text-blue-600" />
                           <AlertDescription className="text-blue-800">
-                            {t('withdrawal.packageLimits')}
+                            {t('withdrawal.packageLimits')
+                              .replace('${min}', `${settings.packageLimits[userPackage].min}`)
+                              .replace('${max}', `${settings.packageLimits[userPackage].max}`)
+                              .replace('${daily}', `${settings.packageLimits[userPackage].daily}`)
+                            }
                           </AlertDescription>
                         </Alert>
                       )}
