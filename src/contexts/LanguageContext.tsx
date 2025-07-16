@@ -196,6 +196,7 @@ const translations = {
     'features.support.desc': 'فريق الدعم متوفر طوال الوقت لمساعدتك',
     
     // Offers Page
+    'offers.loading': 'جاري التحميل...',
     'offers.title': 'العروض المتاحة',
     'offers.subtitle': 'اكتشف العروض المتاحة واحصل على مكافآت إضافية',
     'offers.trading': 'تداول',
@@ -240,6 +241,9 @@ const translations = {
     'profile.idBack': 'صورة الهوية - الوجه الخلفي',
     'profile.saving': 'جاري الحفظ...',
     'profile.save': 'حفظ البيانات',
+    'profile.totalRevenue': 'إجمالي الإيرادات',
+    'profile.capital': 'رأس المال',
+    'profile.rewards': 'المكافآت',
     
     // Transactions Page
     'transactions.title': 'سجل المعاملات',
@@ -461,11 +465,10 @@ const translations = {
 
     // Home Page Features Section
     'home.features.title': 'لماذا تختار كاش؟',
-
-    // Home Page CTA Section
-    'home.cta.title': 'ابدأ رحلتك مع كاش اليوم',
-    'home.cta.subtitle': 'انضم إلى آلاف المستخدمين الذين يثقون بمنصة كاش لإدارة أرباحهم',
-    'home.cta.button': 'إنشاء حساب مجاني',  
+    // --- SYNCHRONIZED TRANSLATION KEYS START ---
+    'home.cta.title': 'ابدأ رحلتك مع كاش اليوم', // Synced key
+    'home.cta.subtitle': 'انضم إلى آلاف المستخدمين الذين يثقون في منصة كاش لإدارة أرباحهم', // Synced key
+    'home.cta.button': 'أنشئ حساب مجاني', // Synced key
     
     // Admin Dashboard Additional
     'admin.analytics': 'التحليلات',
@@ -590,6 +593,9 @@ const translations = {
     'offers.create': 'إنشاء',
     'offers.preview': 'معاينة',
     'offers.removePreview': 'إزالة المعاينة',
+    'offers.deleteAll': 'حذف الكل',
+    'offers.list': 'قائمة العروض',
+    'admin.backToAdmin': 'العودة للوحة الإدارة',
     
     // Deposit
     'deposit.loading': 'جاري تحميل صفحة الإيداع...',
@@ -630,8 +636,8 @@ const translations = {
     'referral.yourCode': 'كود الإحالة الخاص بك',
     'referral.totalReferrals': 'إجمالي الإحالات',
     'referral.pointsEarned': 'النقاط المكتسبة',
-    'referral.level1': 'المستوى 1',
-    'referral.level2plus3': 'المستوى 2+3',
+    'referral.level1': 'المستوى الأول',
+    'referral.level2plus3': 'المستوى الثاني+الثالث',
     'referral.howItWorks': 'كيف يعمل',
     'referral.howItWorks.level1': 'اكسب نقاط عند تسجيل أصدقائك باستخدام كودك',
     'referral.howItWorks.level2': 'اكسب نقاط عند إحالة أصدقائك للآخرين',
@@ -683,26 +689,24 @@ const translations = {
     'register.validReferralTitle': 'كود الإحالة صالح',
     'register.validReferralDesc': 'سيتم إحالتك بواسطة',
     // Profile Page Additional
-    'profile.noData': 'لا توجد بيانات للملف الشخصي',
-    'profile.noDataDesc': 'يرجى إكمال بيانات حسابك لعرض ملفك الشخصي.',
-    'profile.updateAccount': 'تحديث بيانات الحساب',
+    'profile.accountInfo': 'معلومات الحساب',
     'profile.achievements': 'الإنجازات',
+    'profile.badges': 'الشارات',
+    'profile.bonuses': 'المكافآت',
+    'profile.edit': 'تعديل',
+    'profile.idBackLabel': 'الوجه الخلفي',
+    'profile.idFrontLabel': 'الوجه الأمامي',
+    'profile.idPhotos': 'صور الهوية',
     'profile.level': 'المستوى',
     'profile.levelDesc': 'مستواك الحالي',
-    'profile.badges': 'الشارات',
     'profile.noBadges': 'لم تحصل على أي شارات بعد',
-    'profile.accountInfo': 'معلومات الحساب',
-    'profile.edit': 'تعديل',
-    'profile.idPhotos': 'صور الهوية',
-    'profile.profilePhoto': 'صورة الملف الشخصي',
-    'profile.view': 'عرض',
-    'profile.idFrontLabel': 'الوجه الأمامي',
-    'profile.idBackLabel': 'الوجه الخلفي',
-    'profile.balance': 'الرصيد الحالي',
+    'profile.noData': 'لا توجد بيانات ملف شخصي',
+    'profile.noDataDesc': 'يرجى إكمال بيانات حسابك لعرض ملفك الشخصي.',
     'profile.personalEarnings': 'الأرباح الشخصية',
+    'profile.profilePhoto': 'صورة الملف الشخصي',
     'profile.teamEarnings': 'أرباح الفريق',
-    'profile.bonuses': 'المكافآت',
-    'profile.capital': 'رأس المال',
+    'profile.view': 'عرض',
+    
     // ... existing code ...
     'admin.accept': 'قبول',
     'admin.reject': 'رفض',
@@ -812,9 +816,23 @@ const translations = {
     'common.max': 'الحد الأقصى',
     'common.daily': 'اليومي',
     
+    'referral.networkTitle': 'شبكة الإحالة',
+    'referral.level2': 'المستوى الثاني',
+    'referral.level3': 'المستوى الثالث',
+    
+    'admin.createOffer': 'إنشاء عرض',
+    'admin.editOffer': 'تعديل العرض',
+    'admin.reward': 'المكافأة',
+    'admin.cost': 'التكلفة',
+    'admin.dailyProfit': 'الربح اليومي',
+    'admin.monthlyProfit': 'الربح الشهري',
+    'admin.deadline': 'تاريخ الانتهاء',
+    'admin.image': 'الصورة',
+    'admin.saving': 'جاري الحفظ...',
+    'admin.uploadPrompt': 'انقر للرفع أو اسحب الصورة هنا',
+    'admin.supportedFormats': 'الصيغ المدعومة: JPG, PNG, GIF',
   },
   en: {
-
     // Navigation
     'nav.home': 'Home',
     'nav.offers': 'Offers',
@@ -956,6 +974,7 @@ const translations = {
     'features.support.desc': 'Our support team is available around the clock to help you',
     
     // Offers Page
+    'offers.loading': 'Loading...',
     'offers.title': 'Available Offers',
     'offers.subtitle': 'Discover available offers and get additional rewards',
     'offers.trading': 'Trading',
@@ -1000,6 +1019,9 @@ const translations = {
     'profile.idBack': 'ID Photo - Back',
     'profile.saving': 'Saving...',
     'profile.save': 'Save Data',
+    'profile.totalRevenue': 'Total Revenue',
+    'profile.capital': 'Capital',
+    'profile.rewards': 'Rewards',
     
     // Transactions Page
     'transactions.title': 'Transaction History',
@@ -1331,10 +1353,24 @@ const translations = {
     'offers.manageOffers': 'Manage Offers',
     'offers.saving': 'Saving...',
     'offers.update': 'Update',
-    'offers.create': 'Create',
+    'offers.create': 'Create Offer',
     'offers.preview': 'Preview',
     'offers.removePreview': 'Remove Preview',
-    
+    'offers.deleteAll': 'Delete All',
+    'offers.list': 'Offers List',
+    'admin.backToAdmin': 'Back to Admin',
+    'admin.createOffer': 'Create Offer',
+    'admin.description': 'Description',
+    'admin.reward': 'Reward',
+    'admin.cost': 'Cost',
+    'admin.dailyProfit': 'Daily Profit',
+    'admin.monthlyProfit': 'Monthly Profit',
+    'admin.deadline': 'Deadline',
+    'admin.image': 'Image',
+    'admin.uploadPrompt': 'Click to upload or drag image here',
+    'admin.supportedFormats': 'Supported formats: JPG, PNG, GIF',
+    'admin.cancel': 'Cancel',
+        
     // Deposit
     'deposit.loading': 'Loading deposit page...',
     'deposit.loadingNumber': 'Loading deposit number...',
@@ -1427,27 +1463,23 @@ const translations = {
     'register.validReferralTitle': 'Valid Referral Code',
     'register.validReferralDesc': "You'll be referred by",
     // Profile Page Additional
-    'profile.noData': 'No Profile Data',
-    'profile.noDataDesc': 'Please complete your account information to view your profile.',
-    'profile.updateAccount': 'Update Account Information',
+    'profile.accountInfo': 'Account Information',
     'profile.achievements': 'Achievements',
+    'profile.badges': 'Badges',
+    'profile.bonuses': 'Bonuses',
+    'profile.edit': 'Edit',
+    'profile.idBackLabel': 'Back',
+    'profile.idFrontLabel': 'Front',
+    'profile.idPhotos': 'ID Photos',
     'profile.level': 'Level',
     'profile.levelDesc': 'Your current level',
-    'profile.badges': 'Badges',
     'profile.noBadges': 'No badges earned yet',
-    'profile.accountInfo': 'Account Information',
-    'profile.edit': 'Edit',
-    'profile.idPhotos': 'ID Photos',
-    'profile.profilePhoto': 'Profile Photo',
-    'profile.view': 'View',
-    'profile.idFrontLabel': 'Front',
-    'profile.idBackLabel': 'Back',
-    'profile.balance': 'Current Balance',
+    'profile.noData': 'No Profile Data',
+    'profile.noDataDesc': 'Please complete your account information to view your profile.',
     'profile.personalEarnings': 'Personal Earnings',
+    'profile.profilePhoto': 'Profile Photo',
     'profile.teamEarnings': 'Team Earnings',
-    'profile.bonuses': 'Bonuses',
-    'profile.capital': 'Capital',
-    // ... existing code ...
+    'profile.view': 'View',
     'admin.accept': 'Accept',
     'admin.reject': 'Reject',
     'admin.edit': 'Edit',
@@ -1528,6 +1560,14 @@ const translations = {
     'home.hero.readMore': 'Read More',
     'readmore.title': 'Learn More About Cash App',
     'readmore.body': 'Cash App is a modern financial platform that lets you manage your money, benefit from offers, and earn rewards through referrals and challenges. Enjoy a secure, fast experience with full support and advanced features.',
-
+    'home.features.title': 'Why choose Cash?',
+    // --- SYNCHRONIZED TRANSLATION KEYS START ---
+    'home.cta.title': 'Start Your Journey with Cash Today', // Synced key
+    'home.cta.subtitle': 'Join thousands of users who trust Cash platform to manage their earnings', // Synced key
+    'home.cta.button': 'Create Free Account', // Synced key
+    
+    'referral.networkTitle': 'Referral Network', 
+    'referral.level2': 'Level 2', 
+    'referral.level3': 'Level 3', 
   }
 };

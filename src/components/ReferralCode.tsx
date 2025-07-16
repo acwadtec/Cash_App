@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Copy, Share2, Trophy } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ReferralCodeProps {
   userUid: string;
@@ -16,6 +17,7 @@ interface ReferralCodeProps {
 }
 
 export default function ReferralCode({ userUid, isVerified, level1Count = 0, level2Count = 0, level3Count = 0 }: ReferralCodeProps) {
+  const { t } = useLanguage();
   const [referralCode, setReferralCode] = useState('');
   const [referralStats, setReferralStats] = useState({
     totalReferrals: 0,
@@ -136,14 +138,14 @@ export default function ReferralCode({ userUid, isVerified, level1Count = 0, lev
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
-            Referral Program
+            {t('referral.program')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Badge variant="outline" className="mb-4">Account Verification Required</Badge>
+            <Badge variant="outline" className="mb-4">{t('referral.accountVerificationRequired')}</Badge>
             <p className="text-muted-foreground">
-              Please verify your account to access the referral program and earn rewards.
+              {t('referral.verifyToAccess')}
             </p>
           </div>
         </CardContent>
@@ -157,12 +159,12 @@ export default function ReferralCode({ userUid, isVerified, level1Count = 0, lev
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
-            Referral Program
+            {t('referral.program')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading referral data...</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           </div>
         </CardContent>
       </Card>
@@ -174,13 +176,13 @@ export default function ReferralCode({ userUid, isVerified, level1Count = 0, lev
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="h-5 w-5" />
-          Your Referral Program
+          {t('referral.yourProgram')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Referral Code */}
         <div>
-          <label className="text-sm font-medium mb-2 block">Your Referral Code</label>
+          <label className="text-sm font-medium mb-2 block">{t('referral.yourCode')}</label>
           <div className="flex gap-2">
             <Input
               value={referralCode}
@@ -200,22 +202,22 @@ export default function ReferralCode({ userUid, isVerified, level1Count = 0, lev
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">{totalReferrals}</div>
-            <div className="text-sm text-muted-foreground">Total Referrals</div>
+            <div className="text-sm text-muted-foreground">{t('referral.totalReferrals')}</div>
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{referralStats.totalPoints}</div>
-            <div className="text-sm text-muted-foreground">Points Earned</div>
+            <div className="text-sm text-muted-foreground">{t('referral.pointsEarned')}</div>
           </div>
         </div>
 
         {/* Referral Rewards Info */}
         <div className="bg-muted p-4 rounded-lg">
-          <h4 className="font-semibold mb-2">How It Works</h4>
+          <h4 className="font-semibold mb-2">{t('referral.howItWorks')}</h4>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <div>• <strong>Level 1:</strong> Earn points when friends sign up using your code</div>
-            <div>• <strong>Level 2:</strong> Earn points when your referrals refer others</div>
-            <div>• <strong>Level 3:</strong> Earn points from third-level referrals</div>
-            <div>• Share your code with friends to start earning rewards!</div>
+            <div>• <strong>{t('referral.howItWorks.level1')}</strong></div>
+            <div>• <strong>{t('referral.howItWorks.level2')}</strong></div>
+            <div>• <strong>{t('referral.howItWorks.level3')}</strong></div>
+            <div>• {t('referral.howItWorks.share')}</div>
           </div>
         </div>
       </CardContent>

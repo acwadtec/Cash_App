@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Offer {
   id: string;
@@ -44,6 +45,7 @@ export default function ManageOffers() {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
 
   // Fetch offers from Supabase
   const fetchOffers = async () => {
@@ -244,21 +246,21 @@ export default function ManageOffers() {
   });
 
   return (
-    <div className="min-h-screen py-20">
+    <div className={`min-h-screen py-20 bg-background text-foreground ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Manage Offers</h1>
+          <h1 className="text-3xl font-bold">{t('offers.manageOffers')}</h1>
           <div className="flex gap-2">
-            <Button onClick={() => navigate('/admin')} variant="outline">Back to Admin</Button>
-            <Button onClick={() => openDialog()}>Create Offer</Button>
+            <Button onClick={() => navigate('/admin')} variant="outline">{t('admin.backToAdmin')}</Button>
+            <Button onClick={() => openDialog()}>{t('offers.create')}</Button>
             <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0}>
-              Delete All
+              {t('offers.deleteAll')}
             </Button>
           </div>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Offers List</CardTitle>
+            <CardTitle>{t('offers.list')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -289,15 +291,15 @@ export default function ManageOffers() {
         {showDialog && (
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
             <div className="fixed inset-0 flex items-center justify-center bg-black/50 dark:bg-black/70 z-50 p-4">
-              <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-black dark:text-white border border-gray-200 dark:border-gray-700">
+              <form onSubmit={handleSubmit} className="bg-background rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-foreground border border-border">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">{editOffer ? 'Edit Offer' : 'Create Offer'}</h2>
+                  <h2 className="text-2xl font-bold">{editOffer ? t('admin.editOffer') : t('admin.createOffer')}</h2>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDialog(false)}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -307,7 +309,7 @@ export default function ManageOffers() {
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="title" className="text-sm font-medium">Title *</Label>
+                      <Label htmlFor="title" className="text-sm font-medium">{t('admin.title')} *</Label>
                       <Input 
                         id="title" 
                         name="title" 
@@ -315,12 +317,12 @@ export default function ManageOffers() {
                         onChange={handleChange} 
                         required 
                         className="mt-1"
-                        placeholder="Enter offer title"
+                        placeholder={t('admin.title') + '...'}
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="description" className="text-sm font-medium">Description *</Label>
+                      <Label htmlFor="description" className="text-sm font-medium">{t('admin.description')} *</Label>
                       <Textarea 
                         id="description" 
                         name="description" 
@@ -328,13 +330,13 @@ export default function ManageOffers() {
                         onChange={handleChange} 
                         required 
                         className="mt-1"
-                        placeholder="Enter offer description"
+                        placeholder={t('admin.description') + '...'}
                         rows={3}
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="amount" className="text-sm font-medium">Reward *</Label>
+                      <Label htmlFor="amount" className="text-sm font-medium">{t('admin.reward')} *</Label>
                       <Input 
                         id="amount" 
                         name="amount" 
@@ -343,14 +345,14 @@ export default function ManageOffers() {
                         onChange={handleChange} 
                         required 
                         className="mt-1"
-                        placeholder="Enter reward amount"
+                        placeholder={t('admin.reward') + '...'}
                         min="0"
                         step="0.01"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="cost" className="text-sm font-medium">Cost</Label>
+                      <Label htmlFor="cost" className="text-sm font-medium">{t('admin.cost')}</Label>
                       <Input 
                         id="cost" 
                         name="cost" 
@@ -358,7 +360,7 @@ export default function ManageOffers() {
                         value={form.cost} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder="Enter cost"
+                        placeholder={t('admin.cost') + '...'}
                         min="0"
                         step="0.01"
                       />
@@ -368,7 +370,7 @@ export default function ManageOffers() {
                   {/* Right Column */}
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="daily_profit" className="text-sm font-medium">Daily Profit</Label>
+                      <Label htmlFor="daily_profit" className="text-sm font-medium">{t('admin.dailyProfit')}</Label>
                       <Input 
                         id="daily_profit" 
                         name="daily_profit" 
@@ -376,14 +378,14 @@ export default function ManageOffers() {
                         value={form.daily_profit} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder="Enter daily profit"
+                        placeholder={t('admin.dailyProfit') + '...'}
                         min="0"
                         step="0.01"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="monthly_profit" className="text-sm font-medium">Monthly Profit</Label>
+                      <Label htmlFor="monthly_profit" className="text-sm font-medium">{t('admin.monthlyProfit')}</Label>
                       <Input 
                         id="monthly_profit" 
                         name="monthly_profit" 
@@ -391,14 +393,14 @@ export default function ManageOffers() {
                         value={form.monthly_profit} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder="Enter monthly profit"
+                        placeholder={t('admin.monthlyProfit') + '...'}
                         min="0"
                         step="0.01"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="deadline" className="text-sm font-medium">Deadline</Label>
+                      <Label htmlFor="deadline" className="text-sm font-medium">{t('admin.deadline')}</Label>
                       <Input 
                         id="deadline" 
                         name="deadline" 
@@ -410,10 +412,10 @@ export default function ManageOffers() {
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium">Image</Label>
+                      <Label className="text-sm font-medium">{t('admin.image')}</Label>
                       <div className="mt-1">
                         <div className="flex items-center justify-center w-full">
-                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80 dark:bg-muted/20 dark:hover:bg-muted/40 border-border">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                               {imagePreview ? (
                                 <div className="relative">
@@ -437,11 +439,11 @@ export default function ManageOffers() {
                                 </div>
                               ) : (
                                 <>
-                                  <Upload className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
-                                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <span className="font-semibold">Click to upload</span> or drag and drop
+                                  <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                                  <p className="mb-2 text-sm text-muted-foreground">
+                                    <span className="font-semibold">{t('admin.uploadPrompt')}</span>
                                   </p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">Supported formats: JPG, PNG, GIF</p>
+                                  <p className="text-xs text-muted-foreground">{t('admin.supportedFormats')}</p>
                                 </>
                               )}
                             </div>
@@ -459,21 +461,21 @@ export default function ManageOffers() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setShowDialog(false)}
                     disabled={uploading}
                   >
-                    Cancel
+                    {t('admin.cancel')}
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={uploading}
                     className="min-w-[100px]"
                   >
-                    {uploading ? 'Saving...' : (editOffer ? 'Update' : 'Create')}
+                    {uploading ? t('admin.saving') : (editOffer ? t('admin.update') : t('admin.create'))}
                   </Button>
                 </div>
               </form>

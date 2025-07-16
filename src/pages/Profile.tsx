@@ -366,11 +366,11 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen py-20">
+    <div className="min-h-screen py-20 bg-background text-foreground">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* User Info Card */}
-          <Card className="shadow-glow">
+          <Card className="shadow-glow bg-card">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <div className="relative">
@@ -398,81 +398,68 @@ export default function Profile() {
                 </div>
                 
                 <div className="flex-1 text-center md:text-right">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <h1 className="text-3xl font-bold mb-2">
-                        {userInfo?.first_name && userInfo?.last_name 
-                          ? `${userInfo.first_name} ${userInfo.last_name}`
-                          : userInfo?.email || 'User'}
-                      </h1>
-                      <p className="text-muted-foreground mb-2">{userInfo?.email}</p>
-                      <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center md:items-end gap-2">
-                      <Badge className={userInfo?.verified ? 'bg-success' : 'bg-warning'}>
-                        {userInfo?.verified ? t('profile.verified') : t('profile.pending')}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {t('profile.memberSince')} {userInfo?.joinDate || ''}
-                      </span>
-                    </div>
-                  </div>
+                  <h1 className="text-3xl font-bold mb-2 text-foreground">
+                    {userInfo?.first_name && userInfo?.last_name 
+                      ? `${userInfo.first_name} ${userInfo.last_name}`
+                      : userInfo?.email || t('profile.noData')}
+                  </h1>
+                  <p className="text-muted-foreground mb-2">{userInfo?.email}</p>
+                  <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Dashboard Cards Row (now after user info, replaces balance card) */}
+          {/* Dashboard Cards Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <Card className="bg-muted/40 border border-muted-foreground/10">
+            <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">{balances ? `$${balances.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
-                <span className="mt-2 text-sm text-muted-foreground">إجمالي الإيرادات</span>
+                <span className="text-3xl font-bold text-success">{balances ? `$${balances.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
+                <span className="mt-2 text-sm text-muted-foreground">{t('profile.totalRevenue') || 'Total Revenue'}</span>
               </CardContent>
             </Card>
-            <Card className="bg-muted/40 border border-muted-foreground/10">
+            <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">{balances ? `$${balances.personal_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
+                <span className="text-3xl font-bold text-primary">{balances ? `$${balances.personal_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.rewards') || 'Rewards'}</span>
               </CardContent>
             </Card>
-            <Card className="bg-muted/40 border border-muted-foreground/10">
+            <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">{balances ? `$${balances.team_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
+                <span className="text-3xl font-bold text-primary">{balances ? `$${balances.team_earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.personalEarnings') || 'Personal Earnings'}</span>
               </CardContent>
             </Card>
-            <Card className="bg-muted/40 border border-muted-foreground/10">
+            <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500 break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">{balances ? `$${balances.bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
+                <span className="text-3xl font-bold text-primary break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">{balances ? `$${balances.bonuses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.bonuses') || 'Bonuses'}</span>
               </CardContent>
             </Card>
-            <Card className="bg-muted/40 border border-muted-foreground/10">
+            <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500 break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">{balances ? `$${balances.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}</span>
-                <span className="mt-2 text-sm text-muted-foreground">رأس المال</span>
+                <span className="text-3xl font-bold text-primary break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">{balances ? `$${balances.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}</span>
+                <span className="mt-2 text-sm text-muted-foreground">{t('profile.capital') || 'Capital'}</span>
               </CardContent>
             </Card>
-            <Card className="bg-muted/40 border border-muted-foreground/10">
+            <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">$0</span>
+                <span className="text-3xl font-bold text-primary">$0</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.totalEarnings') || 'Total Earnings'}</span>
               </CardContent>
             </Card>
           </div>
 
           {/* Gamification: Level and Badges */}
-          <Card className="shadow-glow">
+          <Card className="shadow-glow bg-card">
               <CardHeader>
-              <CardTitle>{t('profile.achievements') || 'Achievements'}</CardTitle>
+              <CardTitle className="text-foreground">{t('profile.achievements') || 'Achievements'}</CardTitle>
               </CardHeader>
               <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Level */}
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">{t('profile.level') || 'Level'}</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">{t('profile.level') || 'Level'}</h3>
                   <div className="text-3xl font-bold text-primary mb-2">
                     {userInfo?.current_level || 1}
                   </div>
@@ -480,10 +467,10 @@ export default function Profile() {
                     const levelObj = levels.find(lvl => lvl.level === userInfo?.current_level);
                     return levelObj ? (
                       <>
-                        <div className="text-lg font-semibold mb-1">{levelObj.name}</div>
+                        <div className="text-lg font-semibold mb-1 text-foreground">{levelObj.name}</div>
                         <div className="text-sm text-muted-foreground mb-1">{levelObj.description}</div>
                         {levelObj.benefits && (
-                          <div className="text-sm text-green-500">{levelObj.benefits}</div>
+                          <div className="text-sm text-success">{levelObj.benefits}</div>
                         )}
                       </>
                     ) : null;
@@ -495,7 +482,7 @@ export default function Profile() {
 
                 {/* Badges */}
                     <div>
-                  <h3 className="text-lg font-semibold mb-4">{t('profile.badges') || 'Badges'}</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">{t('profile.badges') || 'Badges'}</h3>
                   {userBadges.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {userBadges.map((badge: any, index: number) => (
@@ -515,10 +502,10 @@ export default function Profile() {
           </Card>
 
           {/* Account Information */}
-          <Card className="shadow-glow">
+          <Card className="shadow-glow bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>{t('profile.accountInfo') || 'Account Information'}</CardTitle>
+                <CardTitle className="text-foreground">{t('profile.accountInfo') || 'Account Information'}</CardTitle>
                 <Button onClick={handleUpdateAccount} variant="outline" size="sm">
                   {t('profile.edit') || 'Edit'}
                 </Button>
@@ -531,13 +518,13 @@ export default function Profile() {
                     <label className="text-sm font-medium text-muted-foreground">
                       {t('profile.firstName')}
                     </label>
-                    <p className="text-sm">{userInfo?.first_name || '-'}</p>
+                    <p className="text-sm text-foreground">{userInfo?.first_name || '-'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       {t('profile.lastName')}
                     </label>
-                    <p className="text-sm">{userInfo?.last_name || '-'}</p>
+                    <p className="text-sm text-foreground">{userInfo?.last_name || '-'}</p>
                   </div>
                 </div>
                 
@@ -545,14 +532,14 @@ export default function Profile() {
                   <label className="text-sm font-medium text-muted-foreground">
                     {t('profile.phone')}
                   </label>
-                  <p className="text-sm">{userInfo?.phone || '-'}</p>
+                  <p className="text-sm text-foreground">{userInfo?.phone || '-'}</p>
                 </div>
                 
                     <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     {t('profile.wallet')}
                   </label>
-                  <p className="text-sm">{userInfo?.wallet || '-'}</p>
+                  <p className="text-sm text-foreground">{userInfo?.wallet || '-'}</p>
                     </div>
 
                 {/* Profile Photo */}
@@ -648,7 +635,7 @@ export default function Profile() {
                 level2Count={level2Referrals.length}
                 level3Count={level3Referrals.length}
               />
-                      </div>
+            </div>
           )}
 
         </div>
