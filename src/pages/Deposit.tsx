@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase, checkIfUserIsAdmin, checkAndAwardAllBadges } from '@/lib/supabase';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Copy } from 'lucide-react';
 
 export default function Deposit() {
   const { t } = useLanguage();
@@ -268,6 +268,17 @@ export default function Deposit() {
     }
   };
 
+  // Add copy handler for deposit number
+  const copyDepositNumber = async () => {
+    if (!selectedNumber) return;
+    try {
+      await navigator.clipboard.writeText(selectedNumber);
+      toast({ title: t('common.copied') || 'Copied!', description: t('deposit.copiedNumber') || 'Deposit number copied to clipboard' });
+    } catch (error) {
+      toast({ title: t('common.error'), description: t('deposit.copyError') || 'Failed to copy deposit number', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen py-20">
@@ -331,12 +342,19 @@ export default function Deposit() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Label>{t('deposit.targetNumber')}</Label>
-                  <Input 
-                    value={selectedNumber || ''} 
-                    readOnly 
-                    className="h-12 font-bold text-lg bg-muted" 
-                    placeholder={t('deposit.loadingNumber')}
-                  />
+                  <div className="flex gap-2 items-center">
+                    <Input 
+                      value={selectedNumber || ''} 
+                      readOnly 
+                      className="h-12 font-bold text-lg bg-muted" 
+                      placeholder={t('deposit.loadingNumber')}
+                    />
+                    {selectedNumber && (
+                      <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber') || 'Copy number'}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   {!selectedNumber && (
                     <p className="text-sm text-muted-foreground mt-1">{t('deposit.noNumbersAvailable')}</p>
                   )}
