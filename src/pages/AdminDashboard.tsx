@@ -28,7 +28,7 @@ import { toast } from '@/hooks/use-toast';
 // Services
 import { supabase } from '@/lib/supabase';
 import { checkIfUserIsAdmin } from '@/lib/supabase';
-import { checkAndAwardAllBadges, testUserBadgesTable } from '@/lib/supabase';
+import { checkAndAwardAllBadges } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -2286,7 +2286,7 @@ export default function AdminDashboard() {
                     </TableBody>
                   </Table>
                     <div className="flex gap-2">
-                      <Button onClick={handleSavePackageLimits} className="mt-2" disabled={Object.keys(packageLimits).length === 0}>{t('admin.savePackageLimits')}</Button>
+                      <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.savePackageLimits')}</Button>
                       <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
                     </div>
                   </div>

@@ -379,12 +379,12 @@ export default function Profile() {
                 
                 <div className="flex-1 text-center md:text-right">
                   <h1 className="text-3xl font-bold mb-2 text-foreground">
-                    {userInfo?.first_name && userInfo?.last_name 
-                      ? `${userInfo.first_name} ${userInfo.last_name}`
+                        {userInfo?.first_name && userInfo?.last_name 
+                          ? `${userInfo.first_name} ${userInfo.last_name}`
                       : userInfo?.email || t('profile.noData')}
-                  </h1>
-                  <p className="text-muted-foreground mb-2">{userInfo?.email}</p>
-                  <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
+                      </h1>
+                      <p className="text-muted-foreground mb-2">{userInfo?.email}</p>
+                      <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
                 </div>
               </div>
             </CardContent>
@@ -599,7 +599,7 @@ export default function Profile() {
                 level2Count={level2Referrals.length}
                 level3Count={level3Referrals.length}
               />
-            </div>
+                      </div>
           )}
 
         </div>

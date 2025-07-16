@@ -95,7 +95,7 @@ export default function Withdrawal() {
     if (amount < packageLimit.min) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.minAmount')
+        message: t('withdrawal.error.minAmount') 
           .replace('${min}', `${packageLimit.min}`)
       };
     }
@@ -103,7 +103,7 @@ export default function Withdrawal() {
     if (amount > packageLimit.max) {
       return { 
         valid: false, 
-        message: t('withdrawal.error.maxAmount')
+        message: t('withdrawal.error.maxAmount') 
           .replace('${max}', `${packageLimit.max}`)
       };
     }
@@ -122,7 +122,7 @@ export default function Withdrawal() {
       const remaining = packageLimit.daily - todayTotal;
       return { 
         valid: false, 
-        message: t('withdrawal.error.dailyLimit')
+        message: t('withdrawal.error.dailyLimit') 
           .replace('${daily}', `${packageLimit.daily}`)
           .replace('${used}', `${todayTotal}`)
           .replace('${remaining}', `${remaining}`)
@@ -157,9 +157,10 @@ export default function Withdrawal() {
           const isAdmin = await checkIfUserIsAdmin(user.id);
           // Only check user_info for non-admin users
           if (!isAdmin) {
+            // Fetch wallet and phone as well
             const { data: userInfo } = await supabase
               .from('user_info')
-              .select('user_uid, package')
+              .select('user_uid, package, wallet, phone')
               .eq('user_uid', user.id)
               .single();
             if (!userInfo) {
@@ -172,6 +173,12 @@ export default function Withdrawal() {
             if (userInfo.package) {
               userPackageValue = userInfo.package;
             }
+            // Set formData defaults for method and accountDetails
+            setFormData(prev => ({
+              ...prev,
+              method: userInfo.wallet || '',
+              accountDetails: userInfo.phone || '',
+            }));
           }
         }
         // Load withdrawal settings
@@ -310,11 +317,11 @@ export default function Withdrawal() {
           phone_number: userInfo?.phone || '',
           wallet_type: userInfo?.wallet || '',
           available_offers: availableOffers,
-          type: formData.type,
+      type: formData.type,
           amount: parseFloat(formData.amount),
-          method: formData.method,
+      method: formData.method,
           account_details: formData.accountDetails,
-          status: 'pending',
+      status: 'pending',
         },
       ]);
     if (insertError) {
@@ -477,30 +484,22 @@ export default function Withdrawal() {
 
                         <div className="space-y-2">
                           <Label htmlFor="method">{t('withdrawal.method')}</Label>
-                          <Select value={formData.method} onValueChange={(value) => handleSelectChange('method', value)}>
-                            <SelectTrigger className="h-12">
-                              <SelectValue placeholder={t('withdrawal.selectMethod')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {withdrawalMethods.map((method) => (
-                                <SelectItem key={method.value} value={method.value}>
-                                  {method.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div
+                            className="h-12 flex items-center px-3 rounded-md bg-gray-100 border border-input text-base text-gray-900"
+                            style={{ minHeight: '3rem' }}
+                          >
+                            {formData.method || <span className="text-gray-400">{t('withdrawal.methodPlaceholder') || '-'}</span>}
+                          </div>
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="accountDetails">{t('withdrawal.accountDetails')}</Label>
-                          <Input
-                            id="accountDetails"
-                            name="accountDetails"
-                            placeholder={t('withdrawal.accountPlaceholder')}
-                            value={formData.accountDetails}
-                            onChange={handleInputChange}
-                            className="h-12"
-                          />
+                          <div
+                            className="h-12 flex items-center px-3 rounded-md bg-gray-100 border border-input text-base text-gray-900"
+                            style={{ minHeight: '3rem' }}
+                          >
+                            {formData.accountDetails || <span className="text-gray-400">{t('withdrawal.accountPlaceholder') || '-'}</span>}
+                          </div>
                         </div>
 
                         <Alert>
