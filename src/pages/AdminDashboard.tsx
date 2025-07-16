@@ -28,7 +28,7 @@ import { toast } from '@/hooks/use-toast';
 // Services
 import { supabase } from '@/lib/supabase';
 import { checkIfUserIsAdmin } from '@/lib/supabase';
-import { checkAndAwardAllBadges } from '@/lib/supabase';
+import { checkAndAwardAllBadges, testUserBadgesTable } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -1656,6 +1656,22 @@ export default function AdminDashboard() {
   const [editingUserLevelId, setEditingUserLevelId] = useState(null);
   const [editedLevel, setEditedLevel] = useState(null);
 
+  // Add state for search and filter
+  const [userBadgeSearch, setUserBadgeSearch] = useState('');
+  const [userBadgeTypeFilter, setUserBadgeTypeFilter] = useState('all');
+
+  // Before rendering userBadges in the table, filter them:
+  const filteredUserBadges = userBadges.filter(ub => {
+    const userMatch =
+      !userBadgeSearch ||
+      (ub.user?.first_name?.toLowerCase().includes(userBadgeSearch.toLowerCase()) ||
+        ub.user?.last_name?.toLowerCase().includes(userBadgeSearch.toLowerCase()) ||
+        ub.user?.email?.toLowerCase().includes(userBadgeSearch.toLowerCase()));
+    const typeMatch =
+      userBadgeTypeFilter === 'all' || ub.badge?.type === userBadgeTypeFilter;
+    return userMatch && typeMatch;
+  });
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -2687,6 +2703,37 @@ export default function AdminDashboard() {
 
             {/* Gamification Tab */}
             <TabsContent value="gamification">
+              <div className="mb-4 flex justify-end">
+                <Button
+                  className="mb-4"
+                  onClick={async () => {
+                    console.log('Starting badge sync for all users...');
+                    toast({ title: 'Syncing badges for all users...', description: 'This may take a moment.' });
+                    try {
+                      const { data: users, error } = await supabase.from('user_info').select('user_uid');
+                      if (error) {
+                        console.error('Error fetching users:', error);
+                        toast({ title: 'Error', description: 'Failed to fetch users', variant: 'destructive' });
+                        return;
+                      }
+                      console.log(`Found ${users.length} users to process`);
+                      let processedCount = 0;
+                      for (const user of users) {
+                        console.log(`Processing user ${processedCount + 1}/${users.length}: ${user.user_uid}`);
+                        await checkAndAwardAllBadges(user.user_uid);
+                        processedCount++;
+                      }
+                      console.log('Badge sync completed successfully');
+                      toast({ title: 'Success', description: `All badges have been synced for ${users.length} users!` });
+                    } catch (error) {
+                      console.error('Error during badge sync:', error);
+                      toast({ title: 'Error', description: 'Failed to sync badges', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Sync Badges for All Users
+                </Button>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Badges Management */}
                 <Card className="shadow-card">
@@ -2840,6 +2887,40 @@ export default function AdminDashboard() {
                   </Button>
                 </CardHeader>
                 <CardContent>
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search by user name or email"
+                        value={userBadgeSearch}
+                        onChange={e => setUserBadgeSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                      {userBadgeSearch && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                          onClick={() => setUserBadgeSearch('')}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="w-48">
+                      <Select value={userBadgeTypeFilter} onValueChange={setUserBadgeTypeFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filter by badge type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          {Array.from(new Set(badges.map(b => b.type))).map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -2851,14 +2932,14 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {userBadges.length === 0 ? (
+                      {filteredUserBadges.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
                             {t('admin.noUserBadges') || 'No badges earned yet'}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        userBadges.map((userBadge) => (
+                        filteredUserBadges.map((userBadge) => (
                           <TableRow key={userBadge.id}>
                             <TableCell>
                               {userBadge.user?.first_name} {userBadge.user?.last_name}
@@ -3222,24 +3303,6 @@ export default function AdminDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <Button
-        className="mb-4"
-        onClick={async () => {
-          toast({ title: 'Syncing badges for all users...', description: 'This may take a moment.' });
-          const { data: users, error } = await supabase.from('user_info').select('user_uid');
-          if (error) {
-            toast({ title: 'Error', description: 'Failed to fetch users', variant: 'destructive' });
-            return;
-          }
-          for (const user of users) {
-            await checkAndAwardAllBadges(user.user_uid);
-          }
-          toast({ title: 'Success', description: 'All badges have been synced for all users!' });
-        }}
-      >
-        Sync Badges for All Users
-      </Button>
     </div>
   );
 }
