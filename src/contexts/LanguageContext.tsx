@@ -831,6 +831,13 @@ const translations = {
     'admin.saving': 'جاري الحفظ...',
     'admin.uploadPrompt': 'انقر للرفع أو اسحب الصورة هنا',
     'admin.supportedFormats': 'الصيغ المدعومة: JPG, PNG, GIF',
+    'common.copied': 'تم النسخ!',
+    'deposit.copiedNumber': 'تم نسخ رقم الإيداع إلى الحافظة',
+    'deposit.amountUnit': 'ج.م',
+    'deposit.noScreenshot': 'لا توجد صورة',
+    'common.page': 'صفحة',
+    'common.of': 'من',
+    'deposit.newRequest': 'طلب إيداع جديد',
   },
   en: {
     // Navigation
@@ -1569,5 +1576,12 @@ const translations = {
     'referral.networkTitle': 'Referral Network', 
     'referral.level2': 'Level 2', 
     'referral.level3': 'Level 3', 
+    'common.copied': 'Copied!',
+    'deposit.copiedNumber': 'Deposit number copied to clipboard',
+    'deposit.amountUnit': 'EGP',
+    'deposit.noScreenshot': 'No image',
+    'common.page': 'Page',
+    'common.of': 'of',
+    'deposit.newRequest': 'New Deposit Request',
   }
 };

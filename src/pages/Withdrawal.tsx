@@ -531,7 +531,7 @@ export default function Withdrawal() {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center p-3 rounded-lg bg-accent/20">
                           <span className="font-medium">إجمالي الإيرادات</span>
-                          <span className="font-bold text-primary">{balances ? `$${balances.balance.toLocaleString()}` : '$0'}</span>
+                          <span className="font-bold text-primary">{balances ? `${balances.balance} ${t('deposit.amountUnit')}` : `${t('deposit.amountUnit')}`}</span>
                         </div>
                         {withdrawalTypes.map((type) => (
                           <div key={type.value} className="flex justify-between items-center p-3 rounded-lg bg-accent/20">

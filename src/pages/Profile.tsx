@@ -394,33 +394,33 @@ export default function Profile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">$0</span>
+                <span className="text-3xl font-bold text-green-500">{t('deposit.amountUnit')}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.rewards') || 'Rewards'}</span>
               </CardContent>
             </Card>
             <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">$0</span>
+                <span className="text-3xl font-bold text-green-500">{t('deposit.amountUnit')}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.personalEarnings') || 'Personal Earnings'}</span>
               </CardContent>
             </Card>
             <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
                 <span className="text-3xl font-bold text-green-500 break-words truncate text-balance max-w-full md:text-3xl sm:text-2xl text-xl">
-                  {typeof userInfo?.balance === 'number' ? `$${userInfo.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0'}
+                  {typeof userInfo?.balance === 'number' ? `${userInfo.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${t('deposit.amountUnit')}` : `${t('deposit.amountUnit')}`}
                 </span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.capital') || 'Capital'}</span>
               </CardContent>
             </Card>
             <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-green-500">$0</span>
+                <span className="text-3xl font-bold text-green-500">{t('deposit.amountUnit')}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.teamEarnings') || 'Team Earnings'}</span>
               </CardContent>
             </Card>
             <Card className="bg-card border border-border shadow-card">
               <CardContent className="flex flex-col items-center justify-center py-8">
-                <span className="text-3xl font-bold text-primary">$0</span>
+                <span className="text-3xl font-bold text-primary">{t('deposit.amountUnit')}</span>
                 <span className="mt-2 text-sm text-muted-foreground">{t('profile.totalEarnings') || 'Total Earnings'}</span>
               </CardContent>
             </Card>
