@@ -1246,14 +1246,52 @@ export default function AdminDashboard() {
     if (proofImage) {
       const fileExt = proofImage.name.split('.').pop();
       const fileName = `${selectedWithdrawal.id}_${Date.now()}.${fileExt}`;
-      const filePath = `withdrawal-proofs/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from('withdrawal-proofs').upload(filePath, proofImage);
+      // Upload to the bucket with just the file name as the path
+      const { error: uploadError } = await supabase.storage.from('withdrawal-proofs').upload(fileName, proofImage);
       if (!uploadError) {
-        const { data: urlData } = supabase.storage.from('withdrawal-proofs').getPublicUrl(filePath);
+        const { data: urlData } = supabase.storage.from('withdrawal-proofs').getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
+      } else {
+        toast({ title: t('common.error'), description: uploadError.message, variant: 'destructive' });
+        return;
       }
     }
-    await supabase.from('withdrawal_requests').update({ status: 'paid', admin_note: adminNote, proof_image_url: imageUrl, updated_at: new Date().toISOString() }).eq('id', selectedWithdrawal.id);
+    // Only proceed if status is pending
+    if (selectedWithdrawal.status !== 'pending') {
+      toast({ title: t('common.error'), description: t('admin.withdrawals.alreadyProcessed'), variant: 'destructive' });
+      return;
+    }
+    // Update withdrawal status to paid
+    const { error: updateError } = await supabase.from('withdrawal_requests').update({ status: 'paid', admin_note: adminNote, proof_image_url: imageUrl, updated_at: new Date().toISOString() }).eq('id', selectedWithdrawal.id);
+    if (updateError) {
+      toast({ title: t('common.error'), description: updateError.message, variant: 'destructive' });
+      return;
+    }
+    // Deduct from the correct user_info balance
+    const typeToField = {
+      capital: 'balance',
+      personal: 'personal_earnings',
+      team: 'team_earnings',
+      bonuses: 'bonuses',
+    };
+    const field = typeToField[selectedWithdrawal.type];
+    if (field) {
+      // Fetch current balance
+      const { data: userInfo, error: userInfoError } = await supabase.from('user_info').select(field).eq('user_uid', selectedWithdrawal.user_uid).single();
+      if (!userInfoError && userInfo && typeof userInfo[field] === 'number') {
+        const newBalance = userInfo[field] - Number(selectedWithdrawal.amount);
+        const { error: balanceError } = await supabase.from('user_info').update({ [field]: newBalance }).eq('user_uid', selectedWithdrawal.user_uid);
+        if (balanceError) {
+          toast({ title: t('common.error'), description: balanceError.message, variant: 'destructive' });
+        } else {
+          toast({ title: t('common.success'), description: t('admin.withdrawals.paidAndDeducted') });
+        }
+      } else {
+        toast({ title: t('common.error'), description: t('admin.withdrawals.balanceFetchError'), variant: 'destructive' });
+      }
+    } else {
+      toast({ title: t('common.error'), description: t('admin.withdrawals.unknownType'), variant: 'destructive' });
+    }
     setShowPayModal(false);
     setAdminNote('');
     setProofImage(null);
@@ -1652,9 +1690,44 @@ export default function AdminDashboard() {
     }
   };
 
-  // Add state for editing user level
-  const [editingUserLevelId, setEditingUserLevelId] = useState(null);
-  const [editedLevel, setEditedLevel] = useState(null);
+  // Quick responses for admin notes
+  const approvalQuickResponses = [
+    'Withdrawal approved. Please check your account.',
+    'Payment processed successfully.',
+    'Your withdrawal has been completed.'
+  ];
+  const rejectionQuickResponses = [
+    'Withdrawal rejected due to incorrect account details.',
+    'Insufficient balance for withdrawal.',
+    'Withdrawal request does not meet the requirements.'
+  ];
+
+  // Helper: Convert 24-hour to 12-hour AM/PM
+  function toAmPm(hour) {
+    const h = hour % 12 || 12;
+    const ampm = hour < 12 ? 'AM' : 'PM';
+    return { hour: h, ampm };
+  }
+  // Helper: Convert 12-hour AM/PM to 24-hour
+  function fromAmPm(hour, ampm) {
+    let h = parseInt(hour, 10);
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return h;
+  }
+  const daysOfWeek = [
+    { value: 0, label: t('common.day.sunday') || 'Sunday' },
+    { value: 1, label: t('common.day.monday') || 'Monday' },
+    { value: 2, label: t('common.day.tuesday') || 'Tuesday' },
+    { value: 3, label: t('common.day.wednesday') || 'Wednesday' },
+    { value: 4, label: t('common.day.thursday') || 'Thursday' },
+    { value: 5, label: t('common.day.friday') || 'Friday' },
+    { value: 6, label: t('common.day.saturday') || 'Saturday' },
+  ];
+  const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  const ampmOptions = ['AM', 'PM'];
+  // State for new slot
+  const [newSlot, setNewSlot] = useState({ day: 0, startHour: 9, startAmPm: 'AM', endHour: 5, endAmPm: 'PM' });
 
   // Add state for search and filter
   const [userBadgeSearch, setUserBadgeSearch] = useState('');
@@ -1897,7 +1970,6 @@ export default function AdminDashboard() {
                         <TableHead>{t('admin.users.phone')}</TableHead>
                         <TableHead>{t('admin.users.status')}</TableHead>
                         <TableHead>{t('admin.users.actions')}</TableHead>
-                        <TableHead>Level</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1915,62 +1987,31 @@ export default function AdminDashboard() {
                         </TableRow>
                       ) : (
                         paginatedUsers.map((user) => (
-                          <TableRow key={user.id}>
+                        <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>{user.phone}</TableCell>
-                            <TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.phone}</TableCell>
+                          <TableCell>
                               <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
                                 {user.verified ? t('admin.users.verified') : t('admin.users.pending')}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleView(user)}>
                                   {t('admin.view')}
-                                </Button>
+                              </Button>
                                 {!user.verified && (
                                   <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
                                     {t('admin.verify')}
-                                  </Button>
-                                )}
+                                </Button>
+                              )}
                                 <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
                                   {t('admin.remove')}
                                 </Button>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {editingUserLevelId === user.user_uid ? (
-                                <div className="flex items-center gap-2">
-                                  <select
-                                    value={editedLevel ?? user.current_level}
-                                    onChange={e => setEditedLevel(Number(e.target.value))}
-                                    className="border rounded px-2 py-1"
-                                  >
-                                    {levels.map(lvl => (
-                                      <option key={lvl.level} value={lvl.level}>
-                                        {lvl.level} - {lvl.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <Button size="sm" onClick={async () => {
-                                    await supabase.from('user_info').update({ current_level: editedLevel }).eq('user_uid', user.user_uid);
-                                    setEditingUserLevelId(null);
-                                    setEditedLevel(null);
-                                    // Optionally refresh users list here
-                                    const { data } = await supabase.from('user_info').select('*');
-                                    setUsers(data || []);
-                                  }}>Save</Button>
-                                  <Button size="sm" variant="outline" onClick={() => { setEditingUserLevelId(null); setEditedLevel(null); }}>Cancel</Button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <span>{user.current_level}</span>
-                                  <Button size="sm" variant="outline" onClick={() => { setEditingUserLevelId(user.user_uid); setEditedLevel(user.current_level); }}>Edit</Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                         ))
                       )}
                     </TableBody>
@@ -2107,6 +2148,12 @@ export default function AdminDashboard() {
                     <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
                       <Label>{t('admin.adminNote')}</Label>
+                      {/* Quick responses for approval */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {approvalQuickResponses.map((msg, idx) => (
+                          <Button key={idx} size="sm" variant="outline" onClick={() => setAdminNote(msg)}>{msg}</Button>
+                        ))}
+                      </div>
                       <Input value={adminNote} onChange={e => setAdminNote(e.target.value)} />
                     </div>
                     <div className="mb-2">
@@ -2129,6 +2176,12 @@ export default function AdminDashboard() {
                     <div className="mb-2">{t('admin.withdrawals.amount')}: ${selectedWithdrawal.amount}</div>
                     <div className="mb-2">
                       <Label>{t('admin.rejectionReason')}</Label>
+                      {/* Quick responses for rejection */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {rejectionQuickResponses.map((msg, idx) => (
+                          <Button key={idx} size="sm" variant="outline" onClick={() => setRejectionReason(msg)}>{msg}</Button>
+                        ))}
+                      </div>
                       <Input value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} />
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -2878,6 +2931,123 @@ export default function AdminDashboard() {
                 </Card>
               </div>
 
+              {/* Gamification Settings */}
+              <Card className="shadow-card mt-6">
+                <CardHeader>
+                  <CardTitle>{t('admin.gamificationSettings') || 'Gamification Settings'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">{t('admin.pointsMultiplier') || 'Points Multiplier'}</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Deposit</Label>
+                          <Input
+                            type="number"
+                            value={gamificationSettings.points_multiplier?.deposit || 1}
+                            onChange={(e) => {
+                              const newSettings = { ...gamificationSettings };
+                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
+                              newSettings.points_multiplier.deposit = parseFloat(e.target.value) || 1;
+                              setGamificationSettings(newSettings);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Referral</Label>
+                          <Input
+                            type="number"
+                            value={gamificationSettings.points_multiplier?.referral || 2}
+                            onChange={(e) => {
+                              const newSettings = { ...gamificationSettings };
+                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
+                              newSettings.points_multiplier.referral = parseFloat(e.target.value) || 2;
+                              setGamificationSettings(newSettings);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Withdrawal</Label>
+                          <Input
+                            type="number"
+                            value={gamificationSettings.points_multiplier?.withdrawal || 1.5}
+                            onChange={(e) => {
+                              const newSettings = { ...gamificationSettings };
+                              if (!newSettings.points_multiplier) newSettings.points_multiplier = {};
+                              newSettings.points_multiplier.withdrawal = parseFloat(e.target.value) || 1.5;
+                              setGamificationSettings(newSettings);
+                            }}
+                            className="w-20"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => handleUpdateGamificationSettings('points_multiplier', gamificationSettings.points_multiplier)}
+                        className="w-full"
+                      >
+                        {t('admin.updateSettings') || 'Update Settings'}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="font-semibold">{t('admin.automation') || 'Automation Settings'}</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Auto Award Badges</Label>
+                          <Select
+                            value={gamificationSettings.badge_auto_award ? 'true' : 'false'}
+                            onValueChange={(value) => {
+                              const newSettings = { ...gamificationSettings };
+                              newSettings.badge_auto_award = value === 'true';
+                              setGamificationSettings(newSettings);
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">{t('admin.automation.enabled') || 'Enabled'}</SelectItem>
+                              <SelectItem value="false">{t('admin.automation.disabled') || 'Disabled'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Auto Update Levels</Label>
+                          <Select
+                            value={gamificationSettings.level_auto_update ? 'true' : 'false'}
+                            onValueChange={(value) => {
+                              const newSettings = { ...gamificationSettings };
+                              newSettings.level_auto_update = value === 'true';
+                              setGamificationSettings(newSettings);
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">{t('admin.automation.enabled') || 'Enabled'}</SelectItem>
+                              <SelectItem value="false">{t('admin.automation.disabled') || 'Disabled'}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          handleUpdateGamificationSettings('badge_auto_award', gamificationSettings.badge_auto_award);
+                          handleUpdateGamificationSettings('level_auto_update', gamificationSettings.level_auto_update);
+                        }}
+                        className="w-full"
+                      >
+                        {t('admin.updateSettings') || 'Update Settings'}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* User Badges Statistics */}
               <Card className="shadow-card mt-6">
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -3306,3 +3476,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
