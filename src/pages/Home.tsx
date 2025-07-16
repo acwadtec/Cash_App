@@ -107,7 +107,7 @@ export default function Home() {
             <Button
               asChild
               size="lg"
-              className="text-lg px-8 py-3 shadow-glow font-arabic font-bold transition-colors duration-200 bg-primary text-primary-foreground hover:bg-primary-glow focus:ring-2 focus:ring-primary focus:outline-none"
+              className="text-lg px-8 py-3 shadow-glow font-arabic font-bold transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 bg-primary text-primary-foreground hover:bg-primary-glow"
             >
               <Link to="/register">{t('home.hero.cta')}</Link>
             </Button>
@@ -115,7 +115,7 @@ export default function Home() {
               asChild
               variant="secondary"
               size="lg"
-              className="text-lg px-8 py-3 font-arabic font-bold border-2 border-primary text-primary bg-secondary hover:bg-primary/10 hover:text-primary-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors duration-200 shadow-sm"
+              className="text-lg px-8 py-3 font-arabic font-bold border-2 border-primary text-primary bg-secondary hover:bg-primary/10 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary focus:outline-none transition-all duration-150 hover:scale-105 hover:shadow-lg active:scale-95 shadow-sm"
             >
               <Link to="/read-more">{t('home.hero.readMore')}</Link>
             </Button>
@@ -150,7 +150,7 @@ export default function Home() {
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
             {t('home.cta.subtitle')}
           </p>
-          <Button asChild size="lg" className="text-lg px-8 py-3 shadow-glow bg-primary text-primary-foreground">
+          <Button asChild size="lg" className="text-lg px-8 py-3 shadow-glow bg-primary text-primary-foreground transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
             <Link to="/register">{t('home.cta.button')}</Link>
           </Button>
         </div>

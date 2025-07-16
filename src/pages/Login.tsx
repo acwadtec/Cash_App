@@ -122,7 +122,7 @@ export default function Login() {
                   required
                 />
               </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95" disabled={loading}>
               {loading ? t('common.loading') : t('login.submit')}
               </Button>
             </form>

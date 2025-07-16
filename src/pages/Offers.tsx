@@ -208,7 +208,7 @@ export default function Offers() {
                     )}
                   </div>
                   <Button
-                    className="w-full shadow-glow"
+                    className="w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                     onClick={() => handleJoinOffer(offer.id)}
                     disabled={joinedOffers.includes(offer.id)}
                   >
@@ -227,7 +227,7 @@ export default function Offers() {
               <p className="text-muted-foreground mb-6">
                 {t('offers.notification.subtitle') || t('offers.stayTuned')}
               </p>
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
                 {t('offers.notification.button') || t('offers.notifyMe')}
               </Button>
             </CardContent>

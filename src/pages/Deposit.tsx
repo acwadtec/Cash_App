@@ -307,7 +307,9 @@ export default function Deposit() {
               <CardContent className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <p className="text-muted-foreground mb-4">{t('deposit.loginRequired')}</p>
-                  <Button onClick={() => navigate('/login')}>{t('nav.login')}</Button>
+                  <Button onClick={() => navigate('/login')} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
+                    {t('nav.login')}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -350,7 +352,7 @@ export default function Deposit() {
                       placeholder={t('deposit.loadingNumber')}
                     />
                     {selectedNumber && (
-                      <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber') || 'Copy number'}>
+                      <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber') || 'Copy number'} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-110 hover:shadow-lg active:scale-95">
                         <Copy className="h-4 w-4" />
                       </Button>
                     )}
@@ -400,7 +402,7 @@ export default function Deposit() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full h-12 text-lg shadow-glow" 
+                  className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95" 
                   disabled={submitting || !selectedNumber}
                 >
                   {submitting ? t('deposit.submitting') : t('deposit.submit')}

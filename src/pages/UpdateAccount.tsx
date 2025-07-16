@@ -306,7 +306,7 @@ export default function UpdateAccount() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-lg shadow-glow"
+                  className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                   disabled={uploading}
                 >
                   {uploading ? t('common.loading') : t('updateAccount.submit') || 'Complete Registration'}

@@ -16,11 +16,26 @@ import { useEffect, useState } from 'react';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function HelpCenter() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [showAlert, setShowAlert] = useState(false);
+
+  // Data-driven support options
+  const supportOptions = [
+    {
+      label: t('help.liveChat'),
+      variant: 'secondary',
+      onClick: () => {
+        // Dispatch a custom event to open the chat
+        window.dispatchEvent(new CustomEvent('open-chat'));
+      },
+    },
+  ];
 
   // Check if user has user_info data
   useEffect(() => {
@@ -244,12 +259,23 @@ export default function HelpCenter() {
                   {t('help.supportMessage')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Badge className="bg-accent text-primary px-4 py-2 text-base">
-                    {t('help.emailSupport')}
-                  </Badge>
-                  <Badge className="bg-accent text-primary px-4 py-2 text-base">
-                    {t('help.liveChat')}
-                  </Badge>
+                  {supportOptions.map((option, idx) => (
+                    <Button
+                      key={option.label}
+                      variant={option.variant as any}
+                      size="lg"
+                      className={`px-6 py-2 text-base font-bold transition-all duration-150
+                        focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                        hover:scale-105 hover:shadow-lg active:scale-95
+                        ${option.variant === 'default'
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/80'
+                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80 dark:bg-secondary dark:text-secondary-foreground dark:hover:bg-secondary/60'}
+                      `}
+                      onClick={option.onClick}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </CardContent>

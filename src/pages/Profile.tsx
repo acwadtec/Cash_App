@@ -527,6 +527,7 @@ export default function Profile() {
                           setModalImageUrl(getProfilePhotoUrl()!);
                           setShowImageModal(true);
                         }}
+                        className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                       >
                         {t('profile.view') || 'View'}
                       </Button>
@@ -553,6 +554,7 @@ export default function Profile() {
                               setModalImageUrl(getImageUrl('front'));
                               setShowImageModal(true);
                             }}
+                            className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                           >
                             {t('profile.view') || 'View'}
                           </Button>
@@ -570,6 +572,7 @@ export default function Profile() {
                               setModalImageUrl(getImageUrl('back'));
                               setShowImageModal(true);
                             }}
+                            className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                           >
                             {t('profile.view') || 'View'}
                           </Button>

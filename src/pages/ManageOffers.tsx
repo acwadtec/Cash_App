@@ -251,11 +251,9 @@ export default function ManageOffers() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">{t('offers.manageOffers')}</h1>
           <div className="flex gap-2">
-            <Button onClick={() => navigate('/admin')} variant="outline">{t('admin.backToAdmin')}</Button>
-            <Button onClick={() => openDialog()}>{t('offers.create')}</Button>
-            <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0}>
-              {t('offers.deleteAll')}
-            </Button>
+            <Button onClick={() => navigate('/admin')} variant="outline" className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">{t('admin.backToAdmin')}</Button>
+            <Button onClick={() => openDialog()} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">{t('offers.create')}</Button>
+            <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">{t('offers.deleteAll')}</Button>
           </div>
         </div>
         <Card>
@@ -467,13 +465,14 @@ export default function ManageOffers() {
                     variant="outline" 
                     onClick={() => setShowDialog(false)}
                     disabled={uploading}
+                    className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                   >
                     {t('admin.cancel')}
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={uploading}
-                    className="min-w-[100px]"
+                    className="min-w-[100px] transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                   >
                     {uploading ? t('admin.saving') : (editOffer ? t('admin.update') : t('admin.create'))}
                   </Button>

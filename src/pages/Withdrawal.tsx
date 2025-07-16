@@ -511,7 +511,7 @@ export default function Withdrawal() {
 
                         <Button 
                           type="submit" 
-                          className="w-full h-12 text-lg shadow-glow"
+                          className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                           disabled={!isWithinTimeSlot() || loading}
                         >
                           {loading ? t('common.loading') : t('withdrawal.submit')}
@@ -640,7 +640,7 @@ export default function Withdrawal() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="mt-1"
+                                  className="mt-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                                   onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
                                 >
                                   {t('withdrawal.viewProof') || 'View Proof'}
@@ -667,7 +667,9 @@ export default function Withdrawal() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-background p-4 rounded shadow-lg max-w-lg w-full flex flex-col items-center">
             <img src={modalImageUrl} alt="Proof" className="max-h-[70vh] max-w-full mb-4 rounded" />
-            <Button onClick={() => setShowImageModal(false)}>{t('common.close') || 'Close'}</Button>
+            <Button onClick={() => setShowImageModal(false)} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
+              {t('common.close') || 'Close'}
+            </Button>
           </div>
         </div>
       )}

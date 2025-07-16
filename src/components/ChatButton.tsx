@@ -20,6 +20,17 @@ export function ChatButton() {
     getUser();
   }, []);
 
+  // Listen for custom event to open chat from anywhere
+  useEffect(() => {
+    const handleOpenChatEvent = () => {
+      setIsChatOpen(true);
+      setIsMinimized(false);
+      setUnreadCount(0);
+    };
+    window.addEventListener('open-chat', handleOpenChatEvent);
+    return () => window.removeEventListener('open-chat', handleOpenChatEvent);
+  }, []);
+
   const fetchUnread = async () => {
     if (!userId) return;
     const { data, error } = await supabase
