@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash } from 'lucide-react';
+import { Plus, Pencil, Trash, Phone } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,36 +27,39 @@ interface DepositNumber {
 }
 
 export default function DepositNumbersPage() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [depositNumbers, setDepositNumbers] = useState<DepositNumber[]>([]);
   const [loadingNumbers, setLoadingNumbers] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedNumber, setSelectedNumber] = useState<DepositNumber | null>(null);
-  const [numberForm, setNumberForm] = useState({
-    number: '',
-    active: true
-  });
+  const [newNumber, setNewNumber] = useState('');
 
-  useEffect(() => {
-    fetchDepositNumbers();
+  useEffect(() => { 
+    fetchDepositNumbers(); 
   }, []);
 
   const fetchDepositNumbers = async () => {
+    setLoadingNumbers(true);
     try {
-      setLoadingNumbers(true);
       const { data, error } = await supabase
         .from('deposit_numbers')
         .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setDepositNumbers(data || []);
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching deposit numbers:', error);
+        toast({ 
+          title: t('common.error'), 
+          description: 'Failed to fetch deposit numbers', 
+          variant: 'destructive' 
+        });
+      } else {
+        setDepositNumbers(data || []);
+      }
     } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to fetch deposit numbers'),
-        variant: 'destructive',
+      console.error('Error fetching deposit numbers:', error);
+      toast({ 
+        title: t('common.error'), 
+        description: 'Failed to fetch deposit numbers', 
+        variant: 'destructive' 
       });
     } finally {
       setLoadingNumbers(false);
@@ -62,214 +67,219 @@ export default function DepositNumbersPage() {
   };
 
   const handleAddNumber = async () => {
-    try {
-      const { error } = await supabase
-        .from('deposit_numbers')
-        .insert([numberForm]);
-
-      if (error) throw error;
-
-      toast({
-        title: t('Success'),
-        description: t('Deposit number added successfully'),
+    if (!newNumber.trim()) {
+      toast({ 
+        title: t('common.error'), 
+        description: 'Please enter a valid number', 
+        variant: 'destructive' 
       });
-      setShowAddModal(false);
-      setNumberForm({
-        number: '',
-        active: true
-      });
-      fetchDepositNumbers();
-    } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to add deposit number'),
-        variant: 'destructive',
-      });
+      return;
     }
-  };
 
-  const handleEditNumber = async () => {
-    if (!selectedNumber) return;
+    if (depositNumbers.length >= 10) {
+      toast({ 
+        title: t('common.error'), 
+        description: t('deposit.error.maxNumbers'), 
+        variant: 'destructive' 
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('deposit_numbers')
-        .update(numberForm)
-        .eq('id', selectedNumber.id);
-
-      if (error) throw error;
-
-      toast({
-        title: t('Success'),
-        description: t('Deposit number updated successfully'),
-      });
-      setShowEditModal(false);
-      setSelectedNumber(null);
-      setNumberForm({
-        number: '',
-        active: true
-      });
-      fetchDepositNumbers();
+        .insert([{ number: newNumber.trim() }]);
+      
+      if (error) {
+        console.error('Error adding deposit number:', error);
+        toast({ 
+          title: t('common.error'), 
+          description: 'Failed to add deposit number', 
+          variant: 'destructive' 
+        });
+      } else {
+        setNewNumber('');
+        await fetchDepositNumbers();
+        toast({ 
+          title: t('common.success'), 
+          description: 'Deposit number added successfully' 
+        });
+      }
     } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to update deposit number'),
-        variant: 'destructive',
+      console.error('Error adding deposit number:', error);
+      toast({ 
+        title: t('common.error'), 
+        description: 'Failed to add deposit number', 
+        variant: 'destructive' 
       });
     }
   };
 
-  const handleDeleteNumber = async (id: string) => {
-    if (!window.confirm(t('Are you sure you want to delete this deposit number?'))) return;
-
+  const handleRemoveNumber = async (id: string) => {
     try {
       const { error } = await supabase
         .from('deposit_numbers')
         .delete()
         .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: t('Success'),
-        description: t('Deposit number deleted successfully'),
-      });
-      fetchDepositNumbers();
+      
+      if (error) {
+        console.error('Error removing deposit number:', error);
+        toast({ 
+          title: t('common.error'), 
+          description: 'Failed to remove deposit number', 
+          variant: 'destructive' 
+        });
+      } else {
+        await fetchDepositNumbers();
+        toast({ 
+          title: t('common.success'), 
+          description: 'Deposit number removed successfully' 
+        });
+      }
     } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to delete deposit number'),
-        variant: 'destructive',
+      console.error('Error removing deposit number:', error);
+      toast({ 
+        title: t('common.error'), 
+        description: 'Failed to remove deposit number', 
+        variant: 'destructive' 
       });
     }
   };
 
-  return (
-    <div className="space-y-4 p-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">{t('Deposit Numbers')}</h2>
-        <Button onClick={() => setShowAddModal(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('Add Number')}
-        </Button>
-      </div>
+  const handleUpdateNumber = async (id: string, value: string) => {
+    if (!value.trim()) {
+      toast({ 
+        title: t('common.error'), 
+        description: 'Please enter a valid number', 
+        variant: 'destructive' 
+      });
+      return;
+    }
 
-      <Card>
+    try {
+      const { error } = await supabase
+        .from('deposit_numbers')
+        .update({ number: value.trim() })
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error updating deposit number:', error);
+        toast({ 
+          title: t('common.error'), 
+          description: 'Failed to update deposit number', 
+          variant: 'destructive' 
+        });
+      } else {
+        await fetchDepositNumbers();
+        toast({ 
+          title: t('common.success'), 
+          description: 'Deposit number updated successfully' 
+        });
+      }
+    } catch (error) {
+      console.error('Error updating deposit number:', error);
+      toast({ 
+        title: t('common.error'), 
+        description: 'Failed to update deposit number', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddNumber();
+    }
+  };
+
+  return (
+    <div className="space-y-4 p-4 sm:p-8">
+      <Card className="shadow-card w-full bg-background border border-border dark:bg-muted/40 dark:border-muted-foreground/10 rounded-2xl">
         <CardHeader>
-          <CardTitle>{t('Numbers List')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Plus className="w-5 h-5 text-primary" />
+            {t('deposit.numbers') || 'Deposit Numbers'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('Number')}</TableHead>
-                <TableHead>{t('Status')}</TableHead>
-                <TableHead>{t('Created At')}</TableHead>
-                <TableHead>{t('Actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loadingNumbers ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
-                    {t('Loading...')}
-                  </TableCell>
-                </TableRow>
-              ) : depositNumbers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
-                    {t('No deposit numbers found')}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                depositNumbers.map((number) => (
-                  <TableRow key={number.id}>
-                    <TableCell className="font-mono">{number.number}</TableCell>
-                    <TableCell>
-                      <Badge variant={number.active ? 'default' : 'secondary'}>
-                        {number.active ? t('Active') : t('Inactive')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(number.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedNumber(number);
-                            setNumberForm({
-                              number: number.number,
-                              active: number.active
-                            });
-                            setShowEditModal(true);
-                          }}
+          <div className="mb-4 flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+            <Input
+              value={newNumber}
+              onChange={e => setNewNumber(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={t('deposit.userNumber') || 'Mobile Number'}
+              className="max-w-xs truncate overflow-x-auto bg-background border border-border focus:ring-2 focus:ring-primary/30 dark:bg-muted/60 dark:border-muted-foreground/20"
+              disabled={depositNumbers.length >= 10}
+            />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={handleAddNumber} 
+                    disabled={depositNumbers.length >= 10 || !newNumber.trim()}
+                    className="flex gap-1 items-center"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('common.save') || 'Add'}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('common.save') || 'Add'}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {depositNumbers.length >= 10 && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md dark:bg-yellow-900/30 dark:border-yellow-800">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                {t('deposit.error.maxNumbers') || 'Maximum of 10 deposit numbers reached'}
+              </p>
+            </div>
+          )}
+
+          <Separator className="my-4" />
+
+          {loadingNumbers ? (
+            <div className="text-center py-8 text-muted-foreground animate-pulse">{t('common.loading') || 'Loading...'}</div>
+          ) : (
+            <div className="space-y-2">
+              {depositNumbers.map((num) => (
+                <div
+                  key={num.id}
+                  className="flex items-center gap-2 p-3 border border-border bg-card dark:bg-muted/60 dark:border-muted-foreground/10 rounded-xl shadow-sm transition hover:shadow-md"
+                >
+                  <Input
+                    value={num.number}
+                    onChange={e => handleUpdateNumber(num.id, e.target.value)}
+                    className="max-w-xs truncate overflow-x-auto bg-background border border-border focus:ring-2 focus:ring-primary/30 dark:bg-muted/60 dark:border-muted-foreground/20"
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveNumber(num.id)}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive focus:ring-2 focus:ring-destructive/30"
+                          aria-label={t('common.delete') || 'Remove'}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Trash className="w-5 h-5" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteNumber(number.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TooltipTrigger>
+                      <TooltipContent>{t('common.delete') || 'Remove'}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              ))}
+              {depositNumbers.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+                  <Phone className="w-10 h-10 opacity-30" />
+                  <span className="text-lg font-medium">{t('deposit.noNumbers') || 'No deposit numbers found'}</span>
+                </div>
               )}
-            </TableBody>
-          </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Add/Edit Number Modal */}
-      <Dialog open={showAddModal || showEditModal} onOpenChange={(open) => {
-        if (!open) {
-          setShowAddModal(false);
-          setShowEditModal(false);
-          setSelectedNumber(null);
-          setNumberForm({
-            number: '',
-            active: true
-          });
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {showAddModal ? t('Add New Number') : t('Edit Number')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{t('Number')}</Label>
-              <Input
-                value={numberForm.number}
-                onChange={(e) => setNumberForm(prev => ({ ...prev, number: e.target.value }))}
-                placeholder={t('Enter deposit number')}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="active"
-                checked={numberForm.active}
-                onChange={(e) => setNumberForm(prev => ({ ...prev, active: e.target.checked }))}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="active">{t('Active')}</Label>
-            </div>
-            <Button
-              onClick={showAddModal ? handleAddNumber : handleEditNumber}
-              disabled={!numberForm.number}
-            >
-              {showAddModal ? t('Add Number') : t('Update Number')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 } 

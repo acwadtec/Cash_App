@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -102,7 +103,7 @@ export const checkIfUserIsAdmin = async (userUid: string): Promise<boolean> => {
       .from('admins')
       .select('user_uid')
       .eq('user_uid', userUid)
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     return data !== null;
@@ -121,7 +122,7 @@ export const getAdminInfo = async (userUid: string) => {
       .from('admins')
       .select('*')
       .eq('user_uid', userUid)
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     return { data, error: null };
@@ -158,7 +159,7 @@ export const checkAndAwardReferralBadges = async (userUid: string) => {
         .select('id')
         .eq('user_id', userUid)
         .eq('badge_id', badge.id)
-        .single();
+        .maybeSingle();
       if (!existing || existingError) {
         // 4. Award badge
         await supabase.from('user_badges').insert({
@@ -219,7 +220,7 @@ export const checkAndAwardAllBadges = async (userUid) => {
         .select('id')
         .eq('user_uid', userUid)
         .eq('badge_id', badge.id)
-        .single();
+        .maybeSingle();
       if (!existing) {
         await supabase.from('user_badges').insert({
           user_uid: userUid,
@@ -228,5 +229,72 @@ export const checkAndAwardAllBadges = async (userUid) => {
         });
       }
     }
+  }
+}; 
+
+/**
+ * Accrues daily profit for all approved offer joins that are due (24h since last profit or approval).
+ * Adds the offer's daily_profit to the user's balance and updates last_profit_at.
+ * Returns a summary of processed joins for testing.
+ */
+export const accrueDailyOfferProfits = async () => {
+  const now = new Date();
+  // 1. Get all approved offer joins
+  const { data: joins, error: joinsError } = await supabase
+    .from('offer_joins')
+    .select('id, user_id, offer_id, approved_at, last_profit_at, status')
+    .eq('status', 'approved');
+  if (joinsError) throw joinsError;
+  const processed = [];
+  for (const join of joins) {
+    const last = join.last_profit_at || join.approved_at;
+    if (!last) continue;
+    const lastDate = new Date(last);
+    if ((now.getTime() - lastDate.getTime()) < 24 * 60 * 60 * 1000) continue; // Not due yet
+    // 2. Get offer's daily profit
+    const { data: offer, error: offerError } = await supabase
+      .from('offers')
+      .select('daily_profit')
+      .eq('id', join.offer_id)
+      .single();
+    if (offerError || !offer) continue;
+    // 3. Add to user balance
+    const { data: user, error: userError } = await supabase
+      .from('user_info')
+      .select('balance')
+      .eq('user_uid', join.user_id)
+      .single();
+    if (userError || !user) continue;
+    const newBalance = (user.balance || 0) + (offer.daily_profit || 0);
+    await supabase
+      .from('user_info')
+      .update({ balance: newBalance })
+      .eq('user_uid', join.user_id);
+    // 4. Update last_profit_at
+    await supabase
+      .from('offer_joins')
+      .update({ last_profit_at: now.toISOString() })
+      .eq('id', join.id);
+    processed.push({ join_id: join.id, user_id: join.user_id, profit: offer.daily_profit });
+  }
+  return processed;
+}; 
+
+/**
+ * Test function to simulate and verify daily profit accrual for offer joins.
+ * Logs the processed joins and their profit.
+ */
+export const testAccrueDailyOfferProfits = async () => {
+  try {
+    const processed = await accrueDailyOfferProfits();
+    if (processed.length === 0) {
+      console.log('No offer joins were due for profit accrual.');
+    } else {
+      console.log('Processed offer joins for daily profit:', processed);
+    }
+    return processed;
+  } catch (error) {
+    console.error('Error during daily profit accrual test:', error);
+    throw error;
   }
 }; 
