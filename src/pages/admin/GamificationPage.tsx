@@ -1,6 +1,5 @@
 import * as React from 'react';
-import type { FC } from 'react';
-import { Trophy, Award, Plus, Pencil, Trash, User } from 'lucide-react';
+import { Trophy, Award, Plus, Pencil, Trash, User, Search, Filter } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 
 // Services
 import { supabase } from '@/lib/supabase';
+import { useState } from 'react';
 
 interface Badge {
   id: string;
@@ -106,6 +106,13 @@ const GamificationPage: FC = () => {
     description: '',
     requirement: 100,
     benefits: ''
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [showEditBadgeModal, setShowEditBadgeModal] = useState(false);
+  const [selectedUserBadge, setSelectedUserBadge] = useState<UserBadge | null>(null);
+  const [editForm, setEditForm] = useState({
+    points_earned: 0
   });
 
   React.useEffect(() => {
@@ -454,6 +461,73 @@ const GamificationPage: FC = () => {
     }
   };
 
+  const filteredUserBadges = userBadges.filter(userBadge => {
+    const matchesSearch = searchTerm === '' || 
+      userBadge.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userBadge.badge?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = filterType === 'all' || userBadge.badge?.type === filterType;
+    
+    return matchesSearch && matchesType;
+  });
+
+  const handleEditUserBadge = async () => {
+    if (!selectedUserBadge) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_badges')
+        .update({
+          points_earned: editForm.points_earned
+        })
+        .eq('id', selectedUserBadge.id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('Success'),
+        description: t('User badge updated successfully'),
+      });
+
+      setShowEditBadgeModal(false);
+      fetchUserBadges();
+    } catch (error) {
+      console.error('Error updating user badge:', error);
+      toast({
+        title: t('Error'),
+        description: t('Failed to update user badge'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteUserBadge = async (id: string) => {
+    if (!window.confirm(t('Are you sure you want to delete this badge?'))) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_badges')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('Success'),
+        description: t('User badge deleted successfully'),
+      });
+
+      fetchUserBadges();
+    } catch (error) {
+      console.error('Error deleting user badge:', error);
+      toast({
+        title: t('Error'),
+        description: t('Failed to delete user badge'),
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
@@ -469,6 +543,35 @@ const GamificationPage: FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('Search by user email or badge name...')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div className="w-full md:w-[200px]">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('Filter by type')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('All Types')}</SelectItem>
+                  <SelectItem value="achievement">{t('Achievement')}</SelectItem>
+                  <SelectItem value="profile">{t('Profile')}</SelectItem>
+                  <SelectItem value="verification">{t('Verification')}</SelectItem>
+                  <SelectItem value="deposit">{t('Deposit')}</SelectItem>
+                  <SelectItem value="withdrawal">{t('Withdrawal')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {loadingUserBadges ? (
             <div className="flex justify-center py-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -483,17 +586,18 @@ const GamificationPage: FC = () => {
                     <TableHead>{t('Type')}</TableHead>
                     <TableHead>{t('Points Earned')}</TableHead>
                     <TableHead>{t('Earned At')}</TableHead>
+                    <TableHead>{t('Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {userBadges.length === 0 ? (
+                  {filteredUserBadges.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">
+                      <TableCell colSpan={6} className="text-center py-4">
                         {t('No user badges found')}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    userBadges.map((userBadge) => (
+                    filteredUserBadges.map((userBadge) => (
                       <TableRow key={userBadge.id}>
                         <TableCell>
                           <div className="flex flex-col">
@@ -508,11 +612,9 @@ const GamificationPage: FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              {userBadge.badge?.name}
-                            </span>
-                          </div>
+                          <span className="font-medium">
+                            {userBadge.badge?.name}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize">
@@ -524,6 +626,28 @@ const GamificationPage: FC = () => {
                           {userBadge.earned_at
                             ? new Date(userBadge.earned_at).toLocaleDateString()
                             : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUserBadge(userBadge);
+                                setEditForm({ points_earned: userBadge.points_earned });
+                                setShowEditBadgeModal(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteUserBadge(userBadge.id)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -943,6 +1067,44 @@ const GamificationPage: FC = () => {
               disabled={!levelForm.name || !levelForm.description}
             >
               {selectedLevel ? t('Update Level') : t('Add Level')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Badge Modal */}
+      <Dialog open={showEditBadgeModal} onOpenChange={setShowEditBadgeModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('Edit User Badge')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t('User')}</Label>
+              <div className="mt-1.5 text-sm">
+                {selectedUserBadge?.user?.email}
+              </div>
+            </div>
+            <div>
+              <Label>{t('Badge')}</Label>
+              <div className="mt-1.5 text-sm">
+                {selectedUserBadge?.badge?.name}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('Points Earned')}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={editForm.points_earned}
+                onChange={(e) => setEditForm(prev => ({
+                  ...prev,
+                  points_earned: parseInt(e.target.value) || 0
+                }))}
+              />
+            </div>
+            <Button onClick={handleEditUserBadge} className="w-full">
+              {t('Save Changes')}
             </Button>
           </div>
         </DialogContent>
