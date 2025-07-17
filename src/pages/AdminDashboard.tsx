@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+<<<<<<< HEAD
 import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Pencil } from 'lucide-react';
+=======
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Clock, Package, Info } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+>>>>>>> c533f5e19bc682755b43ac04ac92ca5be459f44c
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +37,7 @@ import { checkIfUserIsAdmin } from '@/lib/supabase';
 import { checkAndAwardAllBadges } from '@/lib/supabase';
 
 export default function AdminDashboard() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [notificationData, setNotificationData] = useState({
     title: '',
     message: '',
@@ -1420,16 +1425,7 @@ export default function AdminDashboard() {
     fetchWithdrawals();
     fetchTransactions(); // Refresh transaction history
   };
-  // Update time slots
-  const handleSaveTimeSlots = async () => {
-    await supabase.from('settings').upsert({ key: 'withdrawal_time_slots', value: timeSlots });
-    fetchSettings();
-  };
-  // Update package limits
-  const handleSavePackageLimits = async () => {
-    await supabase.from('settings').upsert({ key: 'package_withdrawal_limits', value: packageLimits });
-    fetchSettings();
-  };
+
 
   // Gamification functions
   const fetchBadges = async () => {
@@ -1888,8 +1884,59 @@ export default function AdminDashboard() {
     }
   };
 
+<<<<<<< HEAD
   // Add at the top with other state
   const [levelSavingId, setLevelSavingId] = useState(null);
+=======
+  // Add at the top of the component, after other useState hooks
+  const [withdrawalPage, setWithdrawalPage] = useState(1);
+  const [withdrawalsPerPage] = useState(10);
+  const [withdrawalStatusFilter, setWithdrawalStatusFilter] = useState('all');
+  const [withdrawalDateFilter, setWithdrawalDateFilter] = useState('');
+
+  useEffect(() => {
+    setWithdrawalPage(1);
+  }, [withdrawalStatusFilter, withdrawalDateFilter]);
+
+  // Add state for transaction logs pagination
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [transactionsPerPage] = useState(15);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setTransactionPage(1);
+  }, [transactionFilter, transactionStatusFilter]);
+
+  // Sort and paginate transactions
+  const filteredTransactions = transactions
+    .filter(txn => {
+      if (transactionFilter === 'all') return true;
+      if (transactionFilter === 'deposits') return txn.type === 'deposit';
+      if (transactionFilter === 'withdrawals') return txn.type === 'withdrawal';
+      return true;
+    })
+    .filter(txn => transactionStatusFilter === 'all' || txn.status === transactionStatusFilter)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const totalTransactionPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+  const paginatedTransactions = filteredTransactions.slice((transactionPage - 1) * transactionsPerPage, transactionPage * transactionsPerPage);
+
+  // 1. Add state for deposit requests pagination
+  const [depositPage, setDepositPage] = useState(1);
+  const [depositsPerPage] = useState(10);
+
+  // 2. Paginate depositRequests
+  const paginatedDeposits = depositRequests.slice((depositPage - 1) * depositsPerPage, depositPage * depositsPerPage);
+  const totalDepositPages = Math.ceil(depositRequests.length / depositsPerPage);
+
+  // 1. Add state for user badges pagination
+  const [userBadgePage, setUserBadgePage] = useState(1);
+  const [userBadgesPerPage] = useState(10);
+
+  // 2. Paginate userBadges
+  const paginatedUserBadges = userBadges.slice((userBadgePage - 1) * userBadgesPerPage, userBadgePage * userBadgesPerPage);
+  const totalUserBadgePages = Math.ceil(userBadges.length / userBadgesPerPage);
+>>>>>>> c533f5e19bc682755b43ac04ac92ca5be459f44c
 
   return (
     <div className="min-h-screen py-20">
@@ -2264,54 +2311,114 @@ export default function AdminDashboard() {
                   <CardTitle>{t('admin.withdrawals.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-4 mb-4 items-end">
+                    <div>
+                      <Label>{t('admin.withdrawals.status')}</Label>
+                      <Select value={withdrawalStatusFilter} onValueChange={setWithdrawalStatusFilter}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('admin.transactions.all') || 'All'}</SelectItem>
+                          <SelectItem value="pending">{t('admin.transactions.pending') || 'Pending'}</SelectItem>
+                          <SelectItem value="paid">{t('admin.transactions.paid') || 'Paid'}</SelectItem>
+                          <SelectItem value="rejected">{t('admin.transactions.rejected') || 'Rejected'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{t('admin.withdrawals.date')}</Label>
+                      <Input
+                        type="date"
+                        value={withdrawalDateFilter}
+                        onChange={e => setWithdrawalDateFilter(e.target.value)}
+                        className="w-48"
+                      />
+                    </div>
+                  </div>
                   {loadingWithdrawals ? (
                     <div>Loading...</div>
                   ) : Object.keys(groupedWithdrawals).length === 0 ? (
                     <div>{t('admin.withdrawals.noRequests')}</div>
                   ) : (
-                    Object.entries(groupedWithdrawals).map(([day, list]) => (
-                      <div key={day} className="mb-8">
-                        <h3 className="font-semibold mb-2">{day}</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('admin.withdrawals.user')}</TableHead>
-                              <TableHead>{t('profile.phone')}</TableHead>
-                              <TableHead>{t('admin.withdrawals.wallet')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.amount')}</TableHead>
-                              <TableHead>{t('offers.title')}</TableHead>
-                              <TableHead>{t('admin.withdrawals.status')}</TableHead>
-                        <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                        <TableHead>{t('admin.users.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                            {list.map(w => (
-                              <TableRow key={w.id}>
-                                <TableCell>{w.user_name}</TableCell>
-                                <TableCell>{w.phone_number}</TableCell>
-                                <TableCell>{w.wallet_type}</TableCell>
-                                <TableCell>${w.amount}</TableCell>
-                                <TableCell>{w.package_id}</TableCell>
-                                <TableCell>{w.status}</TableCell>
-                                <TableCell>{w.created_at.split('T')[0]}</TableCell>
-                          <TableCell>
-                                  {w.status === 'pending' && (
-                                    <>
-                                      <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
-                                      <Button size="sm" variant="destructive" onClick={() => { setSelectedWithdrawal(w); setShowRejectModal(true); }}>{t('admin.withdrawals.reject')}</Button>
-                                    </>
-                                  )}
-                                  {w.status === 'paid' && w.proof_image_url && (
-                                    <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
-                                  )}
-                          </TableCell>
+                    // Flatten, filter, and paginate withdrawals
+                    (() => {
+                      let allWithdrawals = Object.entries(groupedWithdrawals).flatMap(([day, list]) => list.map(w => ({ ...w, day })));
+                      if (withdrawalStatusFilter !== 'all') {
+                        allWithdrawals = allWithdrawals.filter(w => w.status === withdrawalStatusFilter);
+                      }
+                      if (withdrawalDateFilter) {
+                        allWithdrawals = allWithdrawals.filter(w => w.created_at.split('T')[0] === withdrawalDateFilter);
+                      }
+                      const totalPages = Math.ceil(allWithdrawals.length / withdrawalsPerPage);
+                      const paginated = allWithdrawals.slice((withdrawalPage - 1) * withdrawalsPerPage, withdrawalPage * withdrawalsPerPage);
+                      return (
+                        <>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>{t('admin.withdrawals.user')}</TableHead>
+                                <TableHead>{t('profile.phone')}</TableHead>
+                                <TableHead>{t('admin.withdrawals.wallet')}</TableHead>
+                                <TableHead>{t('admin.withdrawals.amount')}</TableHead>
+                                <TableHead>{t('admin.withdrawals.status')}</TableHead>
+                                <TableHead>{t('admin.withdrawals.date')}</TableHead>
+                                <TableHead>{t('admin.users.actions')}</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ))
+                            </TableHeader>
+                            <TableBody>
+                              {paginated.map(w => (
+                                <TableRow key={w.id}>
+                                  <TableCell>{w.user_name}</TableCell>
+                                  <TableCell>{w.phone_number}</TableCell>
+                                  <TableCell>{w.wallet_type}</TableCell>
+                                  <TableCell>${w.amount}</TableCell>
+                                  <TableCell>{w.status}</TableCell>
+                                  <TableCell>{w.created_at.split('T')[0]}</TableCell>
+                                  <TableCell>
+                                    {w.status === 'pending' && (
+                                      <>
+                                        <Button size="sm" className="bg-success mr-2" onClick={() => { setSelectedWithdrawal(w); setShowPayModal(true); }}>{t('admin.withdrawals.approve')}</Button>
+                                        <Button size="sm" variant="destructive" onClick={() => { setSelectedWithdrawal(w); setShowRejectModal(true); }}>{t('admin.withdrawals.reject')}</Button>
+                                      </>
+                                    )}
+                                    {w.status === 'paid' && w.proof_image_url && (
+                                      <a href={w.proof_image_url} target="_blank" rel="noopener noreferrer">{t('admin.proof')}</a>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                              {paginated.length === 0 && (
+                                <TableRow>
+                                  <TableCell colSpan={7} className="text-center text-muted-foreground">{t('admin.withdrawals.noRequests')}</TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                          {/* Pagination */}
+                          {totalPages > 1 && paginated.length > 0 && (
+                            <div className="flex justify-center mt-4">
+                              <Pagination>
+                                <PaginationContent>
+                                  <PaginationItem>
+                                    <PaginationPrevious onClick={() => setWithdrawalPage(p => Math.max(p - 1, 1))} className={withdrawalPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
+                                  </PaginationItem>
+                                  {Array.from({ length: totalPages }, (_, i) => (
+                                    <PaginationItem key={i + 1}>
+                                      <PaginationLink onClick={() => setWithdrawalPage(i + 1)} className={withdrawalPage === i + 1 ? 'bg-primary text-white cursor-default' : 'cursor-pointer'}>{i + 1}</PaginationLink>
+                                    </PaginationItem>
+                                  ))}
+                                  <PaginationItem>
+                                    <PaginationNext onClick={() => setWithdrawalPage(p => Math.min(p + 1, totalPages))} className={withdrawalPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
+                                  </PaginationItem>
+                                </PaginationContent>
+                              </Pagination>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()
                   )}
                 </CardContent>
               </Card>
@@ -2370,102 +2477,112 @@ export default function AdminDashboard() {
               {/* Settings UI */}
               <Card className="shadow-card mt-8">
                 <CardHeader>
-                                  <CardTitle>{t('admin.settings')}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="text-primary w-5 h-5" />
+                    {t('admin.timeSlots')}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="text-muted-foreground w-4 h-4 cursor-pointer" />
+                      </TooltipTrigger>
+                      <TooltipContent>{t('admin.timeSlotsInfo')}</TooltipContent>
+                    </Tooltip>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-background text-foreground">
-                  {/* Withdrawal Time Slots Visual Editor */}
-                  <div className="mb-8">
-                    <Label className="text-base font-semibold flex items-center gap-2 text-foreground">
-                      <span>{t('admin.timeSlots')}</span>
-                      <span className="text-xs text-muted-foreground" title="Set allowed withdrawal times (day, start hour, end hour)">🛈</span>
-                    </Label>
-                    <div className="flex flex-wrap gap-4 items-end mb-2 mt-2">
-                      <select value={newTimeSlotDay} onChange={e => setNewTimeSlotDay(e.target.value)} className="border border-border rounded px-2 py-1 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100">
-                        <option value="">{t('common.day')}</option>
-                        <option value="0">{t('common.day.sunday')}</option>
-                        <option value="1">{t('common.day.monday')}</option>
-                        <option value="2">{t('common.day.tuesday')}</option>
-                        <option value="3">{t('common.day.wednesday')}</option>
-                        <option value="4">{t('common.day.thursday')}</option>
-                        <option value="5">{t('common.day.friday')}</option>
-                        <option value="6">{t('common.day.saturday')}</option>
-                      </select>
-                      <input type="number" min="0" max="23" value={newTimeSlotStart} onChange={e => setNewTimeSlotStart(e.target.value)} placeholder={t('common.startHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
-                      <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder={t('common.endHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder-zinc-400" />
-                      <Button size="sm" className="bg-success text-white dark:bg-green-700" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
-                        {t('common.save') || 'Add'}
-                              </Button>
-                            </div>
-                    <div className="mb-2 text-xs text-muted-foreground">{t('common.currentTimeSlots')}</div>
-                    <ul className="list-disc ml-5 mb-2">
-                      {timeSlots.map((slot, idx) => {
+                <CardContent className="space-y-6">
+                  {/* Input Row */}
+                  <div className={`flex flex-wrap gap-2 items-end ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <select value={newTimeSlotDay} onChange={e => setNewTimeSlotDay(e.target.value)} className="border border-border rounded px-2 py-1 bg-background text-foreground focus:ring-2 focus:ring-primary/50 transition-all">
+                      <option value="">{t('common.day')}</option>
+                      <option value="0">{t('common.day.sunday')}</option>
+                      <option value="1">{t('common.day.monday')}</option>
+                      <option value="2">{t('common.day.tuesday')}</option>
+                      <option value="3">{t('common.day.wednesday')}</option>
+                      <option value="4">{t('common.day.thursday')}</option>
+                      <option value="5">{t('common.day.friday')}</option>
+                      <option value="6">{t('common.day.saturday')}</option>
+                    </select>
+                    <input type="number" min="0" max="23" value={newTimeSlotStart} onChange={e => setNewTimeSlotStart(e.target.value)} placeholder={t('common.startHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground" />
+                    <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder={t('common.endHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground" />
+                    <Button size="sm" className="bg-success text-white dark:bg-green-700 hover:bg-success/90 transition-all h-9" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
+                      {t('common.save') || 'Add'}
+                    </Button>
+                  </div>
+                  {/* List of Time Slots */}
+                  <div className="space-y-2">
+                    {timeSlots.length === 0 ? (
+                      <div className="text-muted-foreground text-center">{t('common.noneSet')}</div>
+                    ) : (
+                      timeSlots.map((slot, idx) => {
                         const [day, start, end] = slot.split(':');
                         return (
-                          <li key={idx} className="flex items-center gap-2">
-                            <span><b>{t(`common.day.${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day]}`)}</b>: {start}:00 - {end}:00</span>
+                          <div key={idx} className={`flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2 ${isRTL ? 'flex-row-reverse' : ''}`}> 
+                            <span className="flex items-center gap-2">
+                              <Badge variant="secondary">{t(`common.day.${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day]}`)}</Badge>
+                              <span className="font-semibold">{start}:00 - {end}:00</span>
+                            </span>
                             <Button size="sm" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete')}</Button>
-                          </li>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              <hr className="my-8 border-muted" />
+              <Card className="shadow-card mt-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="text-primary w-5 h-5" />
+                    {t('admin.packageLimits')}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="text-muted-foreground w-4 h-4 cursor-pointer" />
+                      </TooltipTrigger>
+                      <TooltipContent>{t('admin.packageLimitsInfo')}</TooltipContent>
+                    </Tooltip>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <form className={`flex flex-wrap gap-2 items-end mt-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`} onSubmit={handleAddOrUpdatePackageLimit}>
+                    <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder={t('common.packageName')} className="w-32 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder={t('common.min')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder={t('common.max')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder={t('common.daily')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Button size="sm" className="bg-success text-white dark:bg-green-700 hover:bg-success/90 transition-all h-9" type="submit" disabled={!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily}>{packageEditIndex === null ? (t('common.save') || 'Add') : (t('common.edit') || 'Edit')}</Button>
+                    {packageEditIndex !== null && <Button size="sm" variant="outline" onClick={handleCancelEditPackageLimit} className="h-9">{t('common.cancel') || 'Cancel'}</Button>}
+                  </form>
+                  <div className="mb-2 text-xs text-muted-foreground">{t('common.currentPackageLimits')}</div>
+                  <Table className="mb-2 rounded overflow-hidden">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('common.packageName')}</TableHead>
+                        <TableHead>{t('common.min')}</TableHead>
+                        <TableHead>{t('common.max')}</TableHead>
+                        <TableHead>{t('common.daily')}</TableHead>
+                        <TableHead>{t('common.actions')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(packageLimits).map(([pkg, vals], idx) => {
+                        const { min, max, daily } = vals as { min: number; max: number; daily: number };
+                        return (
+                          <TableRow key={pkg} className={`hover:bg-muted/20 transition-all ${isRTL ? 'text-right' : ''}`}>
+                            <TableCell><Badge variant="secondary">{pkg}</Badge></TableCell>
+                            <TableCell>{min}</TableCell>
+                            <TableCell>{max}</TableCell>
+                            <TableCell>{daily}</TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
-                      {timeSlots.length === 0 && <li className="text-muted-foreground">{t('common.noneSet')}</li>}
-                    </ul>
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveTimeSlots} className="mt-2" disabled={timeSlots.some(slot => !/^\d+:\d+:\d+$/.test(slot))}>{t('admin.saveTimeSlots')}</Button>
-                      <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
-                    </div>
-                  </div>
-                  <hr className="my-6 border-muted" />
-                  {/* Package Withdrawal Limits Visual Editor */}
-                  <div>
-                    <Label className="text-base font-semibold flex items-center gap-2">
-                      <span>{t('admin.packageLimits')}</span>
-                      <span className="text-xs text-muted-foreground" title="Set withdrawal limits for each package">🛈</span>
-                    </Label>
-                    <form className="flex flex-wrap gap-2 items-end mt-2 mb-2" onSubmit={handleAddOrUpdatePackageLimit}>
-                      <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder={t('common.packageName')} className="w-32" />
-                      <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder={t('common.min')} className="w-20" />
-                      <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder={t('common.max')} className="w-20" />
-                      <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder={t('common.daily')} className="w-20" />
-                      <Button size="sm" className="bg-success" type="submit" disabled={!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily}>{packageEditIndex === null ? (t('common.save') || 'Add') : (t('common.edit') || 'Edit')}</Button>
-                      {packageEditIndex !== null && <Button size="sm" variant="outline" onClick={handleCancelEditPackageLimit}>{t('common.cancel') || 'Cancel'}</Button>}
-                    </form>
-                    <div className="mb-2 text-xs text-muted-foreground">{t('common.currentPackageLimits')}</div>
-                    <Table className="mb-2">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('common.packageName')}</TableHead>
-                          <TableHead>{t('common.min')}</TableHead>
-                          <TableHead>{t('common.max')}</TableHead>
-                          <TableHead>{t('common.daily')}</TableHead>
-                          <TableHead>{t('common.actions')}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {Object.entries(packageLimits).map(([pkg, vals], idx) => {
-                          const { min, max, daily } = vals as { min: number; max: number; daily: number };
-                          return (
-                            <TableRow key={pkg}>
-                              <TableCell>{pkg}</TableCell>
-                              <TableCell>{min}</TableCell>
-                              <TableCell>{max}</TableCell>
-                              <TableCell>{daily}</TableCell>
-                              <TableCell>
-                                <Button size="sm" variant="outline" onClick={() => handleEditPackageLimit(pkg, vals, idx)}>{t('common.edit') || 'Edit'}</Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleRemovePackageLimit(pkg)}>{t('common.delete') || 'Delete'}</Button>
-                          </TableCell>
-                        </TableRow>
-                          );
-                        })}
-                        {Object.keys(packageLimits).length === 0 && (
-                          <TableRow><TableCell colSpan={5} className="text-muted-foreground">{t('common.noneSet')}</TableCell></TableRow>
-                        )}
+                      {Object.keys(packageLimits).length === 0 && (
+                        <TableRow><TableCell colSpan={5} className="text-muted-foreground text-center">{t('common.noneSet')}</TableCell></TableRow>
+                      )}
                     </TableBody>
                   </Table>
-                    <div className="flex gap-2">
-                      <Button onClick={handleSavePackageLimits} className="mt-2">{t('admin.savePackageLimits')}</Button>
-                      <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -2535,117 +2652,103 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {transactions
-                          .filter(txn => {
-                            if (transactionFilter === 'all') return true;
-                            if (transactionFilter === 'deposits') return txn.type === 'deposit';
-                            if (transactionFilter === 'withdrawals') return txn.type === 'withdrawal';
-                            return true;
-                          })
-                          .filter(txn => transactionStatusFilter === 'all' || txn.status === transactionStatusFilter)
-                          .map((transaction) => (
-                            <TableRow key={transaction.id}>
-                              <TableCell>
-                                {new Date(transaction.created_at).toLocaleDateString()}
-                                <br />
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(transaction.created_at).toLocaleTimeString()}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={transaction.type === 'deposit' ? 'default' : 'secondary'}>
-                                  {transaction.type === 'deposit' ? (t('admin.transactions.deposit') || 'Deposit') : (t('admin.transactions.withdrawal') || 'Withdrawal')}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{transaction.user_name}</TableCell>
-                              <TableCell className="font-bold">${Number(transaction.amount).toLocaleString()}</TableCell>
-                              <TableCell>{transaction.method}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant={
-                                    transaction.status === 'approved' || transaction.status === 'paid' ? 'default' : 
-                                    transaction.status === 'rejected' ? 'destructive' : 'secondary'
-                                  }
+                        {paginatedTransactions.map((transaction) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              {new Date(transaction.created_at).toLocaleDateString()}
+                              <br />
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(transaction.created_at).toLocaleTimeString()}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={transaction.type === 'deposit' ? 'default' : 'secondary'}>
+                                {transaction.type === 'deposit' ? (t('admin.transactions.deposit') || 'Deposit') : (t('admin.transactions.withdrawal') || 'Withdrawal')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{transaction.user_name}</TableCell>
+                            <TableCell className="font-bold">${Number(transaction.amount).toLocaleString()}</TableCell>
+                            <TableCell>{transaction.method}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  transaction.status === 'approved' || transaction.status === 'paid' ? 'default' : 
+                                  transaction.status === 'rejected' ? 'destructive' : 'secondary'
+                                }
+                              >
+                                {transaction.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {transaction.status === 'pending' && (
+                                <div className="flex gap-2">
+                                  {transaction.type === 'deposit' ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        className="bg-success"
+                                        disabled
+                                      >
+                                        {t('admin.approve') || 'Approve'}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled
+                                      >
+                                        {t('admin.reject') || 'Reject'}
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        className="bg-success"
+                                        disabled
+                                      >
+                                        {t('admin.withdrawals.approve') || 'Pay'}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled
+                                      >
+                                        {t('admin.withdrawals.reject') || 'Reject'}
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                              {transaction.status === 'paid' && transaction.proof_image_url && (
+                                <a 
+                                  href={transaction.proof_image_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline text-sm"
                                 >
-                                  {transaction.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {transaction.status === 'pending' && (
-                                  <div className="flex gap-2">
-                                    {transaction.type === 'deposit' ? (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          className="bg-success"
-                                          disabled
-                                        >
-                                          {t('admin.approve') || 'Approve'}
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          disabled
-                                        >
-                                          {t('admin.reject') || 'Reject'}
-                                        </Button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          className="bg-success"
-                                          disabled
-                                        >
-                                          {t('admin.withdrawals.approve') || 'Pay'}
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          disabled
-                                        >
-                                          {t('admin.withdrawals.reject') || 'Reject'}
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
-                                {transaction.status === 'paid' && transaction.proof_image_url && (
-                                  <a 
-                                    href={transaction.proof_image_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline text-sm"
-                                  >
-                                    {t('admin.viewProof') || 'View Proof'}
-                                  </a>
-                                )}
-                                {transaction.status === 'approved' && transaction.screenshot_url && (
-                                  <a 
-                                    href={transaction.screenshot_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline text-sm"
-                                  >
-                                    {t('admin.viewScreenshot') || 'View Screenshot'}
-                                  </a>
-                                )}
-                                {(transaction.admin_note || transaction.rejection_reason) && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {transaction.admin_note && <div>Note: {transaction.admin_note}</div>}
-                                    {transaction.rejection_reason && <div>Reason: {transaction.rejection_reason}</div>}
-                                  </div>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        {transactions.filter(txn => {
-                          const typeMatch = transactionFilter === 'all' || 
-                            (transactionFilter === 'deposits' && txn.type === 'deposit') ||
-                            (transactionFilter === 'withdrawals' && txn.type === 'withdrawal');
-                          const statusMatch = transactionStatusFilter === 'all' || txn.status === transactionStatusFilter;
-                          return typeMatch && statusMatch;
-                        }).length === 0 && (
+                                  {t('admin.viewProof') || 'View Proof'}
+                                </a>
+                              )}
+                              {transaction.status === 'approved' && transaction.screenshot_url && (
+                                <a 
+                                  href={transaction.screenshot_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline text-sm"
+                                >
+                                  {t('admin.viewScreenshot') || 'View Screenshot'}
+                                </a>
+                              )}
+                              {(transaction.admin_note || transaction.rejection_reason) && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {transaction.admin_note && <div>Note: {transaction.admin_note}</div>}
+                                  {transaction.rejection_reason && <div>Reason: {transaction.rejection_reason}</div>}
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {paginatedTransactions.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center text-muted-foreground">
                               {t('admin.transactions.noTransactions') || 'No transactions found'}
@@ -2654,6 +2757,26 @@ export default function AdminDashboard() {
                         )}
                       </TableBody>
                     </Table>
+                  )}
+                  {/* Pagination for logs */}
+                  {totalTransactionPages > 1 && (
+                    <div className="flex justify-center mt-8">
+                      <Pagination>
+                        <PaginationContent className={isRTL ? 'flex-row-reverse' : ''}>
+                          <PaginationItem>
+                            <PaginationPrevious onClick={() => setTransactionPage(p => Math.max(p - 1, 1))} className={transactionPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}>{t('pagination.previous') || 'Previous'}</PaginationPrevious>
+                          </PaginationItem>
+                          {Array.from({ length: totalTransactionPages }, (_, i) => (
+                            <PaginationItem key={i + 1}>
+                              <PaginationLink onClick={() => setTransactionPage(i + 1)} className={transactionPage === i + 1 ? 'bg-primary text-white cursor-default' : 'cursor-pointer'}>{i + 1}</PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext onClick={() => setTransactionPage(p => Math.min(p + 1, totalTransactionPages))} className={transactionPage === totalTransactionPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}>{t('pagination.next') || 'Next'}</PaginationNext>
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -2932,7 +3055,7 @@ export default function AdminDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {depositRequests.map((req) => (
+                        {paginatedDeposits.map((req) => (
                           <TableRow key={req.id}>
                             <TableCell>{req.amount}</TableCell>
                             <TableCell>{req.user_number}</TableCell>
@@ -2963,6 +3086,32 @@ export default function AdminDashboard() {
                         ))}
                       </TableBody>
                     </Table>
+                  )}
+                  {/* Pagination */}
+                  {totalDepositPages > 1 && paginatedDeposits.length > 0 && (
+                    <div className="flex justify-center mt-4">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious onClick={() => setDepositPage(p => Math.max(p - 1, 1))} className={depositPage === 1 ? 'pointer-events-none opacity-50' : ''}>
+                              {t('pagination.previous')}
+                            </PaginationPrevious>
+                          </PaginationItem>
+                          {[...Array(totalDepositPages)].map((_, idx) => (
+                            <PaginationItem key={idx}>
+                              <PaginationLink isActive={depositPage === idx + 1} onClick={() => setDepositPage(idx + 1)}>
+                                {idx + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext onClick={() => setDepositPage(p => Math.min(p + 1, totalDepositPages))} className={depositPage === totalDepositPages ? 'pointer-events-none opacity-50' : ''}>
+                              {t('pagination.next')}
+                            </PaginationNext>
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -3447,14 +3596,14 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUserBadges.length === 0 ? (
+                      {paginatedUserBadges.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
                             {t('admin.noUserBadges') || 'No badges earned yet'}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredUserBadges.map((userBadge) => (
+                        paginatedUserBadges.map((userBadge) => (
                           <TableRow key={userBadge.id}>
                             <TableCell>
                               {userBadge.user?.first_name} {userBadge.user?.last_name}
@@ -3506,6 +3655,31 @@ export default function AdminDashboard() {
                       )}
                     </TableBody>
                   </Table>
+                  {totalUserBadgePages > 1 && paginatedUserBadges.length > 0 && (
+                    <div className="flex justify-center mt-4">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious onClick={() => setUserBadgePage(p => Math.max(p - 1, 1))} className={userBadgePage === 1 ? 'pointer-events-none opacity-50' : ''}>
+                              {t('pagination.previous')}
+                            </PaginationPrevious>
+                          </PaginationItem>
+                          {[...Array(totalUserBadgePages)].map((_, idx) => (
+                            <PaginationItem key={idx}>
+                              <PaginationLink isActive={userBadgePage === idx + 1} onClick={() => setUserBadgePage(idx + 1)}>
+                                {idx + 1}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext onClick={() => setUserBadgePage(p => Math.min(p + 1, totalUserBadgePages))} className={userBadgePage === totalUserBadgePages ? 'pointer-events-none opacity-50' : ''}>
+                              {t('pagination.next')}
+                            </PaginationNext>
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
