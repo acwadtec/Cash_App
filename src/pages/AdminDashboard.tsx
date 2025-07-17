@@ -168,6 +168,12 @@ export default function AdminDashboard() {
   const [packageLimits, setPackageLimits] = useState({});
   const [settingsLoading, setSettingsLoading] = useState(false);
 
+  // Transaction history state
+  const [transactions, setTransactions] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [transactionFilter, setTransactionFilter] = useState('all'); // all, deposits, withdrawals
+  const [transactionStatusFilter, setTransactionStatusFilter] = useState('all'); // all, pending, approved, rejected, paid
+
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState('');
@@ -862,12 +868,14 @@ export default function AdminDashboard() {
     const newBalance = (userInfo?.balance || 0) + Number(request.amount);
     await supabase.from('user_info').update({ balance: newBalance }).eq('user_uid', request.user_uid);
     fetchDepositRequests(setDepositRequests, setLoadingDepositRequests, toast, t);
+    fetchTransactions(); // Refresh transaction history
     toast({ title: t('common.success'), description: t('deposit.success') });
   };
   // Reject deposit request
   const handleRejectDeposit = async (id) => {
     await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', id);
     fetchDepositRequests(setDepositRequests, setLoadingDepositRequests, toast, t);
+    fetchTransactions(); // Refresh transaction history
   };
 
   // Fetch deposit numbers
@@ -958,16 +966,13 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfCurrentWeek.toISOString())
         .lte('created_at', endOfCurrentWeek.toISOString())
-        .neq('role', 'admin');
+        .not('role', 'eq', 'admin');
       
       if (usersError) {
         console.error('Error fetching weekly users:', usersError);
       } else {
         setWeeklyNewUsers(weeklyUsers || 0);
       }
-
-      // Fetch pending withdrawals (using mock data for now)
-      setPendingWithdrawals(15);
 
       // Calculate average transaction value
       const { data: allDeposits, error: avgError } = await supabase
@@ -1224,6 +1229,8 @@ export default function AdminDashboard() {
         grouped[day].push(w);
       });
       setGroupedWithdrawals(grouped);
+      // Set pendingWithdrawals to the count of pending withdrawals
+      setPendingWithdrawals(data.filter(w => w.status === 'pending').length);
     }
     setLoadingWithdrawals(false);
   };
@@ -1239,6 +1246,112 @@ export default function AdminDashboard() {
     setSettingsLoading(false);
   };
   useEffect(() => { fetchSettings(); }, []);
+
+  // Fetch all transactions (deposits + withdrawals)
+  const fetchTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      // Fetch deposit requests
+      const { data: deposits, error: depositsError } = await supabase
+        .from('deposit_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (depositsError) {
+        console.error('Error fetching deposits:', depositsError);
+      }
+
+      // Fetch withdrawal requests
+      const { data: withdrawals, error: withdrawalsError } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (withdrawalsError) {
+        console.error('Error fetching withdrawals:', withdrawalsError);
+      }
+
+      // Get all unique user UIDs
+      const allUserUids = new Set();
+      (deposits || []).forEach(deposit => {
+        if (deposit.user_uid) allUserUids.add(deposit.user_uid);
+      });
+      (withdrawals || []).forEach(withdrawal => {
+        if (withdrawal.user_uid) allUserUids.add(withdrawal.user_uid);
+      });
+
+      // Fetch user info for all users
+      let userInfoMap = {};
+      if (allUserUids.size > 0) {
+        const { data: userInfoData, error: userInfoError } = await supabase
+          .from('user_info')
+          .select('user_uid, first_name, last_name, email')
+          .in('user_uid', Array.from(allUserUids));
+        if (userInfoError) {
+          console.error('Error fetching user info:', userInfoError);
+        }
+        (userInfoData || []).forEach(user => {
+          userInfoMap[user.user_uid] = user;
+        });
+      }
+
+      // Combine and format transactions
+      const depositTransactions = (deposits || []).map(deposit => {
+        const userInfo = userInfoMap[deposit.user_uid];
+        const userName = userInfo
+          ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email
+          : (deposit.user_name || 'Unknown User');
+        return {
+          id: `deposit_${deposit.id}`,
+          type: 'deposit',
+          user_name: userName,
+          user_uid: deposit.user_uid,
+          amount: deposit.amount,
+          status: deposit.status,
+          method: deposit.target_number || 'Mobile Transfer',
+          account_details: deposit.user_number,
+          created_at: deposit.created_at,
+          updated_at: deposit.updated_at,
+          screenshot_url: deposit.screenshot_url,
+          admin_note: deposit.admin_note,
+          rejection_reason: deposit.rejection_reason
+        };
+      });
+
+      const withdrawalTransactions = (withdrawals || []).map(withdrawal => {
+        const userInfo = userInfoMap[withdrawal.user_uid];
+        const userName = userInfo
+          ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email
+          : (withdrawal.user_name || 'Unknown User');
+        return {
+          id: `withdrawal_${withdrawal.id}`,
+          type: 'withdrawal',
+          user_name: userName,
+          user_uid: withdrawal.user_uid,
+          amount: withdrawal.amount,
+          status: withdrawal.status,
+          method: withdrawal.method,
+          account_details: withdrawal.account_details,
+          created_at: withdrawal.created_at,
+          updated_at: withdrawal.updated_at,
+          proof_image_url: withdrawal.proof_image_url,
+          admin_note: withdrawal.admin_note,
+          rejection_reason: withdrawal.rejection_reason
+        };
+      });
+
+      // Combine and sort by date
+      const allTransactions = [...depositTransactions, ...withdrawalTransactions]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setTransactions(allTransactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast({ title: t('common.error'), description: 'Failed to fetch transactions', variant: 'destructive' });
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
+  useEffect(() => { fetchTransactions(); }, []);
 
   // Pay withdrawal
   const handlePay = async () => {
@@ -1296,6 +1409,7 @@ export default function AdminDashboard() {
     setAdminNote('');
     setProofImage(null);
     fetchWithdrawals();
+    fetchTransactions(); // Refresh transaction history
   };
   // Reject withdrawal
   const handleReject = async () => {
@@ -1303,6 +1417,7 @@ export default function AdminDashboard() {
     setShowRejectModal(false);
     setRejectionReason('');
     fetchWithdrawals();
+    fetchTransactions(); // Refresh transaction history
   };
   // Update time slots
   const handleSaveTimeSlots = async () => {
@@ -1744,6 +1859,33 @@ export default function AdminDashboard() {
       userBadgeTypeFilter === 'all' || ub.badge?.type === userBadgeTypeFilter;
     return userMatch && typeMatch;
   });
+
+  // Handle transaction actions
+  const handleTransactionAction = async (transaction, action) => {
+    try {
+      if (transaction.type === 'deposit') {
+        const depositId = transaction.id.replace('deposit_', '');
+        if (action === 'approve') {
+          await handleApproveDeposit({ id: depositId, user_uid: transaction.user_uid, amount: transaction.amount });
+        } else if (action === 'reject') {
+          await handleRejectDeposit(depositId);
+        }
+      } else if (transaction.type === 'withdrawal') {
+        const withdrawalId = transaction.id.replace('withdrawal_', '');
+        if (action === 'approve') {
+          setSelectedWithdrawal({ id: withdrawalId, ...transaction });
+          setShowPayModal(true);
+        } else if (action === 'reject') {
+          setSelectedWithdrawal({ id: withdrawalId, ...transaction });
+          setShowRejectModal(true);
+        }
+      }
+      fetchTransactions(); // Refresh transaction history
+    } catch (error) {
+      console.error('Error handling transaction action:', error);
+      toast({ title: t('common.error'), description: 'Failed to process transaction', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="min-h-screen py-20">
@@ -2307,9 +2449,178 @@ export default function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground text-center py-8">
-                    {t('admin.transactions.log')}
-                  </p>
+                  {/* Transaction Filters */}
+                  <div className="flex flex-wrap gap-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="transactionType">{t('admin.transactions.type') || 'Type'}</Label>
+                      <Select value={transactionFilter} onValueChange={setTransactionFilter}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('admin.transactions.all') || 'All'}</SelectItem>
+                          <SelectItem value="deposits">{t('admin.transactions.deposits') || 'Deposits'}</SelectItem>
+                          <SelectItem value="withdrawals">{t('admin.transactions.withdrawals') || 'Withdrawals'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="transactionStatus">{t('admin.transactions.status') || 'Status'}</Label>
+                      <Select value={transactionStatusFilter} onValueChange={setTransactionStatusFilter}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('admin.transactions.all') || 'All'}</SelectItem>
+                          <SelectItem value="pending">{t('admin.transactions.pending') || 'Pending'}</SelectItem>
+                          {(transactionFilter === 'all' || transactionFilter === 'deposits') && (
+                            <SelectItem value="approved">{t('admin.transactions.approved') || 'Approved'}</SelectItem>
+                          )}
+                          <SelectItem value="rejected">{t('admin.transactions.rejected') || 'Rejected'}</SelectItem>
+                          {(transactionFilter === 'all' || transactionFilter === 'withdrawals') && (
+                            <SelectItem value="paid">{t('admin.transactions.paid') || 'Paid'}</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {loadingTransactions ? (
+                    <div className="text-center py-8">{t('common.loading')}</div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('admin.transactions.date') || 'Date'}</TableHead>
+                          <TableHead>{t('admin.transactions.type') || 'Type'}</TableHead>
+                          <TableHead>{t('admin.transactions.user') || 'User'}</TableHead>
+                          <TableHead>{t('admin.transactions.amount') || 'Amount'}</TableHead>
+                          <TableHead>{t('admin.transactions.method') || 'Method'}</TableHead>
+                          <TableHead>{t('admin.transactions.status') || 'Status'}</TableHead>
+                          <TableHead>{t('admin.transactions.actions') || 'Actions'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions
+                          .filter(txn => {
+                            if (transactionFilter === 'all') return true;
+                            if (transactionFilter === 'deposits') return txn.type === 'deposit';
+                            if (transactionFilter === 'withdrawals') return txn.type === 'withdrawal';
+                            return true;
+                          })
+                          .filter(txn => transactionStatusFilter === 'all' || txn.status === transactionStatusFilter)
+                          .map((transaction) => (
+                            <TableRow key={transaction.id}>
+                              <TableCell>
+                                {new Date(transaction.created_at).toLocaleDateString()}
+                                <br />
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(transaction.created_at).toLocaleTimeString()}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={transaction.type === 'deposit' ? 'default' : 'secondary'}>
+                                  {transaction.type === 'deposit' ? (t('admin.transactions.deposit') || 'Deposit') : (t('admin.transactions.withdrawal') || 'Withdrawal')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{transaction.user_name}</TableCell>
+                              <TableCell className="font-bold">${Number(transaction.amount).toLocaleString()}</TableCell>
+                              <TableCell>{transaction.method}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={
+                                    transaction.status === 'approved' || transaction.status === 'paid' ? 'default' : 
+                                    transaction.status === 'rejected' ? 'destructive' : 'secondary'
+                                  }
+                                >
+                                  {transaction.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {transaction.status === 'pending' && (
+                                  <div className="flex gap-2">
+                                    {transaction.type === 'deposit' ? (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          className="bg-success"
+                                          disabled
+                                        >
+                                          {t('admin.approve') || 'Approve'}
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled
+                                        >
+                                          {t('admin.reject') || 'Reject'}
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          className="bg-success"
+                                          disabled
+                                        >
+                                          {t('admin.withdrawals.approve') || 'Pay'}
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled
+                                        >
+                                          {t('admin.withdrawals.reject') || 'Reject'}
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                                {transaction.status === 'paid' && transaction.proof_image_url && (
+                                  <a 
+                                    href={transaction.proof_image_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline text-sm"
+                                  >
+                                    {t('admin.viewProof') || 'View Proof'}
+                                  </a>
+                                )}
+                                {transaction.status === 'approved' && transaction.screenshot_url && (
+                                  <a 
+                                    href={transaction.screenshot_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline text-sm"
+                                  >
+                                    {t('admin.viewScreenshot') || 'View Screenshot'}
+                                  </a>
+                                )}
+                                {(transaction.admin_note || transaction.rejection_reason) && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {transaction.admin_note && <div>Note: {transaction.admin_note}</div>}
+                                    {transaction.rejection_reason && <div>Reason: {transaction.rejection_reason}</div>}
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        {transactions.filter(txn => {
+                          const typeMatch = transactionFilter === 'all' || 
+                            (transactionFilter === 'deposits' && txn.type === 'deposit') ||
+                            (transactionFilter === 'withdrawals' && txn.type === 'withdrawal');
+                          const statusMatch = transactionStatusFilter === 'all' || txn.status === transactionStatusFilter;
+                          return typeMatch && statusMatch;
+                        }).length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground">
+                              {t('admin.transactions.noTransactions') || 'No transactions found'}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
