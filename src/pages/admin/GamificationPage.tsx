@@ -950,3 +950,5 @@ const GamificationPage: FC = () => {
     </div>
   );
 } 
+
+export default GamificationPage; 
