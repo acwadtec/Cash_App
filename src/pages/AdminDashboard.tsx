@@ -1,12 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-<<<<<<< HEAD
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Pencil } from 'lucide-react';
-=======
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Clock, Package, Info } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Pencil, Clock, Package, Info } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
->>>>>>> c533f5e19bc682755b43ac04ac92ca5be459f44c
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1884,11 +1880,8 @@ export default function AdminDashboard() {
     }
   };
 
-<<<<<<< HEAD
   // Add at the top with other state
   const [levelSavingId, setLevelSavingId] = useState(null);
-=======
-  // Add at the top of the component, after other useState hooks
   const [withdrawalPage, setWithdrawalPage] = useState(1);
   const [withdrawalsPerPage] = useState(10);
   const [withdrawalStatusFilter, setWithdrawalStatusFilter] = useState('all');
@@ -1936,7 +1929,6 @@ export default function AdminDashboard() {
   // 2. Paginate userBadges
   const paginatedUserBadges = userBadges.slice((userBadgePage - 1) * userBadgesPerPage, userBadgePage * userBadgesPerPage);
   const totalUserBadgePages = Math.ceil(userBadges.length / userBadgesPerPage);
->>>>>>> c533f5e19bc682755b43ac04ac92ca5be459f44c
 
   return (
     <div className="min-h-screen py-20">
