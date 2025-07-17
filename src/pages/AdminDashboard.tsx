@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Pencil } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1888,6 +1888,9 @@ export default function AdminDashboard() {
     }
   };
 
+  // Add at the top with other state
+  const [levelSavingId, setLevelSavingId] = useState(null);
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -2115,49 +2118,99 @@ export default function AdminDashboard() {
                         <TableHead>{t('admin.users.email')}</TableHead>
                         <TableHead>{t('admin.users.phone')}</TableHead>
                         <TableHead>{t('admin.users.status')}</TableHead>
+                        <TableHead>Level</TableHead> {/* New Level column */}
                         <TableHead>{t('admin.users.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loadingUsers ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
                             {t('admin.loading')}
                           </TableCell>
                         </TableRow>
                       ) : filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
                             {t('admin.noUsers')}
                           </TableCell>
                         </TableRow>
                       ) : (
                         paginatedUsers.map((user) => (
-                        <TableRow key={user.id}>
+                          <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone}</TableCell>
-                          <TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{user.phone}</TableCell>
+                            <TableCell>
                               <Badge className={user.verified ? 'bg-success' : 'bg-warning'}>
                                 {user.verified ? t('admin.users.verified') : t('admin.users.pending')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
+                              </Badge>
+                            </TableCell>
+                            {/* Level cell with inline editing */}
+                            <TableCell
+                              onClick={() => {
+                                if (editingId === null) setEditingId(user.id);
+                              }}
+                              style={{ cursor: editingId === null ? 'pointer' : 'default', background: editingId === user.id ? 'rgba(0, 128, 255, 0.08)' : undefined, borderRadius: editingId === user.id ? 6 : undefined, border: editingId === user.id ? '1px solid #2196f3' : undefined }}
+                            >
+                              {editingId === user.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    value={user.current_level?.toString() || ''}
+                                    onValueChange={async (val) => {
+                                      setLevelSavingId(user.id);
+                                      const newLevel = parseInt(val, 10);
+                                      const { error } = await supabase
+                                        .from('user_info')
+                                        .update({ current_level: newLevel })
+                                        .eq('id', user.id);
+                                      if (!error) {
+                                        setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, current_level: newLevel } : u));
+                                        toast({ title: t('common.success'), description: 'Level updated!' });
+                                      } else {
+                                        toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+                                      }
+                                      setLevelSavingId(null);
+                                      setEditingId(null);
+                                    }}
+                                    disabled={levelSavingId === user.id}
+                                  >
+                                    <SelectTrigger className="w-32" autoFocus tabIndex={0}>
+                                      {levels.find((lvl) => lvl.level === user.current_level)?.name || user.current_level || '-'}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {levels.map((lvl) => (
+                                        <SelectItem key={lvl.level} value={lvl.level.toString()}>{lvl.name || `Level ${lvl.level}`}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}>
+                                    {t('common.cancel') || 'Cancel'}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span>{levels.find((lvl) => lvl.level === user.current_level)?.name || user.current_level || '-'}</span>
+                                  <Pencil className="w-4 h-4 cursor-pointer text-muted-foreground hover:text-primary" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleView(user)}>
                                   {t('admin.view')}
-                              </Button>
+                                </Button>
                                 {!user.verified && (
                                   <Button size="sm" className="bg-success" onClick={() => handleVerify(user.id)}>
                                     {t('admin.verify')}
-                                </Button>
-                              )}
+                                  </Button>
+                                )}
                                 <Button size="sm" variant="destructive" onClick={() => handleRemove(user.id)}>
                                   {t('admin.remove')}
                                 </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         ))
                       )}
                     </TableBody>
