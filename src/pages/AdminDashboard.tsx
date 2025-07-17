@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 // Custom Components
 import OffersTable from '@/components/OffersTable';
 import { AdminChat } from '@/components/AdminChat';
+import ManageOffers from './ManageOffers';
 
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -1950,7 +1951,10 @@ export default function AdminDashboard() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="offers" className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background">
+              <TabsTrigger
+                value="offers"
+                className="flex flex-col items-center gap-1 py-3 px-2 data-[state=active]:bg-background"
+              >
                 <Gift className="h-4 w-4" />
                 <span className="text-xs">{t('admin.offers')}</span>
                 {activeOffers > 0 && (
@@ -2197,30 +2201,7 @@ export default function AdminDashboard() {
 
             {/* Offers Tab */}
             <TabsContent value="offers">
-              <Card className="shadow-card">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>{t('admin.offers')}</CardTitle>
-                  <Button onClick={() => navigate('/manage-offers')} className="mt-4">
-                    {t('admin.manageOffers')}
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {loadingOffers ? (
-                    <div>Loading...</div>
-                  ) : (
-                    <OffersTable 
-                      offers={offers} 
-                      showActions={false}
-                      renderExtra={(offer) => (
-                        <div className="flex flex-col gap-1 text-xs">
-                          <span><b>{t('admin.usersCount')}</b> {offerUserCounts[offer.id] || 0}</span>
-                          <span><b>{t('admin.profitLoss')}</b> ${offerProfits[offer.id] !== undefined ? offerProfits[offer.id].toLocaleString() : '0'}</span>
-                        </div>
-                      )}
-                    />
-                  )}
-                </CardContent>
-              </Card>
+              <ManageOffers />
             </TabsContent>
 
             {/* Withdrawals Tab */}

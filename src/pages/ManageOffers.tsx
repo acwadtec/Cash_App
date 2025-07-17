@@ -248,17 +248,17 @@ export default function ManageOffers() {
   return (
     <div className={`min-h-screen py-20 bg-background text-foreground ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">{t('offers.manageOffers')}</h1>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate('/admin')} variant="outline" className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">{t('admin.backToAdmin')}</Button>
-            <Button onClick={() => openDialog()} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">{t('offers.create')}</Button>
-            <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">{t('offers.deleteAll')}</Button>
-          </div>
-        </div>
         <Card>
-          <CardHeader>
-            <CardTitle>{t('offers.list')}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Offers List</CardTitle>
+            <div className="flex gap-2">
+              <Button onClick={() => openDialog()} className="bg-green-500 hover:bg-green-600 text-white font-bold">
+                Create Offer
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteAll} disabled={offers.length === 0} className="font-bold">
+                Delete All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
