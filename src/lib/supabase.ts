@@ -3,10 +3,59 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Test all required tables
+export const testTables = async () => {
+  const tables = [
+    { name: 'user_info', fields: ['user_uid', 'email', 'first_name', 'last_name'] },
+    { name: 'transactions', fields: ['id', 'user_id', 'type', 'amount'] },
+    { name: 'chat_sessions', fields: ['id', 'user_id', 'status'] },
+    { name: 'chat_messages', fields: ['id', 'conversation_id', 'text'] },
+    { name: 'notifications', fields: ['id', 'title', 'message'] },
+    { name: 'deposit_requests', fields: ['id', 'user_id', 'amount'] },
+    { name: 'withdrawal_requests', fields: ['id', 'user_id', 'amount'] },
+    { name: 'deposit_numbers', fields: ['id', 'number', 'active'] },
+    { name: 'offers', fields: ['id', 'title', 'amount'] },
+    { name: 'badges', fields: ['id', 'name', 'type'] },
+    { name: 'levels', fields: ['id', 'level', 'requirement'] },
+    { name: 'settings', fields: ['key', 'value'] }
+  ];
+
+  const results: Record<string, { exists: boolean; error?: string }> = {};
+
+  for (const table of tables) {
+    try {
+      console.log(`Testing table: ${table.name}`);
+      const { data, error } = await supabase
+        .from(table.name)
+        .select(table.fields.join(','))
+        .limit(1);
+
+      if (error) {
+        results[table.name] = { exists: false, error: error.message };
+        console.error(`Error accessing ${table.name}:`, error.message);
+      } else {
+        results[table.name] = { exists: true };
+        console.log(`✓ Table ${table.name} exists and is accessible`);
+      }
+    } catch (error) {
+      results[table.name] = { exists: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      console.error(`Error testing ${table.name}:`, error);
+    }
+  }
+
+  return results;
+};
 
 // Helper function to check if a user is an admin
 export const checkIfUserIsAdmin = async (userUid: string): Promise<boolean> => {
+  if (!userUid) return false;
+  
   try {
     const { data, error } = await supabase
       .from('admins')
@@ -14,7 +63,8 @@ export const checkIfUserIsAdmin = async (userUid: string): Promise<boolean> => {
       .eq('user_uid', userUid)
       .single();
     
-    return !error && data !== null;
+    if (error) throw error;
+    return data !== null;
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
@@ -23,6 +73,8 @@ export const checkIfUserIsAdmin = async (userUid: string): Promise<boolean> => {
 
 // Helper function to get admin info
 export const getAdminInfo = async (userUid: string) => {
+  if (!userUid) return { data: null, error: new Error('No user ID provided') };
+  
   try {
     const { data, error } = await supabase
       .from('admins')
@@ -30,7 +82,8 @@ export const getAdminInfo = async (userUid: string) => {
       .eq('user_uid', userUid)
       .single();
     
-    return { data, error };
+    if (error) throw error;
+    return { data, error: null };
   } catch (error) {
     console.error('Error getting admin info:', error);
     return { data: null, error };
