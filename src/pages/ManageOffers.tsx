@@ -4,15 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table } from '@/components/ui/table';
-import { Dialog } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import OffersTable from '@/components/OffersTable';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Users as UsersIcon } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface Offer {
   id: string;
@@ -46,6 +47,11 @@ export default function ManageOffers() {
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const [joinedUsers, setJoinedUsers] = useState<any[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
   // Fetch offers from Supabase
   const fetchOffers = async () => {
@@ -240,6 +246,40 @@ export default function ManageOffers() {
     fetchOffers();
   };
 
+  // Function to fetch users who joined a specific offer
+  const fetchJoinedUsers = async (offer: Offer) => {
+    setUsersLoading(true);
+    setUsersError(null);
+    setSelectedOffer(offer);
+    setShowUsersModal(true);
+    try {
+      // Get all user_ids who joined this offer
+      const { data: joins, error: joinsError } = await supabase
+        .from('offer_joins')
+        .select('user_id')
+        .eq('offer_id', offer.id);
+      if (joinsError) throw joinsError;
+      const userIds = joins?.map((j: any) => j.user_id) || [];
+      if (userIds.length === 0) {
+        setJoinedUsers([]);
+        setUsersLoading(false);
+        return;
+      }
+      // Fetch user info for these users
+      const { data: users, error: usersError } = await supabase
+        .from('user_info')
+        .select('first_name, last_name, phone, user_uid')
+        .in('user_uid', userIds);
+      if (usersError) throw usersError;
+      setJoinedUsers(users || []);
+    } catch (err: any) {
+      setUsersError(err.message || 'Error fetching users');
+      setJoinedUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   const sortedOffers = [...offers].sort((a, b) => {
     if (!!a.active === !!b.active) return 0;
     return a.active ? -1 : 1;
@@ -270,15 +310,30 @@ export default function ManageOffers() {
                 onDelete={handleDelete}
                 showActions
                 renderExtra={(offer) => (
-                  <Switch
-                    checked={!!offer.active}
-                    onCheckedChange={async (checked) => {
-                      setOffers((prev) => prev.map((o) => o.id === offer.id ? { ...o, active: checked } : o));
-                      const { error } = await supabase.from('offers').update({ active: checked }).eq('id', offer.id);
-                      if (error) console.error('Error updating active status:', error);
-                    }}
-                    className="ml-2"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={!!offer.active}
+                      onCheckedChange={async (checked) => {
+                        setOffers((prev) => prev.map((o) => o.id === offer.id ? { ...o, active: checked } : o));
+                        const { error } = await supabase.from('offers').update({ active: checked }).eq('id', offer.id);
+                        if (error) console.error('Error updating active status:', error);
+                      }}
+                      className="ml-2"
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => fetchJoinedUsers(offer as Offer)}
+                          aria-label={t('admin.showJoinedUsers') || 'Show Joined Users'}
+                        >
+                          <UsersIcon className="w-5 h-5 text-primary" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('admin.showJoinedUsers')}</TooltipContent>
+                    </Tooltip>
+                  </div>
                 )}
               />
             )}
@@ -479,6 +534,44 @@ export default function ManageOffers() {
                 </div>
               </form>
             </div>
+          </Dialog>
+        )}
+
+        {/* Modal for joined users */}
+        {showUsersModal && (
+          <Dialog open={showUsersModal} onOpenChange={setShowUsersModal}>
+            <DialogContent className={`w-full max-w-lg max-h-[90vh] overflow-y-auto ${isRTL ? 'rtl' : 'ltr'}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <UsersIcon className="w-6 h-6 text-primary" />
+                  {t('admin.joinedUsersFor').replace('{offer}', selectedOffer?.title || '')}
+                </h2>
+              </div>
+              {usersLoading ? (
+                <div className="py-8 flex justify-center items-center text-lg text-muted-foreground">{t('common.loading') || 'Loading...'}</div>
+              ) : usersError ? (
+                <div className="text-red-500 py-8 text-center">{usersError}</div>
+              ) : joinedUsers.length === 0 ? (
+                <div className="text-muted-foreground py-8 text-center">{t('admin.noUsersJoined') || 'No users have joined this offer yet.'}</div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 mb-2">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800">
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.name') || 'Name'}</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.phone') || 'Mobile'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {joinedUsers.map((user) => (
+                      <tr key={user.user_uid} className="hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                        <td className="text-left px-4 py-2">{`${user.first_name || ''} ${user.last_name || ''}`.trim()}</td>
+                        <td className="text-left px-4 py-2">{user.phone || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </DialogContent>
           </Dialog>
         )}
       </div>
