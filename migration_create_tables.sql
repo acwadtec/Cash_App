@@ -232,3 +232,10 @@ CREATE POLICY "Only admins can manage levels" ON levels FOR ALL
 CREATE POLICY "Everyone can view settings" ON settings FOR SELECT USING (true);
 CREATE POLICY "Only admins can manage settings" ON settings FOR ALL
     USING (EXISTS (SELECT 1 FROM admins WHERE admins.user_uid = auth.uid())); 
+
+-- Add status column to offer_joins for approval workflow
+ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending'; 
+
+-- Add approved_at and last_profit_at columns to offer_joins for profit scheduling
+ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS last_profit_at TIMESTAMP; 

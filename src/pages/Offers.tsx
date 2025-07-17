@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useEffect, useState } from 'react';
-import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin, testAccrueDailyOfferProfits } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
@@ -22,6 +22,20 @@ interface Offer {
   type?: string;
   deadline?: string;
   minAmount?: number;
+}
+
+function TestProfitButton() {
+  const handleTest = async () => {
+    const result = await testAccrueDailyOfferProfits();
+    console.log('Profit accrual result:', result);
+    alert('Check the console for profit accrual results!');
+  };
+
+  return (
+    <button onClick={handleTest} style={{ margin: '16px', padding: '8px', background: '#4f46e5', color: 'white', borderRadius: '4px' }}>
+      Test Daily Profit Accrual
+    </button>
+  );
 }
 
 export default function Offers() {
@@ -104,11 +118,12 @@ export default function Offers() {
       toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
       return;
     }
-    const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId }]);
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId, status: 'pending', approved_at: now, last_profit_at: now }]);
     if (error) {
       toast({ title: 'Error', description: 'Failed to join offer.', variant: 'destructive' });
     } else {
-      toast({ title: 'Success', description: 'You have joined the offer!' });
+      toast({ title: 'Success', description: 'Your join request is pending admin approval.' });
       setJoinedOffers(prev => [...prev, offerId]);
     }
   };
@@ -124,6 +139,7 @@ export default function Offers() {
 
   return (
     <div className="min-h-screen py-20">
+      <TestProfitButton />
       {/* Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">

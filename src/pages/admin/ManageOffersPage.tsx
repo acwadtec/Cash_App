@@ -217,27 +217,53 @@ export default function ManageOffersPage() {
     setSelectedOffer(offer);
     setShowUsersModal(true);
     try {
+      // Fetch user_id and status for each join
       const { data: joins } = await supabase
         .from('offer_joins')
-        .select('user_id')
+        .select('user_id, status')
         .eq('offer_id', offer.id);
-      const userIds = joins?.map((j: any) => j.user_id) || [];
-      if (userIds.length === 0) {
+      if (!joins || joins.length === 0) {
         setJoinedUsers([]);
         setUsersLoading(false);
         return;
       }
+      const userIds = joins.map((j: any) => j.user_id);
+      // Fetch user info for these users
       const { data: users } = await supabase
         .from('user_info')
         .select('first_name, last_name, phone, user_uid')
         .in('user_uid', userIds);
-      setJoinedUsers(users || []);
+      // Merge status into user info
+      const usersWithStatus = users.map((user: any) => {
+        const join = joins.find((j: any) => j.user_id === user.user_uid);
+        return { ...user, status: join?.status || 'pending' };
+      });
+      setJoinedUsers(usersWithStatus || []);
     } catch (err: any) {
       setUsersError(err.message || 'Error fetching users');
       setJoinedUsers([]);
     } finally {
       setUsersLoading(false);
     }
+  };
+
+  // Add approve/reject handlers
+  const handleApprove = async (userId: string) => {
+    if (!selectedOffer) return;
+    const now = new Date().toISOString();
+    await supabase.from('offer_joins')
+      .update({ status: 'approved', approved_at: now, last_profit_at: now })
+      .eq('user_id', userId)
+      .eq('offer_id', selectedOffer.id);
+    fetchJoinedUsers(selectedOffer);
+  };
+  const handleReject = async (userId: string) => {
+    if (!selectedOffer) return;
+    await supabase.from('offer_joins')
+      .update({ status: 'rejected' })
+      .eq('user_id', userId)
+      .eq('offer_id', selectedOffer.id);
+    fetchJoinedUsers(selectedOffer);
   };
 
   const sortedOffers = [...offers].sort((a, b) => {
@@ -518,6 +544,8 @@ export default function ManageOffersPage() {
                     <tr className="bg-gray-50 dark:bg-gray-800">
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.name') || 'Name'}</th>
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.phone') || 'Mobile'}</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">Status</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -525,6 +553,15 @@ export default function ManageOffersPage() {
                       <tr key={user.user_uid} className="hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                         <td className="text-left px-4 py-2">{`${user.first_name || ''} ${user.last_name || ''}`.trim()}</td>
                         <td className="text-left px-4 py-2">{user.phone || '-'}</td>
+                        <td className="text-left px-4 py-2 capitalize">{user.status}</td>
+                        <td className="text-left px-4 py-2">
+                          {user.status === 'pending' && (
+                            <>
+                              <Button size="sm" className="bg-success mr-2" onClick={() => handleApprove(user.user_uid)}>Approve</Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleReject(user.user_uid)}>Reject</Button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
