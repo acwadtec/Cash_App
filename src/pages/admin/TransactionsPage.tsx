@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { BadgeCheck, XCircle, Eye } from 'lucide-react';
 
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,13 +24,17 @@ import { supabase } from '@/lib/supabase';
 
 interface Transaction {
   id: string;
-  user_id: string;
+  type: string;
   user_name: string;
-  type: 'deposit' | 'withdrawal' | 'referral' | 'bonus';
+  user_uid: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
+  status: string;
+  method: string;
   created_at: string;
-  description?: string;
+  screenshot_url?: string;
+  proof_image_url?: string;
+  admin_note?: string;
+  rejection_reason?: string;
 }
 
 export default function TransactionsPage() {
@@ -38,54 +44,83 @@ export default function TransactionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const transactionsPerPage = 15;
+  const { isRTL } = useLanguage();
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState<'csv' | 'pdf'>('csv');
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [typeFilter, statusFilter, dateFilter]);
+  useEffect(() => { fetchTransactions(); }, [typeFilter, statusFilter]);
 
   const fetchTransactions = async () => {
+    setLoadingTransactions(true);
     try {
-      setLoadingTransactions(true);
-      let query = supabase
-        .from('transactions')
-        .select('*, users(name)')
+      // Fetch deposit requests
+      const { data: deposits } = await supabase
+        .from('deposit_requests')
+        .select('*')
         .order('created_at', { ascending: false });
-
-      if (typeFilter !== 'all') {
-        query = query.eq('type', typeFilter);
+      // Fetch withdrawal requests
+      const { data: withdrawals } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      // Get all unique user UIDs
+      const allUserUids = new Set();
+      (deposits || []).forEach(d => d.user_uid && allUserUids.add(d.user_uid));
+      (withdrawals || []).forEach(w => w.user_uid && allUserUids.add(w.user_uid));
+      // Fetch user info
+      let userInfoMap: Record<string, any> = {};
+      if (allUserUids.size > 0) {
+        const { data: userInfoData } = await supabase
+          .from('user_info')
+          .select('user_uid, first_name, last_name, email')
+          .in('user_uid', Array.from(allUserUids));
+        (userInfoData || []).forEach(user => {
+          userInfoMap[user.user_uid] = user;
+        });
       }
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      if (dateFilter) {
-        const startOfDay = new Date(dateFilter);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(dateFilter);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        query = query.gte('created_at', startOfDay.toISOString())
-          .lte('created_at', endOfDay.toISOString());
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      setTransactions(data?.map(transaction => ({
-        ...transaction,
-        user_name: transaction.users.name
-      })) || []);
-    } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to fetch transactions'),
-        variant: 'destructive',
+      // Format transactions
+      const depositTxns = (deposits || []).map(deposit => {
+        const userInfo = userInfoMap[deposit.user_uid];
+        const userName = userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email : (deposit.user_name || 'Unknown User');
+        return {
+          id: `deposit_${deposit.id}`,
+          type: 'deposit',
+          user_name: userName,
+          user_uid: deposit.user_uid,
+          amount: deposit.amount,
+          status: deposit.status,
+          method: deposit.target_number || 'Mobile Transfer',
+          created_at: deposit.created_at,
+          screenshot_url: deposit.screenshot_url,
+          admin_note: deposit.admin_note,
+          rejection_reason: deposit.rejection_reason
+        };
       });
+      const withdrawalTxns = (withdrawals || []).map(withdrawal => {
+        const userInfo = userInfoMap[withdrawal.user_uid];
+        const userName = userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email : (withdrawal.user_name || 'Unknown User');
+        return {
+          id: `withdrawal_${withdrawal.id}`,
+          type: 'withdrawal',
+          user_name: userName,
+          user_uid: withdrawal.user_uid,
+          amount: withdrawal.amount,
+          status: withdrawal.status,
+          method: withdrawal.method,
+          created_at: withdrawal.created_at,
+          proof_image_url: withdrawal.proof_image_url,
+          admin_note: withdrawal.admin_note,
+          rejection_reason: withdrawal.rejection_reason
+        };
+      });
+      const allTxns = [...depositTxns, ...withdrawalTxns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setTransactions(allTxns);
+      setPage(1);
+    } catch (e) {
+      toast({ title: t('common.error'), description: t('admin.transactions.fetchError'), variant: 'destructive' });
     } finally {
       setLoadingTransactions(false);
     }
@@ -100,7 +135,6 @@ export default function TransactionsPage() {
         Amount: transaction.amount,
         Status: transaction.status,
         Date: new Date(transaction.created_at).toLocaleDateString(),
-        Description: transaction.description || ''
       }));
 
       if (exportFormat === 'csv') {
@@ -161,125 +195,152 @@ export default function TransactionsPage() {
     }
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = searchTerm === '' || 
-      transaction.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+  const filteredTransactions = transactions.filter(txn => {
+    if (typeFilter !== 'all' && txn.type !== typeFilter) return false;
+    if (statusFilter !== 'all' && txn.status !== statusFilter) return false;
+    if (searchTerm && !(
+      txn.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      txn.id.toLowerCase().includes(searchTerm.toLowerCase())
+    )) return false;
+    return true;
   });
+  const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+  const paginatedTransactions = filteredTransactions.slice((page - 1) * transactionsPerPage, page * transactionsPerPage);
 
   return (
     <div className="space-y-4 p-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">{t('Transactions')}</h2>
-        <Button onClick={() => setShowExportModal(true)}>
-          <Download className="mr-2 h-4 w-4" />
-          {t('Export')}
-        </Button>
+        <h2 className="text-3xl font-bold">{t('admin.transactions')}</h2>
       </div>
-
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder={t('Search transactions...')}
+              placeholder={t('admin.transactions.search')}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t('Filter by type')} />
+            <SelectValue placeholder={t('admin.transactions.filterByType')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('All Types')}</SelectItem>
-            <SelectItem value="deposit">{t('Deposits')}</SelectItem>
-            <SelectItem value="withdrawal">{t('Withdrawals')}</SelectItem>
-            <SelectItem value="referral">{t('Referrals')}</SelectItem>
-            <SelectItem value="bonus">{t('Bonuses')}</SelectItem>
+            <SelectItem value="all">{t('admin.transactions.allTypes')}</SelectItem>
+            <SelectItem value="deposit">{t('admin.transactions.deposit')}</SelectItem>
+            <SelectItem value="withdrawal">{t('admin.transactions.withdrawal')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t('Filter by status')} />
+            <SelectValue placeholder={t('admin.transactions.filterByStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('All Statuses')}</SelectItem>
-            <SelectItem value="pending">{t('Pending')}</SelectItem>
-            <SelectItem value="completed">{t('Completed')}</SelectItem>
-            <SelectItem value="failed">{t('Failed')}</SelectItem>
+            <SelectItem value="all">{t('admin.transactions.all')}</SelectItem>
+            <SelectItem value="pending">{t('admin.transactions.pending')}</SelectItem>
+            <SelectItem value="approved">{t('admin.transactions.approved')}</SelectItem>
+            <SelectItem value="paid">{t('admin.transactions.paid')}</SelectItem>
+            <SelectItem value="rejected">{t('admin.transactions.rejected')}</SelectItem>
           </SelectContent>
         </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-[180px]">
-              <Filter className="mr-2 h-4 w-4" />
-              {dateFilter ? new Date(dateFilter).toLocaleDateString() : t('Filter by date')}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={dateFilter}
-              onSelect={setDateFilter}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
       </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>{t('Transactions List')}</CardTitle>
+          <CardTitle>{t('admin.transactions.list')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('ID')}</TableHead>
-                <TableHead>{t('User')}</TableHead>
-                <TableHead>{t('Type')}</TableHead>
-                <TableHead>{t('Amount')}</TableHead>
-                <TableHead>{t('Status')}</TableHead>
-                <TableHead>{t('Date')}</TableHead>
-                <TableHead>{t('Description')}</TableHead>
+                <TableHead>{t('admin.transactions.date')}</TableHead>
+                <TableHead>{t('admin.transactions.type')}</TableHead>
+                <TableHead>{t('admin.transactions.user')}</TableHead>
+                <TableHead>{t('admin.transactions.amount')}</TableHead>
+                <TableHead>{t('admin.transactions.method')}</TableHead>
+                <TableHead>{t('admin.transactions.status')}</TableHead>
+                <TableHead>{t('admin.transactions.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loadingTransactions ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-4">
-                    {t('Loading...')}
+                    {t('common.loading')}
                   </TableCell>
                 </TableRow>
-              ) : filteredTransactions.length === 0 ? (
+              ) : paginatedTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-4">
-                    {t('No transactions found')}
+                    {t('admin.transactions.noTransactions')}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-mono">{transaction.id}</TableCell>
-                    <TableCell>{transaction.user_name}</TableCell>
-                    <TableCell>{getTypeBadge(transaction.type)}</TableCell>
+                paginatedTransactions.map((txn) => (
+                  <TableRow key={txn.id}>
                     <TableCell>
-                      <Badge variant="secondary">${transaction.amount.toLocaleString()}</Badge>
+                      {new Date(txn.created_at).toLocaleDateString()}<br />
+                      <span className="text-xs text-muted-foreground">{new Date(txn.created_at).toLocaleTimeString()}</span>
                     </TableCell>
-                    <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-                    <TableCell>{new Date(transaction.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="max-w-xs truncate" title={transaction.description}>
-                      {transaction.description}
+                    <TableCell>
+                      <Badge variant={txn.type === 'deposit' ? 'default' : 'secondary'}>
+                        {txn.type === 'deposit' ? t('admin.transactions.deposit') : t('admin.transactions.withdrawal')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{txn.user_name}</TableCell>
+                    <TableCell className="font-bold">${Number(txn.amount).toLocaleString()}</TableCell>
+                    <TableCell>{txn.method}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={txn.status === 'approved' || txn.status === 'paid' ? 'default' : txn.status === 'rejected' ? 'destructive' : 'secondary'}
+                      >
+                        {t(`admin.transactions.${txn.status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {txn.status === 'paid' && txn.proof_image_url && (
+                        <a href={txn.proof_image_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm flex items-center gap-1">
+                          <Eye className="w-4 h-4" /> {t('admin.transactions.viewProof')}
+                        </a>
+                      )}
+                      {txn.status === 'approved' && txn.screenshot_url && (
+                        <a href={txn.screenshot_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm flex items-center gap-1">
+                          <Eye className="w-4 h-4" /> {t('admin.transactions.viewScreenshot')}
+                        </a>
+                      )}
+                      {(txn.admin_note || txn.rejection_reason) && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {txn.admin_note && <div>{t('admin.transactions.note')}: {txn.admin_note}</div>}
+                          {txn.rejection_reason && <div>{t('admin.transactions.reason')}: {txn.rejection_reason}</div>}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-8">
+              <Pagination>
+                <PaginationContent className={isRTL ? 'flex-row-reverse' : ''}>
+                  <PaginationItem>
+                    <PaginationPrevious onClick={() => setPage(p => Math.max(p - 1, 1))} className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}>{t('pagination.previous')}</PaginationPrevious>
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <PaginationItem key={i + 1}>
+                      <PaginationLink onClick={() => setPage(i + 1)} className={page === i + 1 ? 'bg-primary text-white cursor-default' : 'cursor-pointer'}>{i + 1}</PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext onClick={() => setPage(p => Math.min(p + 1, totalPages))} className={page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}>{t('pagination.next')}</PaginationNext>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
