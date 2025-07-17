@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -61,33 +62,19 @@ interface Level {
   created_at: string;
 }
 
-interface GamificationSettings {
-  id?: string;
-  points_multiplier_deposit: number;
-  points_multiplier_referral: number;
-  points_multiplier_withdrawal: number;
-  badge_auto_award: boolean;
-  level_auto_update: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+// Remove all state and logic related to settings
+// Remove the Settings Card section from the JSX
+// Do not render or reference settings, fetchSettings, handleUpdateSettings, or related UI
+// Only keep the User Badges and other relevant sections
 
 const GamificationPage: FC = () => {
   const { t } = useLanguage();
   const [badges, setBadges] = React.useState<Badge[]>([]);
   const [userBadges, setUserBadges] = React.useState<UserBadge[]>([]);
   const [levels, setLevels] = React.useState<Level[]>([]);
-  const [settings, setSettings] = React.useState<GamificationSettings>({
-    points_multiplier_deposit: 1,
-    points_multiplier_referral: 1,
-    points_multiplier_withdrawal: 1,
-    badge_auto_award: true,
-    level_auto_update: true
-  });
   const [loadingBadges, setLoadingBadges] = React.useState(false);
   const [loadingUserBadges, setLoadingUserBadges] = React.useState(false);
   const [loadingLevels, setLoadingLevels] = React.useState(false);
-  const [loadingSettings, setLoadingSettings] = React.useState(false);
   const [showBadgeModal, setShowBadgeModal] = React.useState(false);
   const [showLevelModal, setShowLevelModal] = React.useState(false);
   const [selectedBadge, setSelectedBadge] = React.useState<Badge | null>(null);
@@ -114,13 +101,16 @@ const GamificationPage: FC = () => {
   const [editForm, setEditForm] = useState({
     points_earned: 0
   });
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
 
   React.useEffect(() => {
     fetchBadges();
     fetchUserBadges();
     fetchLevels();
-    fetchSettings();
   }, []);
+
+  React.useEffect(() => { setCurrentPage(1); }, [searchTerm, filterType]);
 
   const fetchBadges = async () => {
     try {
@@ -199,56 +189,6 @@ const GamificationPage: FC = () => {
       });
     } finally {
       setLoadingLevels(false);
-    }
-  };
-
-  const fetchSettings = async () => {
-    try {
-      setLoadingSettings(true);
-      console.log('Fetching gamification settings...');
-      
-      const { data, error } = await supabase
-        .from('gamification_settings')
-        .select('*')
-        .limit(1)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No settings found, create default settings
-          const defaultSettings: Omit<GamificationSettings, 'id' | 'created_at' | 'updated_at'> = {
-            points_multiplier_deposit: 1,
-            points_multiplier_referral: 1,
-            points_multiplier_withdrawal: 1,
-            badge_auto_award: true,
-            level_auto_update: true
-          };
-
-          const { data: newSettings, error: insertError } = await supabase
-            .from('gamification_settings')
-            .insert([defaultSettings])
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-          console.log('Created default settings:', newSettings);
-          setSettings(newSettings);
-        } else {
-          throw error;
-        }
-      } else {
-        console.log('Fetched settings:', data);
-        setSettings(data);
-      }
-    } catch (error) {
-      console.error('Error fetching gamification settings:', error);
-      toast({
-        title: t('Error'),
-        description: t('Failed to fetch gamification settings'),
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingSettings(false);
     }
   };
 
@@ -432,35 +372,6 @@ const GamificationPage: FC = () => {
     }
   };
 
-  const handleUpdateSettings = async () => {
-    try {
-      const { error } = await supabase
-        .from('gamification_settings')
-        .update({
-          points_multiplier_deposit: settings.points_multiplier_deposit,
-          points_multiplier_referral: settings.points_multiplier_referral,
-          points_multiplier_withdrawal: settings.points_multiplier_withdrawal,
-          badge_auto_award: settings.badge_auto_award,
-          level_auto_update: settings.level_auto_update
-        })
-        .eq('id', settings.id);
-
-      if (error) throw error;
-
-      toast({
-        title: t('Success'),
-        description: t('Settings updated successfully'),
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      toast({
-        title: t('Error'),
-        description: t('Failed to update settings'),
-        variant: 'destructive',
-      });
-    }
-  };
-
   const filteredUserBadges = userBadges.filter(userBadge => {
     const matchesSearch = searchTerm === '' || 
       userBadge.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -470,6 +381,12 @@ const GamificationPage: FC = () => {
     
     return matchesSearch && matchesType;
   });
+
+  const totalPages = Math.ceil(filteredUserBadges.length / itemsPerPage);
+  const paginatedUserBadges = filteredUserBadges.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleEditUserBadge = async () => {
     if (!selectedUserBadge) return;
@@ -533,222 +450,6 @@ const GamificationPage: FC = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">{t('Gamification')}</h2>
       </div>
-
-      {/* User Badges Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            {t('User Badges')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t('Search by user email or badge name...')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-            <div className="w-full md:w-[200px]">
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('Filter by type')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('All Types')}</SelectItem>
-                  <SelectItem value="achievement">{t('Achievement')}</SelectItem>
-                  <SelectItem value="profile">{t('Profile')}</SelectItem>
-                  <SelectItem value="verification">{t('Verification')}</SelectItem>
-                  <SelectItem value="deposit">{t('Deposit')}</SelectItem>
-                  <SelectItem value="withdrawal">{t('Withdrawal')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {loadingUserBadges ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('User')}</TableHead>
-                    <TableHead>{t('Badge')}</TableHead>
-                    <TableHead>{t('Type')}</TableHead>
-                    <TableHead>{t('Points Earned')}</TableHead>
-                    <TableHead>{t('Earned At')}</TableHead>
-                    <TableHead>{t('Actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUserBadges.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
-                        {t('No user badges found')}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredUserBadges.map((userBadge) => (
-                      <TableRow key={userBadge.id}>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {userBadge.user ? 
-                                `${userBadge.user.first_name} ${userBadge.user.last_name}` : 
-                                'Unknown User'}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              {userBadge.user?.email}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            {userBadge.badge?.name}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {userBadge.badge?.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{userBadge.points_earned}</TableCell>
-                        <TableCell>
-                          {userBadge.earned_at
-                            ? new Date(userBadge.earned_at).toLocaleDateString()
-                            : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedUserBadge(userBadge);
-                                setEditForm({ points_earned: userBadge.points_earned });
-                                setShowEditBadgeModal(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteUserBadge(userBadge.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Settings Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
-            {t('Settings')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingSettings ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4">{t('Points Multipliers')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t('Deposit')}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={settings.points_multiplier_deposit}
-                      onChange={(e) => setSettings(prev => ({
-                        ...prev,
-                        points_multiplier_deposit: parseFloat(e.target.value) || 0
-                      }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t('Referral')}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={settings.points_multiplier_referral}
-                      onChange={(e) => setSettings(prev => ({
-                        ...prev,
-                        points_multiplier_referral: parseFloat(e.target.value) || 0
-                      }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t('Withdrawal')}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={settings.points_multiplier_withdrawal}
-                      onChange={(e) => setSettings(prev => ({
-                        ...prev,
-                        points_multiplier_withdrawal: parseFloat(e.target.value) || 0
-                      }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>{t('Auto Award Badges')}</Label>
-                  <Switch
-                    checked={settings.badge_auto_award}
-                    onCheckedChange={(checked) => setSettings(prev => ({
-                      ...prev,
-                      badge_auto_award: checked
-                    }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>{t('Auto Update Levels')}</Label>
-                  <Switch
-                    checked={settings.level_auto_update}
-                    onCheckedChange={(checked) => setSettings(prev => ({
-                      ...prev,
-                      level_auto_update: checked
-                    }))}
-                  />
-                </div>
-              </div>
-
-              <Button onClick={handleUpdateSettings} className="w-full">
-                {t('Save Settings')}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Badges Card */}
       <Card>
@@ -914,6 +615,131 @@ const GamificationPage: FC = () => {
               )}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* User Badges Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            {t('User Badges')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('Search by user email or badge name...')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div className="w-full md:w-[200px]">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('Filter by type')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('All Types')}</SelectItem>
+                  <SelectItem value="achievement">{t('Achievement')}</SelectItem>
+                  <SelectItem value="profile">{t('Profile')}</SelectItem>
+                  <SelectItem value="verification">{t('Verification')}</SelectItem>
+                  <SelectItem value="deposit">{t('Deposit')}</SelectItem>
+                  <SelectItem value="withdrawal">{t('Withdrawal')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {loadingUserBadges ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('User')}</TableHead>
+                    <TableHead>{t('Badge')}</TableHead>
+                    <TableHead>{t('Type')}</TableHead>
+                    <TableHead>{t('Points Earned')}</TableHead>
+                    <TableHead>{t('Earned At')}</TableHead>
+                    <TableHead>{t('Actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedUserBadges.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        {t('No user badges found')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedUserBadges.map((userBadge) => (
+                      <TableRow key={userBadge.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {userBadge.user ? 
+                                `${userBadge.user.first_name} ${userBadge.user.last_name}` : 
+                                'Unknown User'}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {userBadge.user?.email}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {userBadge.badge?.name}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {userBadge.badge?.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{userBadge.points_earned}</TableCell>
+                        <TableCell>
+                          {userBadge.earned_at
+                            ? new Date(userBadge.earned_at).toLocaleDateString()
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUserBadge(userBadge);
+                                setEditForm({ points_earned: userBadge.points_earned });
+                                setShowEditBadgeModal(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteUserBadge(userBadge.id)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1109,6 +935,36 @@ const GamificationPage: FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                aria-disabled={currentPage === 1}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <PaginationItem key={i + 1}>
+                <PaginationLink
+                  isActive={currentPage === i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                aria-disabled={currentPage === totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 } 
