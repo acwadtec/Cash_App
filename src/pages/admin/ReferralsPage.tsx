@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Gift, Users2, Settings } from 'lucide-react';
-
-// UI Components
+import { Gift, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,73 +7,49 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-
-// Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-
-// Services
 import { supabase } from '@/lib/supabase';
-
-interface ReferralSettings {
-  level1Points: number;
-  level2Points: number;
-  level3Points: number;
-}
-
-interface TopReferrer {
-  id: string;
-  name: string;
-  email: string;
-  referralCount: number;
-  totalPoints: number;
-}
 
 export default function ReferralsPage() {
   const { t } = useLanguage();
-  const [referralSettings, setReferralSettings] = useState<ReferralSettings>({
+  const [referralSettings, setReferralSettings] = useState({
     level1Points: 100,
     level2Points: 50,
     level3Points: 25
   });
-  const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([]);
+  const [topReferrers, setTopReferrers] = useState([]);
   const [loadingReferrers, setLoadingReferrers] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [settingsForm, setSettingsForm] = useState<ReferralSettings>({
+  const [settingsForm, setSettingsForm] = useState({
     level1Points: 100,
     level2Points: 50,
     level3Points: 25
   });
 
   useEffect(() => {
-    fetchTopReferrers();
     loadReferralSettings();
+    fetchTopReferrers();
   }, []);
 
   const fetchTopReferrers = async () => {
+    setLoadingReferrers(true);
     try {
-      setLoadingReferrers(true);
       const { data, error } = await supabase
-        .from('users')
-        .select('id, name, email, referral_count, total_points')
-        .order('referral_count', { ascending: false })
+        .from('user_info')
+        .select('first_name, last_name, email, referral_count, total_referral_points')
+        .not('referral_count', 'is', null)
+        .order('total_referral_points', { ascending: false })
         .limit(10);
-
-      if (error) throw error;
-      
-      setTopReferrers(data?.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        referralCount: user.referral_count || 0,
-        totalPoints: user.total_points || 0
-      })) || []);
+      if (error) {
+        toast({ title: t('common.error'), description: t('admin.failedToFetchReferrers'), variant: 'destructive' });
+        setTopReferrers([]);
+      } else {
+        setTopReferrers(data || []);
+      }
     } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to fetch top referrers'),
-        variant: 'destructive',
-      });
+      toast({ title: t('common.error'), description: t('admin.failedToFetchReferrers'), variant: 'destructive' });
+      setTopReferrers([]);
     } finally {
       setLoadingReferrers(false);
     }
@@ -84,135 +58,122 @@ export default function ReferralsPage() {
   const loadReferralSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('settings')
+        .from('referral_settings')
         .select('*')
-        .eq('type', 'referral')
+        .eq('id', 1)
         .single();
-
-      if (error) throw error;
-      
-      if (data) {
-        const settings = {
+      if (error) {
+        setReferralSettings({ level1Points: 100, level2Points: 50, level3Points: 25 });
+        setSettingsForm({ level1Points: 100, level2Points: 50, level3Points: 25 });
+      } else if (data) {
+        setReferralSettings({
           level1Points: data.level1_points || 100,
           level2Points: data.level2_points || 50,
           level3Points: data.level3_points || 25
-        };
-        setReferralSettings(settings);
-        setSettingsForm(settings);
+        });
+        setSettingsForm({
+          level1Points: data.level1_points || 100,
+          level2Points: data.level2_points || 50,
+          level3Points: data.level3_points || 25
+        });
       }
     } catch (error) {
-      console.error('Error loading referral settings:', error);
+      setReferralSettings({ level1Points: 100, level2Points: 50, level3Points: 25 });
+      setSettingsForm({ level1Points: 100, level2Points: 50, level3Points: 25 });
     }
   };
 
   const handleUpdateSettings = async () => {
-    try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({
-          type: 'referral',
-          level1_points: settingsForm.level1Points,
-          level2_points: settingsForm.level2Points,
-          level3_points: settingsForm.level3Points
-        });
-
-      if (error) throw error;
-
+    const { error } = await supabase
+      .from('referral_settings')
+      .upsert([{
+        id: 1,
+        level1_points: settingsForm.level1Points,
+        level2_points: settingsForm.level2Points,
+        level3_points: settingsForm.level3Points,
+        updated_at: new Date().toISOString()
+      }]);
+    if (error) {
+      toast({ title: t('common.error'), description: t('admin.failedToUpdateReferralSettings'), variant: 'destructive' });
+    } else {
       setReferralSettings(settingsForm);
       setShowSettingsModal(false);
-      toast({
-        title: t('Success'),
-        description: t('Referral settings updated successfully'),
-      });
-    } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to update referral settings'),
-        variant: 'destructive',
-      });
+      toast({ title: t('common.success'), description: t('admin.referralSettingsUpdated') });
     }
   };
 
   return (
     <div className="space-y-4 p-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">{t('Referral System')}</h2>
-        <Button onClick={() => setShowSettingsModal(true)}>
+        <h2 className="text-3xl font-bold flex items-center gap-2"><Gift className="w-7 h-7 text-primary" />{t('admin.referrals')}</h2>
+        <Button onClick={() => setShowSettingsModal(true)} variant="outline">
           <Settings className="mr-2 h-4 w-4" />
-          {t('Settings')}
+          {t('admin.referralSettings')}
         </Button>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle>{t('Level 1 Points')}</CardTitle>
+            <CardTitle>{t('admin.level1Points')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{referralSettings.level1Points}</div>
-            <p className="text-sm text-muted-foreground">{t('Points for direct referrals')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.level1PointsDesc')}</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
-            <CardTitle>{t('Level 2 Points')}</CardTitle>
+            <CardTitle>{t('admin.level2Points')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{referralSettings.level2Points}</div>
-            <p className="text-sm text-muted-foreground">{t('Points for second-level referrals')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.level2PointsDesc')}</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
-            <CardTitle>{t('Level 3 Points')}</CardTitle>
+            <CardTitle>{t('admin.level3Points')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{referralSettings.level3Points}</div>
-            <p className="text-sm text-muted-foreground">{t('Points for third-level referrals')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.level3PointsDesc')}</p>
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>{t('Top Referrers')}</CardTitle>
+          <CardTitle>{t('admin.topReferrers')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('Name')}</TableHead>
-                <TableHead>{t('Email')}</TableHead>
-                <TableHead>{t('Referral Count')}</TableHead>
-                <TableHead>{t('Total Points')}</TableHead>
+                <TableHead>{t('admin.name')}</TableHead>
+                <TableHead>{t('admin.email')}</TableHead>
+                <TableHead>{t('admin.referralCount')}</TableHead>
+                <TableHead>{t('admin.totalReferralPoints')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loadingReferrers ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-4">
-                    {t('Loading...')}
+                    {t('common.loading')}
                   </TableCell>
                 </TableRow>
               ) : topReferrers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-4">
-                    {t('No referrers found')}
+                    {t('admin.noReferrersFound')}
                   </TableCell>
                 </TableRow>
               ) : (
-                topReferrers.map((referrer) => (
-                  <TableRow key={referrer.id}>
-                    <TableCell>{referrer.name}</TableCell>
+                topReferrers.map((referrer, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>{referrer.first_name} {referrer.last_name}</TableCell>
                     <TableCell>{referrer.email}</TableCell>
-                    <TableCell>
-                      <Badge>{referrer.referralCount}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{referrer.totalPoints}</Badge>
-                    </TableCell>
+                    <TableCell><Badge>{referrer.referral_count}</Badge></TableCell>
+                    <TableCell><Badge variant="secondary">{referrer.total_referral_points}</Badge></TableCell>
                   </TableRow>
                 ))
               )}
@@ -220,15 +181,14 @@ export default function ReferralsPage() {
           </Table>
         </CardContent>
       </Card>
-
       <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('Referral Settings')}</DialogTitle>
+            <DialogTitle>{t('admin.referralSettings')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{t('Level 1 Points')}</Label>
+              <Label>{t('admin.level1Points')}</Label>
               <Input
                 type="number"
                 value={settingsForm.level1Points}
@@ -236,7 +196,7 @@ export default function ReferralsPage() {
               />
             </div>
             <div>
-              <Label>{t('Level 2 Points')}</Label>
+              <Label>{t('admin.level2Points')}</Label>
               <Input
                 type="number"
                 value={settingsForm.level2Points}
@@ -244,14 +204,16 @@ export default function ReferralsPage() {
               />
             </div>
             <div>
-              <Label>{t('Level 3 Points')}</Label>
+              <Label>{t('admin.level3Points')}</Label>
               <Input
                 type="number"
                 value={settingsForm.level3Points}
                 onChange={(e) => setSettingsForm(prev => ({ ...prev, level3Points: parseInt(e.target.value) || 0 }))}
               />
             </div>
-            <Button onClick={handleUpdateSettings}>{t('Update Settings')}</Button>
+            <Button onClick={handleUpdateSettings} className="w-full mt-2">
+              {t('common.save')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

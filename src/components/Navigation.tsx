@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Moon, Sun, Menu, X, Settings, Home } from 'lucide-react';
+import { Moon, Sun, Menu, X, Settings, Home, Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy } from 'lucide-react';
 import { NotificationInbox } from './NotificationInbox';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import DarkLogo from '@/../public/Dark_mode.png';
@@ -124,9 +124,10 @@ export function Navigation() {
             {isAdminUser && (
               <Button
                 onClick={handleSwitchView}
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="text-xs"
+                className="text-xs font-bold border-2 border-primary bg-primary text-white hover:bg-primary/90 ml-2"
+                style={{ minWidth: 120 }}
               >
                 {isAdmin ? (
                   <>

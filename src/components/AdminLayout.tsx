@@ -1,164 +1,77 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy } from 'lucide-react';
+import { Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { toast } from '@/hooks/use-toast';
-import { testTables } from '@/lib/supabase';
+import { Navigation } from './Navigation';
 
 export function AdminLayout() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const location = useLocation();
-  const [isTesting, setIsTesting] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const handleTestConnection = async () => {
-    try {
-      setIsTesting(true);
-      const results = await testTables();
-      
-      // Check if any tables failed
-      const failedTables = Object.entries(results)
-        .filter(([_, result]) => !result.exists)
-        .map(([table, result]) => `${table}: ${result.error}`);
-
-      if (failedTables.length > 0) {
-        toast({
-          title: 'Connection Test Failed',
-          description: `Some tables are not accessible. Check console for details.`,
-          variant: 'destructive',
-        });
-        console.error('Failed tables:', failedTables);
-      } else {
-        toast({
-          title: 'Connection Test Successful',
-          description: 'All tables are accessible.',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Connection Test Error',
-        description: 'Failed to test connections. Check console for details.',
-        variant: 'destructive',
-      });
-      console.error('Test error:', error);
-    } finally {
-      setIsTesting(false);
-    }
-  };
+  const adminNavItems = [
+    { href: '/admin/analytics', label: t('admin.analytics'), icon: BarChart3 },
+    { href: '/admin/users', label: t('admin.users'), icon: Users },
+    { href: '/admin/offers', label: t('admin.offers'), icon: Package },
+    { href: '/admin/referrals', label: t('admin.referrals'), icon: Gift },
+    { href: '/admin/withdrawals', label: t('admin.withdrawals.title'), icon: DollarSign },
+    { href: '/admin/transactions', label: t('admin.transactions'), icon: BarChart3 },
+    { href: '/admin/notifications', label: t('admin.notifications'), icon: Bell },
+    { href: '/admin/deposit-numbers', label: t('admin.depositNumbers'), icon: Phone },
+    { href: '/admin/deposit-requests', label: t('admin.depositRequests'), icon: DollarSign },
+    { href: '/admin/support', label: t('admin.support'), icon: Phone },
+    { href: '/admin/gamification', label: t('admin.gamification'), icon: Trophy },
+  ];
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div className={`flex h-screen bg-background ${isRTL ? 'flex-row-reverse' : ''}`}>
+      {/* Top Navigation Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Navigation />
+      </div>
       {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-gray-800 shadow-sm">
-        <div className="p-4">
-          <h1 className="text-xl font-bold">{t('Admin Dashboard')}</h1>
-          <Button 
-            variant="outline" 
-            className="w-full mt-4" 
-            onClick={handleTestConnection}
-            disabled={isTesting}
+      <aside
+        className={`transition-all duration-200 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shadow-lg pt-16 ${sidebarOpen ? 'w-64' : 'w-16'} flex flex-col h-full fixed z-40 ${isRTL ? 'right-0' : 'left-0'}`}
+        aria-label="Admin sidebar"
+      >
+        <div className="flex items-center justify-between p-4">
+          {sidebarOpen && <h1 className="text-xl font-bold text-primary">{t('Admin Dashboard')}</h1>}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50"
+            onClick={() => setSidebarOpen((open) => !open)}
+            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           >
-            {isTesting ? 'Testing...' : 'Test Connection'}
+            {sidebarOpen ? <ChevronLeft className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
           </Button>
         </div>
-        <nav className="mt-4">
-          <Link
-            to="/admin/users"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/users' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            {t('Users')}
-          </Link>
-          <Link
-            to="/admin/offers"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/offers' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Package className="mr-2 h-4 w-4" />
-            {t('Manage Offers')}
-          </Link>
-          <Link
-            to="/admin/referrals"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/referrals' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Gift className="mr-2 h-4 w-4" />
-            {t('Referrals')}
-          </Link>
-          <Link
-            to="/admin/withdrawals"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/withdrawals' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <DollarSign className="mr-2 h-4 w-4" />
-            {t('Withdrawal Requests')}
-          </Link>
-          <Link
-            to="/admin/transactions"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/transactions' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <BarChart3 className="mr-2 h-4 w-4" />
-            {t('Transaction Logs')}
-          </Link>
-          <Link
-            to="/admin/notifications"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/notifications' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Bell className="mr-2 h-4 w-4" />
-            {t('Notifications')}
-          </Link>
-          <Link
-            to="/admin/deposit-numbers"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/deposit-numbers' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Phone className="mr-2 h-4 w-4" />
-            {t('Deposit Numbers')}
-          </Link>
-          <Link
-            to="/admin/deposit-requests"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/deposit-requests' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <DollarSign className="mr-2 h-4 w-4" />
-            {t('Deposit Requests')}
-          </Link>
-          <Link
-            to="/admin/support"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/support' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Phone className="mr-2 h-4 w-4" />
-            {t('Customer Support')}
-          </Link>
-          <Link
-            to="/admin/gamification"
-            className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-              location.pathname === '/admin/gamification' ? 'bg-gray-100 dark:bg-gray-700' : ''
-            }`}
-          >
-            <Trophy className="mr-2 h-4 w-4" />
-            {t('Gamification')}
-          </Link>
+        <nav className="mt-2 flex-1">
+          {adminNavItems.map((item) => {
+            const active = location.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={`group flex items-center gap-3 px-4 py-2 my-1 rounded-lg transition-colors font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+                  ${active ? 'bg-primary/10 text-primary dark:bg-primary/20' : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
+                  ${sidebarOpen ? '' : 'justify-center'}
+                `}
+                title={!sidebarOpen ? item.label : undefined}
+                tabIndex={0}
+              >
+                <item.icon className={`w-5 h-5 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                {sidebarOpen && <span className="truncate">{item.label}</span>}
+              </Link>
+            );
+          })}
         </nav>
-      </div>
-
+      </aside>
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      <main className={`flex-1 overflow-auto pt-16 transition-all duration-200 ${isRTL ? 'mr-16' : 'ml-16'}`} style={isRTL ? { marginRight: sidebarOpen ? 256 : 64 } : { marginLeft: sidebarOpen ? 256 : 64 }}>
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 } 
