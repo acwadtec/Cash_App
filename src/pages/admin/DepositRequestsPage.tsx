@@ -1,283 +1,233 @@
-import { useState, useEffect } from 'react';
-import { DollarSign, Check, X, Clock } from 'lucide-react';
-
-// UI Components
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-
-// Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
-
-// Services
 import { supabase } from '@/lib/supabase';
+import { Loader2, Image as ImageIcon } from 'lucide-react';
 
 interface DepositRequest {
   id: string;
   user_id: string;
-  user_name: string;
   amount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: string;
   deposit_number: string;
-  proof_image: string;
-  created_at: string;
+  proof_image?: string;
   admin_note?: string;
   rejection_reason?: string;
+  created_at: string;
+  user_number?: string;
+  target_number?: string;
+  screenshot_url?: string;
 }
 
 export default function DepositRequestsPage() {
   const { t } = useLanguage();
   const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
-  const [loadingRequests, setLoadingRequests] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [adminNote, setAdminNote] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const perPage = 10;
 
-  useEffect(() => {
-    fetchDepositRequests();
-  }, [statusFilter]);
-
+  // Fetch deposit requests (no user info join, just like AdminDashboard)
   const fetchDepositRequests = async () => {
+    setLoading(true);
     try {
-      setLoadingRequests(true);
-      let query = supabase
+      const { data, error } = await supabase
         .from('deposit_requests')
-        .select('*, users(name)')
+        .select('*')
         .order('created_at', { ascending: false });
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
-
-      setDepositRequests(data?.map(request => ({
-        ...request,
-        user_name: request.users.name
-      })) || []);
+      setDepositRequests(data || []);
     } catch (error) {
+      console.error('Error fetching deposit requests:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to fetch deposit requests'),
+        title: t('common.error'),
+        description: t('deposit.requests') + ' ' + (error as any)?.message,
         variant: 'destructive',
       });
     } finally {
-      setLoadingRequests(false);
+      setLoading(false);
     }
   };
 
-  const handleApprove = async (request: DepositRequest) => {
+  useEffect(() => {
+    fetchDepositRequests();
+  }, []);
+
+  // Approve deposit
+  const handleApprove = async (req: DepositRequest) => {
     try {
       const { error } = await supabase
         .from('deposit_requests')
-        .update({
-          status: 'approved',
-          admin_note: adminNote
-        })
-        .eq('id', request.id);
-
+        .update({ status: 'approved' })
+        .eq('id', req.id);
       if (error) throw error;
-
-      toast({
-        title: t('Success'),
-        description: t('Deposit request approved'),
-      });
+      toast({ title: t('common.success'), description: t('deposit.success') });
       fetchDepositRequests();
     } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to approve deposit request'),
-        variant: 'destructive',
-      });
+      console.error('Error approving deposit:', error);
+      toast({ title: t('common.error'), description: (error as any)?.message, variant: 'destructive' });
     }
   };
 
-  const handleReject = async () => {
-    if (!selectedRequest || !rejectionReason) return;
-
+  // Reject deposit
+  const handleReject = async (id: string) => {
     try {
       const { error } = await supabase
         .from('deposit_requests')
-        .update({
-          status: 'rejected',
-          rejection_reason: rejectionReason
-        })
-        .eq('id', selectedRequest.id);
-
+        .update({ status: 'rejected' })
+        .eq('id', id);
       if (error) throw error;
-
-      toast({
-        title: t('Success'),
-        description: t('Deposit request rejected'),
-      });
-      setShowRejectModal(false);
-      setSelectedRequest(null);
-      setRejectionReason('');
+      toast({ title: t('common.success'), description: t('deposit.rejected') });
       fetchDepositRequests();
     } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to reject deposit request'),
-        variant: 'destructive',
-      });
+      console.error('Error rejecting deposit:', error);
+      toast({ title: t('common.error'), description: (error as any)?.message, variant: 'destructive' });
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-          <Clock className="w-3 h-3 mr-1" />
-          {t('Pending')}
-        </Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-          <Check className="w-3 h-3 mr-1" />
-          {t('Approved')}
-        </Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-          <X className="w-3 h-3 mr-1" />
-          {t('Rejected')}
-        </Badge>;
-      default:
-        return null;
-    }
-  };
+  // Filtered and paginated data
+  const filtered = useMemo(() => {
+    if (statusFilter === 'all') return depositRequests;
+    return depositRequests.filter((r) => r.status === statusFilter);
+  }, [depositRequests, statusFilter]);
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paginated = useMemo(
+    () => filtered.slice((page - 1) * perPage, page * perPage),
+    [filtered, page]
+  );
+
+  // Reset to first page when filter changes
+  useEffect(() => { setPage(1); }, [statusFilter]);
 
   return (
-    <div className="space-y-4 p-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">{t('Deposit Requests')}</h2>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t('Filter by status')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('All')}</SelectItem>
-            <SelectItem value="pending">{t('Pending')}</SelectItem>
-            <SelectItem value="approved">{t('Approved')}</SelectItem>
-            <SelectItem value="rejected">{t('Rejected')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Card>
+    <div className="space-y-4 p-4 sm:p-8">
+      <Card className="shadow-card w-full bg-background border border-border dark:bg-muted/40 dark:border-muted-foreground/10 rounded-2xl">
         <CardHeader>
-          <CardTitle>{t('Requests List')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-primary" />
+            {t('deposit.requests') || 'Deposit Requests'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('User')}</TableHead>
-                <TableHead>{t('Amount')}</TableHead>
-                <TableHead>{t('Deposit Number')}</TableHead>
-                <TableHead>{t('Status')}</TableHead>
-                <TableHead>{t('Date')}</TableHead>
-                <TableHead>{t('Proof')}</TableHead>
-                <TableHead>{t('Actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loadingRequests ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    {t('Loading...')}
-                  </TableCell>
-                </TableRow>
-              ) : depositRequests.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    {t('No deposit requests found')}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                depositRequests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell>{request.user_name}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">${request.amount.toLocaleString()}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono">{request.deposit_number}</TableCell>
-                    <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      {request.proof_image && (
-                        <a
-                          href={request.proof_image}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
-                        >
-                          {t('View Proof')}
-                        </a>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {request.status === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(request)}
-                            >
-                              {t('Approve')}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                setSelectedRequest(request);
-                                setShowRejectModal(true);
-                              }}
-                            >
-                              {t('Reject')}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+          <div className="flex flex-col sm:flex-row gap-2 items-center mb-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t('deposit.status.filter') || 'Filter by status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('deposit.status.all') || 'All'}</SelectItem>
+                <SelectItem value="pending">{t('deposit.status.pending') || 'Pending'}</SelectItem>
+                <SelectItem value="approved">{t('deposit.status.approved') || 'Approved'}</SelectItem>
+                <SelectItem value="rejected">{t('deposit.status.rejected') || 'Rejected'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2 animate-pulse">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+              <ImageIcon className="w-10 h-10 opacity-30" />
+              <span className="text-lg font-medium">{t('deposit.noRequests') || 'No deposit requests found'}</span>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('deposit.amount') || 'Amount'}</TableHead>
+                    <TableHead>{t('deposit.userNumber') || 'User Number'}</TableHead>
+                    <TableHead>{t('deposit.targetNumber') || 'Target Number'}</TableHead>
+                    <TableHead>{t('deposit.screenshot') || 'Screenshot'}</TableHead>
+                    <TableHead>{t('deposit.status') || 'Status'}</TableHead>
+                    <TableHead>{t('deposit.actions') || 'Actions'}</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((req) => (
+                    <TableRow key={req.id}>
+                      <TableCell>{req.amount}</TableCell>
+                      <TableCell>{req.user_number || req.user_id}</TableCell>
+                      <TableCell>{req.target_number || '-'}</TableCell>
+                      <TableCell>
+                        {req.screenshot_url ? (
+                          <a
+                            href={req.screenshot_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            {t('deposit.view') || 'View'}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
+                          {t(`deposit.status.${req.status}`) || req.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {req.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <Button size="sm" className="bg-success" onClick={() => handleApprove(req)}>
+                              {t('admin.accept') || 'Accept'}
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
+                              {t('admin.reject') || 'Reject'}
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {/* Pagination */}
+          {totalPages > 1 && filtered.length > 0 && (
+            <div className="flex justify-center mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                      className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                    >
+                      {t('pagination.previous')}
+                    </PaginationPrevious>
+                  </PaginationItem>
+                  {[...Array(totalPages)].map((_, idx) => (
+                    <PaginationItem key={idx}>
+                      <PaginationLink isActive={page === idx + 1} onClick={() => setPage(idx + 1)}>
+                        {idx + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                      className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
+                    >
+                      {t('pagination.next')}
+                    </PaginationNext>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Reject Modal */}
-      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('Reject Deposit Request')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{t('Rejection Reason')}</Label>
-              <Textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder={t('Enter reason for rejection')}
-              />
-            </div>
-            <Button onClick={handleReject} variant="destructive" disabled={!rejectionReason}>
-              {t('Confirm Rejection')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 } 
