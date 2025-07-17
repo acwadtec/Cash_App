@@ -9,6 +9,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Test connection to user_info table
+export const testUserInfoTable = async (): Promise<boolean> => {
+  try {
+    console.log('Testing connection to user_info table...');
+    const { data, error } = await supabase
+      .from('user_info')
+      .select('user_uid, email, first_name, last_name')
+      .limit(1);
+
+    if (error) {
+      console.error('Error testing user_info table:', error.message);
+      return false;
+    }
+
+    console.log('✓ Successfully connected to user_info table');
+    console.log('Sample data:', data);
+    return true;
+  } catch (error) {
+    console.error('Error testing user_info table:', error);
+    return false;
+  }
+};
+
 // Test all required tables
 export const testTables = async () => {
   const tables = [
