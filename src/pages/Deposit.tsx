@@ -380,12 +380,12 @@ export default function Deposit() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label>{t('withdrawal.accountDetails')}</Label>
+                            <Label>{t('deposit.mobileNumber') || 'Mobile Number'}</Label>
                             <div
                               className="h-12 flex items-center px-3 rounded-md bg-muted border border-input text-base text-foreground"
                               style={{ minHeight: '3rem' }}
                             >
-                              {userInfo.phone || <span className="text-muted-foreground">{t('withdrawal.accountPlaceholder') || '-'}</span>}
+                              {userInfo.phone || <span className="text-muted-foreground">{t('deposit.mobilePlaceholder') || '-'}</span>}
                             </div>
                           </div>
                         </div>

@@ -17,7 +17,7 @@ export function Navigation() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isLoggedIn = Boolean(localStorage.getItem('cash-logged-in'));
-  const isAdmin = location.pathname.startsWith('/admin');
+  const isAdmin = location.pathname.startsWith('/admin') || location.pathname.startsWith('/manage-offers');
   const isManageOffers = location.pathname.startsWith('/manage-offers');
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
