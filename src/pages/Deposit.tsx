@@ -174,7 +174,7 @@ export default function Deposit() {
       const { error: insertError } = await supabase.from('deposit_requests').insert([
         {
           user_uid: user.id,
-          user_number: userNumber, // Keep userNumber for now, as it's not removed from form
+          user_number: userInfo?.phone || '', // Use userInfo.phone
           target_number: selectedNumber,
           amount: amountValue,
           screenshot_url: screenshotUrl,
