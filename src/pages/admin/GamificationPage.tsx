@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Trophy, Award, Plus, Pencil, Trash } from 'lucide-react';
+import * as React from 'react';
+import type { FC } from 'react';
+import { Trophy, Award, Plus, Pencil, Trash, User } from 'lucide-react';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,25 @@ interface Badge {
   created_at: string;
 }
 
+interface UserInfo {
+  user_uid: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  points_earned: number;
+  earned_at: string;
+  created_at: string;
+  updated_at: string;
+  badge: Badge;
+  user: UserInfo | null;
+}
+
 interface Level {
   id: string;
   level: number;
@@ -42,44 +62,45 @@ interface Level {
 }
 
 interface GamificationSettings {
-  points_multiplier: {
-    deposit: number;
-    referral: number;
-    withdrawal: number;
-  };
+  id?: string;
+  points_multiplier_deposit: number;
+  points_multiplier_referral: number;
+  points_multiplier_withdrawal: number;
   badge_auto_award: boolean;
   level_auto_update: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export default function GamificationPage() {
+const GamificationPage: FC = () => {
   const { t } = useLanguage();
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [settings, setSettings] = useState<GamificationSettings>({
-    points_multiplier: {
-      deposit: 1,
-      referral: 1,
-      withdrawal: 1
-    },
+  const [badges, setBadges] = React.useState<Badge[]>([]);
+  const [userBadges, setUserBadges] = React.useState<UserBadge[]>([]);
+  const [levels, setLevels] = React.useState<Level[]>([]);
+  const [settings, setSettings] = React.useState<GamificationSettings>({
+    points_multiplier_deposit: 1,
+    points_multiplier_referral: 1,
+    points_multiplier_withdrawal: 1,
     badge_auto_award: true,
     level_auto_update: true
   });
-  const [loadingBadges, setLoadingBadges] = useState(false);
-  const [loadingLevels, setLoadingLevels] = useState(false);
-  const [loadingSettings, setLoadingSettings] = useState(false);
-  const [showBadgeModal, setShowBadgeModal] = useState(false);
-  const [showLevelModal, setShowLevelModal] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
-  const [badgeForm, setBadgeForm] = useState({
+  const [loadingBadges, setLoadingBadges] = React.useState(false);
+  const [loadingUserBadges, setLoadingUserBadges] = React.useState(false);
+  const [loadingLevels, setLoadingLevels] = React.useState(false);
+  const [loadingSettings, setLoadingSettings] = React.useState(false);
+  const [showBadgeModal, setShowBadgeModal] = React.useState(false);
+  const [showLevelModal, setShowLevelModal] = React.useState(false);
+  const [selectedBadge, setSelectedBadge] = React.useState<Badge | null>(null);
+  const [selectedLevel, setSelectedLevel] = React.useState<Level | null>(null);
+  const [badgeForm, setBadgeForm] = React.useState<Omit<Badge, 'id' | 'created_at'>>({
     name: '',
     description: '',
-    type: 'achievement' as const,
+    type: 'achievement',
     requirement: 1,
     points_awarded: 0,
     is_active: true
   });
-  const [levelForm, setLevelForm] = useState({
+  const [levelForm, setLevelForm] = React.useState({
     level: 1,
     name: '',
     description: '',
@@ -87,8 +108,9 @@ export default function GamificationPage() {
     benefits: ''
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchBadges();
+    fetchUserBadges();
     fetchLevels();
     fetchSettings();
   }, []);
@@ -111,6 +133,44 @@ export default function GamificationPage() {
       });
     } finally {
       setLoadingBadges(false);
+    }
+  };
+
+  const fetchUserBadges = async () => {
+    try {
+      setLoadingUserBadges(true);
+      
+      // Fetch all user badges
+      const { data: badges, error: badgeError } = await supabase
+        .from('user_badges')
+        .select('*, badge:badge_id(*)')
+        .order('earned_at', { ascending: false });
+      if (badgeError) throw badgeError;
+
+      // Fetch all user info
+      const { data: users, error: userError } = await supabase
+        .from('user_info')
+        .select('user_uid, email, first_name, last_name');
+      if (userError) throw userError;
+
+      // Merge user info into badges
+      const userMap = Object.fromEntries((users || []).map(u => [u.user_uid, u]));
+      const badgesWithUser = (badges || []).map(b => ({
+        ...b,
+        user: userMap[b.user_id] || null
+      }));
+      
+      console.log('Fetched and merged user badges:', badgesWithUser);
+      setUserBadges(badgesWithUser);
+    } catch (error) {
+      console.error('Error fetching user badges:', error);
+      toast({
+        title: t('Error'),
+        description: t('Failed to fetch user badges'),
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingUserBadges(false);
     }
   };
 
@@ -138,16 +198,43 @@ export default function GamificationPage() {
   const fetchSettings = async () => {
     try {
       setLoadingSettings(true);
+      console.log('Fetching gamification settings...');
+      
       const { data, error } = await supabase
         .from('gamification_settings')
         .select('*')
+        .limit(1)
         .single();
 
-      if (error) throw error;
-      if (data) {
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No settings found, create default settings
+          const defaultSettings: Omit<GamificationSettings, 'id' | 'created_at' | 'updated_at'> = {
+            points_multiplier_deposit: 1,
+            points_multiplier_referral: 1,
+            points_multiplier_withdrawal: 1,
+            badge_auto_award: true,
+            level_auto_update: true
+          };
+
+          const { data: newSettings, error: insertError } = await supabase
+            .from('gamification_settings')
+            .insert([defaultSettings])
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+          console.log('Created default settings:', newSettings);
+          setSettings(newSettings);
+        } else {
+          throw error;
+        }
+      } else {
+        console.log('Fetched settings:', data);
         setSettings(data);
       }
     } catch (error) {
+      console.error('Error fetching gamification settings:', error);
       toast({
         title: t('Error'),
         description: t('Failed to fetch gamification settings'),
@@ -342,7 +429,14 @@ export default function GamificationPage() {
     try {
       const { error } = await supabase
         .from('gamification_settings')
-        .upsert([settings]);
+        .update({
+          points_multiplier_deposit: settings.points_multiplier_deposit,
+          points_multiplier_referral: settings.points_multiplier_referral,
+          points_multiplier_withdrawal: settings.points_multiplier_withdrawal,
+          badge_auto_award: settings.badge_auto_award,
+          level_auto_update: settings.level_auto_update
+        })
+        .eq('id', settings.id);
 
       if (error) throw error;
 
@@ -351,6 +445,7 @@ export default function GamificationPage() {
         description: t('Settings updated successfully'),
       });
     } catch (error) {
+      console.error('Error updating settings:', error);
       toast({
         title: t('Error'),
         description: t('Failed to update settings'),
@@ -360,258 +455,343 @@ export default function GamificationPage() {
   };
 
   return (
-    <div className="space-y-4 p-8">
+    <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">{t('Gamification')}</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('Settings')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+      {/* User Badges Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            {t('User Badges')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingUserBadges ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('User')}</TableHead>
+                    <TableHead>{t('Badge')}</TableHead>
+                    <TableHead>{t('Type')}</TableHead>
+                    <TableHead>{t('Points Earned')}</TableHead>
+                    <TableHead>{t('Earned At')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userBadges.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-4">
+                        {t('No user badges found')}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    userBadges.map((userBadge) => (
+                      <TableRow key={userBadge.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {userBadge.user ? 
+                                `${userBadge.user.first_name} ${userBadge.user.last_name}` : 
+                                'Unknown User'}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {userBadge.user?.email}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {userBadge.badge?.name}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {userBadge.badge?.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{userBadge.points_earned}</TableCell>
+                        <TableCell>
+                          {userBadge.earned_at
+                            ? new Date(userBadge.earned_at).toLocaleDateString()
+                            : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Settings Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            {t('Settings')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingSettings ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="space-y-6">
               <div>
-                <Label>{t('Points Multipliers')}</Label>
-                <div className="grid grid-cols-3 gap-4 mt-2">
-                  <div>
+                <h3 className="text-lg font-medium mb-4">{t('Points Multipliers')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
                     <Label>{t('Deposit')}</Label>
                     <Input
                       type="number"
-                      value={settings.points_multiplier.deposit}
+                      min="0"
+                      step="0.1"
+                      value={settings.points_multiplier_deposit}
                       onChange={(e) => setSettings(prev => ({
                         ...prev,
-                        points_multiplier: {
-                          ...prev.points_multiplier,
-                          deposit: parseFloat(e.target.value) || 0
-                        }
+                        points_multiplier_deposit: parseFloat(e.target.value) || 0
                       }))}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>{t('Referral')}</Label>
                     <Input
                       type="number"
-                      value={settings.points_multiplier.referral}
+                      min="0"
+                      step="0.1"
+                      value={settings.points_multiplier_referral}
                       onChange={(e) => setSettings(prev => ({
                         ...prev,
-                        points_multiplier: {
-                          ...prev.points_multiplier,
-                          referral: parseFloat(e.target.value) || 0
-                        }
+                        points_multiplier_referral: parseFloat(e.target.value) || 0
                       }))}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>{t('Withdrawal')}</Label>
                     <Input
                       type="number"
-                      value={settings.points_multiplier.withdrawal}
+                      min="0"
+                      step="0.1"
+                      value={settings.points_multiplier_withdrawal}
                       onChange={(e) => setSettings(prev => ({
                         ...prev,
-                        points_multiplier: {
-                          ...prev.points_multiplier,
-                          withdrawal: parseFloat(e.target.value) || 0
-                        }
+                        points_multiplier_withdrawal: parseFloat(e.target.value) || 0
                       }))}
                     />
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={settings.badge_auto_award}
-                  onCheckedChange={(checked) => setSettings(prev => ({
-                    ...prev,
-                    badge_auto_award: checked
-                  }))}
-                />
-                <Label>{t('Auto Award Badges')}</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={settings.level_auto_update}
-                  onCheckedChange={(checked) => setSettings(prev => ({
-                    ...prev,
-                    level_auto_update: checked
-                  }))}
-                />
-                <Label>{t('Auto Update Levels')}</Label>
-              </div>
-              <Button onClick={handleUpdateSettings}>{t('Save Settings')}</Button>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Badges Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>{t('Badges')}</CardTitle>
-              <Button onClick={() => setShowBadgeModal(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t('Add Badge')}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>{t('Auto Award Badges')}</Label>
+                  <Switch
+                    checked={settings.badge_auto_award}
+                    onCheckedChange={(checked) => setSettings(prev => ({
+                      ...prev,
+                      badge_auto_award: checked
+                    }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('Auto Update Levels')}</Label>
+                  <Switch
+                    checked={settings.level_auto_update}
+                    onCheckedChange={(checked) => setSettings(prev => ({
+                      ...prev,
+                      level_auto_update: checked
+                    }))}
+                  />
+                </div>
+              </div>
+
+              <Button onClick={handleUpdateSettings} className="w-full">
+                {t('Save Settings')}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('Name')}</TableHead>
-                  <TableHead>{t('Type')}</TableHead>
-                  <TableHead>{t('Points')}</TableHead>
-                  <TableHead>{t('Status')}</TableHead>
-                  <TableHead>{t('Actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingBadges ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      {t('Loading...')}
-                    </TableCell>
-                  </TableRow>
-                ) : badges.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      {t('No badges found')}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  badges.map((badge) => (
-                    <TableRow key={badge.id}>
-                      <TableCell>{badge.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {badge.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{badge.points_awarded}</TableCell>
-                      <TableCell>
-                        <Badge variant={badge.is_active ? 'default' : 'secondary'}>
-                          {badge.is_active ? t('Active') : t('Inactive')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedBadge(badge);
-                              setBadgeForm({
-                                name: badge.name,
-                                description: badge.description,
-                                type: badge.type,
-                                requirement: badge.requirement,
-                                points_awarded: badge.points_awarded,
-                                is_active: badge.is_active
-                              });
-                              setShowBadgeModal(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteBadge(badge.id)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Levels Card */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>{t('Levels')}</CardTitle>
-              <Button onClick={() => setShowLevelModal(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t('Add Level')}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
+      {/* Badges Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>{t('Badges')}</CardTitle>
+            <Button onClick={() => setShowBadgeModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('Add Badge')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('Name')}</TableHead>
+                <TableHead>{t('Type')}</TableHead>
+                <TableHead>{t('Points')}</TableHead>
+                <TableHead>{t('Status')}</TableHead>
+                <TableHead>{t('Actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loadingBadges ? (
                 <TableRow>
-                  <TableHead>{t('Level')}</TableHead>
-                  <TableHead>{t('Name')}</TableHead>
-                  <TableHead>{t('Requirement')}</TableHead>
-                  <TableHead>{t('Benefits')}</TableHead>
-                  <TableHead>{t('Actions')}</TableHead>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    {t('Loading...')}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingLevels ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      {t('Loading...')}
+              ) : badges.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    {t('No badges found')}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                badges.map((badge) => (
+                  <TableRow key={badge.id}>
+                    <TableCell>{badge.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {badge.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{badge.points_awarded}</TableCell>
+                    <TableCell>
+                      <Badge variant={badge.is_active ? 'default' : 'secondary'}>
+                        {badge.is_active ? t('Active') : t('Inactive')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedBadge(badge);
+                            setBadgeForm({
+                              name: badge.name,
+                              description: badge.description,
+                              type: badge.type,
+                              requirement: badge.requirement,
+                              points_awarded: badge.points_awarded,
+                              is_active: badge.is_active
+                            });
+                            setShowBadgeModal(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteBadge(badge.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : levels.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      {t('No levels found')}
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Levels Card */}
+      <Card className="md:col-span-2">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>{t('Levels')}</CardTitle>
+            <Button onClick={() => setShowLevelModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('Add Level')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('Level')}</TableHead>
+                <TableHead>{t('Name')}</TableHead>
+                <TableHead>{t('Requirement')}</TableHead>
+                <TableHead>{t('Benefits')}</TableHead>
+                <TableHead>{t('Actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loadingLevels ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    {t('Loading...')}
+                  </TableCell>
+                </TableRow>
+              ) : levels.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    {t('No levels found')}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                levels.map((level) => (
+                  <TableRow key={level.id}>
+                    <TableCell>{level.level}</TableCell>
+                    <TableCell>{level.name}</TableCell>
+                    <TableCell>{level.requirement} points</TableCell>
+                    <TableCell className="max-w-xs truncate" title={level.benefits}>
+                      {level.benefits}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedLevel(level);
+                            setLevelForm({
+                              level: level.level,
+                              name: level.name,
+                              description: level.description,
+                              requirement: level.requirement,
+                              benefits: level.benefits
+                            });
+                            setShowLevelModal(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteLevel(level.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  levels.map((level) => (
-                    <TableRow key={level.id}>
-                      <TableCell>{level.level}</TableCell>
-                      <TableCell>{level.name}</TableCell>
-                      <TableCell>{level.requirement} points</TableCell>
-                      <TableCell className="max-w-xs truncate" title={level.benefits}>
-                        {level.benefits}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedLevel(level);
-                              setLevelForm({
-                                level: level.level,
-                                name: level.name,
-                                description: level.description,
-                                requirement: level.requirement,
-                                benefits: level.benefits
-                              });
-                              setShowLevelModal(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteLevel(level.id)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Badge Modal */}
       <Dialog open={showBadgeModal} onOpenChange={(open) => {
