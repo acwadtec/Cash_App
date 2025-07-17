@@ -62,16 +62,62 @@ export default function DepositRequestsPage() {
   // Approve deposit
   const handleApprove = async (req: DepositRequest) => {
     try {
-      const { error } = await supabase
+      // First, update the deposit request status
+      const { error: updateError } = await supabase
         .from('deposit_requests')
         .update({ status: 'approved' })
         .eq('id', req.id);
-      if (error) throw error;
-      toast({ title: t('common.success'), description: t('deposit.success') });
+      
+      if (updateError) throw updateError;
+
+      // Then, add the deposit amount to the user's balance
+      const userUid = req.user_uid || req.user_id;
+      const { data: userInfo, error: userError } = await supabase
+        .from('user_info')
+        .select('balance')
+        .eq('user_uid', userUid)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user info:', userError);
+        toast({ 
+          title: t('common.error'), 
+          description: 'Failed to fetch user balance', 
+          variant: 'destructive' 
+        });
+        return;
+      }
+
+      const currentBalance = userInfo?.balance || 0;
+      const newBalance = currentBalance + req.amount;
+
+      const { error: balanceError } = await supabase
+        .from('user_info')
+        .update({ balance: newBalance })
+        .eq('user_uid', userUid);
+
+      if (balanceError) {
+        console.error('Error updating user balance:', balanceError);
+        toast({ 
+          title: t('common.error'), 
+          description: 'Deposit approved but failed to update balance', 
+          variant: 'destructive' 
+        });
+        return;
+      }
+
+      toast({ 
+        title: t('common.success'), 
+        description: `Deposit approved and ${req.amount} EGP added to user balance` 
+      });
       fetchDepositRequests();
     } catch (error) {
       console.error('Error approving deposit:', error);
-      toast({ title: t('common.error'), description: (error as any)?.message, variant: 'destructive' });
+      toast({ 
+        title: t('common.error'), 
+        description: (error as any)?.message, 
+        variant: 'destructive' 
+      });
     }
   };
 

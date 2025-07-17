@@ -408,7 +408,7 @@ export default function Profile() {
                 <div className="text-2xl font-bold text-green-500">{userInfo.team_earnings ?? 0} EGP</div>
                 <div className="text-muted-foreground mt-2 text-sm font-medium">Team Earnings</div>
               </div>
-            </div>
+          </div>
           )}
 
           
