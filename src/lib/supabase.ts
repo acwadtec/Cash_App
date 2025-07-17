@@ -250,7 +250,7 @@ export const accrueDailyOfferProfits = async () => {
     const last = join.last_profit_at || join.approved_at;
     if (!last) continue;
     const lastDate = new Date(last);
-    if ((now.getTime() - lastDate.getTime()) < 2 * 60 * 1000) continue; // 2 minutes for testing
+    if ((now.getTime() - lastDate.getTime()) < 24 * 60 * 60 * 1000) continue; // Not due yet
     // 2. Get offer's daily profit
     const { data: offer, error: offerError } = await supabase
       .from('offers')
