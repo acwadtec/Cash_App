@@ -96,12 +96,6 @@ function App() {
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <h1 className="text-2xl font-bold text-red-600">Connection Error</h1>
         <p className="text-gray-600">Unable to connect to the database. Please check your connection and try again.</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Retry Connection
-        </button>
       </div>
     );
   }
