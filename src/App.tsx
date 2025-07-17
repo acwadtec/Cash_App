@@ -34,6 +34,7 @@ import DepositNumbersPage from './pages/admin/DepositNumbersPage';
 import DepositRequestsPage from './pages/admin/DepositRequestsPage';
 import SupportPage from './pages/admin/SupportPage';
 import GamificationPage from './pages/admin/GamificationPage';
+import ManageWallet from './pages/admin/ManageWallet';
 
 import { useEffect, useState } from 'react';
 import { supabase, testConnection } from '@/lib/supabase';
@@ -130,6 +131,7 @@ function App() {
                   <Route path="admin" element={<AdminLayout />}>
                     <Route index element={<Navigate to="/admin/users" replace />} />
                     <Route path="users" element={<UsersPage />} />
+                    <Route path="manage-wallet" element={<ManageWallet />} />
                     <Route path="offers" element={<ManageOffersPage />} />
                     <Route path="referrals" element={<ReferralsPage />} />
                     <Route path="withdrawals" element={<WithdrawalRequestsPage />} />

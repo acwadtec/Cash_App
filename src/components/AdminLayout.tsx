@@ -13,6 +13,7 @@ export function AdminLayout() {
   const adminNavItems = [
     { href: '/admin/analytics', label: t('admin.analytics'), icon: BarChart3 },
     { href: '/admin/users', label: t('admin.users'), icon: Users },
+    { href: '/admin/manage-wallet', label: 'Manage Wallets', icon: DollarSign },
     { href: '/admin/offers', label: t('admin.offers'), icon: Package },
     { href: '/admin/referrals', label: t('admin.referrals'), icon: Gift },
     { href: '/admin/withdrawals', label: t('admin.withdrawals.title'), icon: DollarSign },
