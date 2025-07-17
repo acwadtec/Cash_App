@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle } from 'lucide-react';
+import { Users, FileCheck, Gift, DollarSign, Bell, Download, Users2, Trophy, TrendingUp, BarChart3, Search, CalendarIcon, X, MessageCircle, Award, AlertTriangle, Clock, Package, Info } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1420,16 +1421,7 @@ export default function AdminDashboard() {
     fetchWithdrawals();
     fetchTransactions(); // Refresh transaction history
   };
-  // Update time slots
-  const handleSaveTimeSlots = async () => {
-    await supabase.from('settings').upsert({ key: 'withdrawal_time_slots', value: timeSlots });
-    fetchSettings();
-  };
-  // Update package limits
-  const handleSavePackageLimits = async () => {
-    await supabase.from('settings').upsert({ key: 'package_withdrawal_limits', value: packageLimits });
-    fetchSettings();
-  };
+
 
   // Gamification functions
   const fetchBadges = async () => {
@@ -2426,14 +2418,20 @@ export default function AdminDashboard() {
               {/* Settings UI */}
               <Card className="shadow-card mt-8">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="text-primary w-5 h-5" />
                     {t('admin.timeSlots')}
-                    <span className="text-xs text-muted-foreground cursor-pointer" title={t('admin.timeSlotsInfo') || 'Set allowed withdrawal times (day, start hour, end hour)'}>🛈</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="text-muted-foreground w-4 h-4 cursor-pointer" />
+                      </TooltipTrigger>
+                      <TooltipContent>{t('admin.timeSlotsInfo')}</TooltipContent>
+                    </Tooltip>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-background text-foreground space-y-6">
-                  {/* Time Slots Editor */}
-                  <div className="flex flex-wrap gap-4 items-end mb-2 mt-2">
+                <CardContent className="space-y-6">
+                  {/* Input Row */}
+                  <div className={`flex flex-wrap gap-2 items-end ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <select value={newTimeSlotDay} onChange={e => setNewTimeSlotDay(e.target.value)} className="border border-border rounded px-2 py-1 bg-background text-foreground focus:ring-2 focus:ring-primary/50 transition-all">
                       <option value="">{t('common.day')}</option>
                       <option value="0">{t('common.day.sunday')}</option>
@@ -2446,45 +2444,53 @@ export default function AdminDashboard() {
                     </select>
                     <input type="number" min="0" max="23" value={newTimeSlotStart} onChange={e => setNewTimeSlotStart(e.target.value)} placeholder={t('common.startHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground" />
                     <input type="number" min="1" max="24" value={newTimeSlotEnd} onChange={e => setNewTimeSlotEnd(e.target.value)} placeholder={t('common.endHour')} className="border border-border rounded px-2 py-1 w-24 bg-background text-foreground focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground" />
-                    <Button size="sm" className="bg-success text-white dark:bg-green-700 hover:bg-success/90 transition-all" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
+                    <Button size="sm" className="bg-success text-white dark:bg-green-700 hover:bg-success/90 transition-all h-9" onClick={handleAddTimeSlot} disabled={!newTimeSlotDay || !newTimeSlotStart || !newTimeSlotEnd || Number(newTimeSlotEnd) <= Number(newTimeSlotStart)}>
                       {t('common.save') || 'Add'}
                     </Button>
                   </div>
-                  <div className="mb-2 text-xs text-muted-foreground">{t('common.currentTimeSlots')}</div>
-                  <ul className="list-disc ml-5 mb-2 space-y-2">
-                    {timeSlots.map((slot, idx) => {
-                      const [day, start, end] = slot.split(':');
-                      return (
-                        <li key={idx} className="flex items-center gap-2 bg-muted/30 rounded px-2 py-1">
-                          <span><b>{t(`common.day.${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day]}`)}</b>: {start}:00 - {end}:00</span>
-                          <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete')}</Button>
-                        </li>
-                      );
-                    })}
-                    {timeSlots.length === 0 && <li className="text-muted-foreground">{t('common.noneSet')}</li>}
-                  </ul>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveTimeSlots} className="mt-2 bg-primary text-white hover:bg-primary/90 transition-all" disabled={timeSlots.some(slot => !/^[0-6]:\d{1,2}:\d{1,2}$/.test(slot))}>{t('admin.saveTimeSlots')}</Button>
-                    <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
+                  {/* List of Time Slots */}
+                  <div className="space-y-2">
+                    {timeSlots.length === 0 ? (
+                      <div className="text-muted-foreground text-center">{t('common.noneSet')}</div>
+                    ) : (
+                      timeSlots.map((slot, idx) => {
+                        const [day, start, end] = slot.split(':');
+                        return (
+                          <div key={idx} className={`flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2 ${isRTL ? 'flex-row-reverse' : ''}`}> 
+                            <span className="flex items-center gap-2">
+                              <Badge variant="secondary">{t(`common.day.${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day]}`)}</Badge>
+                              <span className="font-semibold">{start}:00 - {end}:00</span>
+                            </span>
+                            <Button size="sm" variant="destructive" onClick={() => handleRemoveTimeSlot(idx)}>{t('common.delete')}</Button>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </CardContent>
               </Card>
               <hr className="my-8 border-muted" />
               <Card className="shadow-card mt-8">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="text-primary w-5 h-5" />
                     {t('admin.packageLimits')}
-                    <span className="text-xs text-muted-foreground cursor-pointer" title={t('admin.packageLimitsInfo') || 'Set withdrawal limits for each package'}>🛈</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="text-muted-foreground w-4 h-4 cursor-pointer" />
+                      </TooltipTrigger>
+                      <TooltipContent>{t('admin.packageLimitsInfo')}</TooltipContent>
+                    </Tooltip>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-background text-foreground space-y-6">
-                  <form className="flex flex-wrap gap-2 items-end mt-2 mb-2" onSubmit={handleAddOrUpdatePackageLimit}>
-                    <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder={t('common.packageName')} className="w-32 focus:ring-2 focus:ring-primary/50 transition-all" />
-                    <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder={t('common.min')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all" />
-                    <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder={t('common.max')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all" />
-                    <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder={t('common.daily')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all" />
-                    <Button size="sm" className="bg-success text-white dark:bg-green-700 hover:bg-success/90 transition-all" type="submit" disabled={!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily}>{packageEditIndex === null ? (t('common.save') || 'Add') : (t('common.edit') || 'Edit')}</Button>
-                    {packageEditIndex !== null && <Button size="sm" variant="outline" onClick={handleCancelEditPackageLimit}>{t('common.cancel') || 'Cancel'}</Button>}
+                <CardContent className="space-y-6">
+                  <form className={`flex flex-wrap gap-2 items-end mt-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`} onSubmit={handleAddOrUpdatePackageLimit}>
+                    <Input value={packageFormName} onChange={e => setPackageFormName(e.target.value)} placeholder={t('common.packageName')} className="w-32 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Input type="number" value={packageFormMin} onChange={e => setPackageFormMin(e.target.value)} placeholder={t('common.min')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Input type="number" value={packageFormMax} onChange={e => setPackageFormMax(e.target.value)} placeholder={t('common.max')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Input type="number" value={packageFormDaily} onChange={e => setPackageFormDaily(e.target.value)} placeholder={t('common.daily')} className="w-20 focus:ring-2 focus:ring-primary/50 transition-all h-9" />
+                    <Button size="sm" className="bg-success text-white dark:bg-green-700 hover:bg-success/90 transition-all h-9" type="submit" disabled={!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily}>{packageEditIndex === null ? (t('common.save') || 'Add') : (t('common.edit') || 'Edit')}</Button>
+                    {packageEditIndex !== null && <Button size="sm" variant="outline" onClick={handleCancelEditPackageLimit} className="h-9">{t('common.cancel') || 'Cancel'}</Button>}
                   </form>
                   <div className="mb-2 text-xs text-muted-foreground">{t('common.currentPackageLimits')}</div>
                   <Table className="mb-2 rounded overflow-hidden">
@@ -2501,8 +2507,8 @@ export default function AdminDashboard() {
                       {Object.entries(packageLimits).map(([pkg, vals], idx) => {
                         const { min, max, daily } = vals as { min: number; max: number; daily: number };
                         return (
-                          <TableRow key={pkg} className="hover:bg-muted/20 transition-all">
-                            <TableCell>{pkg}</TableCell>
+                          <TableRow key={pkg} className={`hover:bg-muted/20 transition-all ${isRTL ? 'text-right' : ''}`}>
+                            <TableCell><Badge variant="secondary">{pkg}</Badge></TableCell>
                             <TableCell>{min}</TableCell>
                             <TableCell>{max}</TableCell>
                             <TableCell>{daily}</TableCell>
@@ -2514,14 +2520,10 @@ export default function AdminDashboard() {
                         );
                       })}
                       {Object.keys(packageLimits).length === 0 && (
-                        <TableRow><TableCell colSpan={5} className="text-muted-foreground">{t('common.noneSet')}</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={5} className="text-muted-foreground text-center">{t('common.noneSet')}</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSavePackageLimits} className="mt-2 bg-primary text-white hover:bg-primary/90 transition-all">{t('admin.savePackageLimits')}</Button>
-                    <Button variant="outline" className="mt-2" onClick={() => fetchSettings()}>{t('common.cancel') || 'Reset'}</Button>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
