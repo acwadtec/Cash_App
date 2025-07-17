@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast';
 
 // Services
 import { supabase } from '@/lib/supabase';
-import { testUserInfoTable } from '@/lib/supabase';
+import { testConnection } from '@/lib/supabase';
 
 interface UserInfo {
   user_uid: string;
@@ -151,7 +151,7 @@ export default function UsersPage() {
 
   const handleTestConnection = async () => {
     try {
-      const isConnected = await testUserInfoTable();
+      const isConnected = await testConnection();
       if (isConnected) {
         toast({
           title: 'Connection Test',

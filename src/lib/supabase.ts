@@ -52,6 +52,24 @@ export const testTables = async () => {
   return results;
 };
 
+// Test connection to Supabase by querying a simple table
+export const testConnection = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('user_info')
+      .select('user_uid')
+      .limit(1);
+    if (error) {
+      console.error('Supabase connection test error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('Supabase connection test exception:', e);
+    return false;
+  }
+};
+
 // Helper function to check if a user is an admin
 export const checkIfUserIsAdmin = async (userUid: string): Promise<boolean> => {
   if (!userUid) return false;
