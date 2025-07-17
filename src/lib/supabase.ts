@@ -76,18 +76,17 @@ export const testTables = async () => {
   return results;
 };
 
-// Test connection to Supabase using a simple ping
+// Test connection to Supabase by querying a simple table
 export const testConnection = async (): Promise<boolean> => {
   try {
-    // Test if we can reach Supabase by checking if the client is properly configured
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase credentials are missing');
+    const { error } = await supabase
+      .from('user_info')
+      .select('user_uid')
+      .limit(1);
+    if (error) {
+      console.error('Supabase connection test error:', error.message);
       return false;
     }
-    
-    // Try to make a simple request to test connectivity
-    const { error } = await supabase.auth.getSession();
-    // This should work even without authentication
     return true;
   } catch (e) {
     console.error('Supabase connection test exception:', e);
