@@ -1,0 +1,172 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+
+interface Offer {
+  id: string;
+  title: string;
+  description: string;
+  amount: number;
+  cost?: number;
+  daily_profit?: number;
+  monthly_profit?: number;
+  image_url?: string;
+  deadline?: string;
+  status: string;
+  joined_at?: string;
+  last_profit_at?: string;
+  approved_at?: string;
+}
+
+const statusTabs = [
+  { label: 'Pending', value: 'pending' },
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
+];
+
+function getTimeLeftToNextProfit(offer: Offer, now: Date): string {
+  const last = offer.last_profit_at || offer.approved_at;
+  if (!last) return '-';
+  const lastDate = new Date(last);
+  const nextProfit = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
+  const diff = nextProfit.getTime() - now.getTime();
+  if (diff <= 0) return 'Available now';
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+function getDaysLeft(offer: Offer, now: Date): string {
+  if (!offer.deadline) return '-';
+  const deadline = new Date(offer.deadline);
+  const diff = deadline.getTime() - now.getTime();
+  if (diff <= 0) return 'Expired';
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  return `${days} day${days !== 1 ? 's' : ''}`;
+}
+
+function getTotalProfit(offer: Offer, now: Date): string {
+  if (offer.status !== 'active' || !offer.daily_profit) return '-';
+  const start = offer.approved_at || offer.joined_at;
+  if (!start) return '-';
+  const startDate = new Date(start);
+  const endDate = offer.deadline ? new Date(offer.deadline) : now;
+  const actualEnd = endDate > now ? now : endDate;
+  if (actualEnd < startDate) return '$0';
+  // Number of full days between start and now or deadline
+  const days = Math.floor((actualEnd.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const total = days * Number(offer.daily_profit);
+  return `$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+const MyOffers: React.FC = () => {
+  const [selectedTab, setSelectedTab] = useState('pending');
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [now, setNow] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      setUserId(userData?.user?.id || null);
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchOffers = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('offer_joins')
+        .select(`
+          id,
+          offer_id,
+          status,
+          joined_at,
+          last_profit_at,
+          approved_at,
+          offer:offers (id, title, description, amount, cost, daily_profit, monthly_profit, image_url, deadline, active)
+        `)
+        .eq('user_id', userId);
+      if (error) {
+        setOffers([]);
+        setLoading(false);
+        return;
+      }
+      const mapped = (data || []).map((row: any) => ({
+        id: row.offer?.id,
+        title: row.offer?.title,
+        description: row.offer?.description,
+        amount: row.offer?.amount,
+        cost: row.offer?.cost,
+        daily_profit: row.offer?.daily_profit,
+        monthly_profit: row.offer?.monthly_profit,
+        image_url: row.offer?.image_url,
+        deadline: row.offer?.deadline,
+        status: row.status === 'pending' ? 'pending' : (row.offer?.active ? 'active' : 'inactive'),
+        joined_at: row.joined_at,
+        last_profit_at: row.last_profit_at,
+        approved_at: row.approved_at,
+      }));
+      setOffers(mapped);
+      setLoading(false);
+    };
+    fetchOffers();
+  }, [userId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredOffers = offers.filter((offer) => offer.status === selectedTab);
+
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">My Offers</h1>
+      <div className="flex space-x-4 mb-6">
+        {statusTabs.map((tab) => (
+          <button
+            key={tab.value}
+            className={`px-4 py-2 rounded ${
+              selectedTab === tab.value
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700'
+            }`}
+            onClick={() => setSelectedTab(tab.value)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div>
+        {loading ? (
+          <p>Loading...</p>
+        ) : filteredOffers.length === 0 ? (
+          <p>No {selectedTab} offers available.</p>
+        ) : (
+          <ul className="space-y-2">
+            {filteredOffers.map((offer) => (
+              <li
+                key={offer.id}
+                className="border rounded p-4 bg-white shadow"
+              >
+                <div className="font-semibold">{offer.title}</div>
+                <div className="text-sm text-gray-600 mb-2">{offer.description}</div>
+                <div className="text-xs text-gray-500">Joined: {offer.joined_at ? new Date(offer.joined_at).toLocaleString() : '-'}</div>
+                <div className="text-xs text-gray-500">Status: {offer.status}</div>
+                <div className="text-xs text-blue-600 mt-1">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
+                <div className="text-xs text-orange-600 mt-1">Days left until offer ends: {getDaysLeft(offer, now)}</div>
+                <div className="text-xs text-green-700 mt-1 font-semibold">Total profit from this offer: {getTotalProfit(offer, now)}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MyOffers; 

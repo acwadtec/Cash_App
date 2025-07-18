@@ -44,6 +44,7 @@ export function Navigation() {
 
   const navItems = [
     { href: '/offers', label: t('nav.offers') },
+    { href: '/my-offers', label: 'My Offers' }, // Added My Offers link
     { href: '/profile', label: t('nav.profile') },
     { href: '/transactions', label: t('nav.transactions') },
     { href: '/deposit', label: t('nav.deposit') },

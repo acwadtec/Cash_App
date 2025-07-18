@@ -12,6 +12,7 @@ export default function ReferralNetwork() {
   const [level2Referrals, setLevel2Referrals] = useState<any[]>([]);
   const [level3Referrals, setLevel3Referrals] = useState<any[]>([]);
   const [teamEarnings, setTeamEarnings] = useState<{[level: string]: number}>({});
+  const [earningsByUser, setEarningsByUser] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -27,17 +28,39 @@ export default function ReferralNetwork() {
       // Fetch team earnings breakdown
       const { data: txns, error: txnError } = await supabase
         .from('transactions')
-        .select('amount, description')
+        .select('amount, description, source_user_id')
         .eq('user_id', userData.user.id)
         .eq('type', 'team_earnings');
       if (txns) {
         const earnings: {[level: string]: number} = { '1': 0, '2': 0, '3': 0 };
+        const earningsByUserMap: {[userId: string]: number} = {};
         for (const txn of txns) {
           const match = txn.description && txn.description.match(/level (\d)/);
           const level = match ? match[1] : '1';
           earnings[level] = (earnings[level] || 0) + Number(txn.amount || 0);
+          if (txn.source_user_id) {
+            earningsByUserMap[txn.source_user_id] = (earningsByUserMap[txn.source_user_id] || 0) + Number(txn.amount || 0);
+          }
         }
         setTeamEarnings(earnings);
+        // Fetch user info for all source_user_ids
+        const userIds = Object.keys(earningsByUserMap);
+        if (userIds.length > 0) {
+          const { data: users } = await supabase
+            .from('user_info')
+            .select('user_uid, first_name, last_name, email')
+            .in('user_uid', userIds);
+          const userMap: {[userId: string]: any} = {};
+          (users || []).forEach(u => { userMap[u.user_uid] = u; });
+          setEarningsByUser(
+            userIds.map(uid => ({
+              user: userMap[uid],
+              amount: earningsByUserMap[uid]
+            }))
+          );
+        } else {
+          setEarningsByUser([]);
+        }
       }
     };
     fetchUser();
@@ -141,6 +164,19 @@ export default function ReferralNetwork() {
                     <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3 Earnings'}</div>
                   </div>
                 </div>
+                {/* Team Earnings By User Breakdown */}
+                {earningsByUser.length > 0 && (
+                  <div className="mt-6">
+                    <h2 className="font-semibold mb-2">Team Earnings Breakdown by User</h2>
+                    <ul>
+                      {earningsByUser.map(({ user, amount }) => (
+                        <li key={user?.user_uid || 'unknown'}>
+                          {user ? `${user.first_name} ${user.last_name} (${user.email})` : 'Unknown User'}: {amount.toFixed(2)} EGP
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                   <div className="text-center p-4 bg-success/10 rounded-lg">
                     <div className="text-2xl font-bold text-success">{level1Referrals.length}</div>

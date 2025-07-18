@@ -400,6 +400,7 @@ export const accrueDailyOfferProfits = async () => {
         .from('transactions')
         .insert({
           user_id: referrer.user_uid,
+          source_user_id: join.user_id, // Add the source user
           type: 'team_earnings',
           amount: earning,
           status: 'completed',
@@ -498,6 +499,7 @@ export const accrueMonthlyOfferProfits = async () => {
         .from('transactions')
         .insert({
           user_id: referrer.user_uid,
+          source_user_id: join.user_id, // Add the source user
           type: 'team_earnings',
           amount: earning,
           status: 'completed',

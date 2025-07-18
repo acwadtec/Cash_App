@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import ManageOffers from './pages/ManageOffers';
 import ReferralNetwork from './pages/ReferralNetwork';
 import ReadMore from "./pages/ReadMore";
+import MyOffers from "./pages/MyOffers";
 
 // Admin Pages
 import UsersPage from './pages/admin/UsersPage';
@@ -125,6 +126,7 @@ function App() {
                     <Route path="manage-offers" element={<ManageOffers />} />
                     <Route path="referral-network" element={<ReferralNetwork />} />
                     <Route path="read-more" element={<ReadMore />} />
+                    <Route path="my-offers" element={<MyOffers />} />
                   </Route>
 
                   {/* Admin Routes */}
