@@ -14,6 +14,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { BadgeCheck, XCircle, Eye } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -126,45 +129,58 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const data = transactions.map(transaction => ({
-        ID: transaction.id,
-        User: transaction.user_name,
-        Type: transaction.type,
-        Amount: transaction.amount,
-        Status: transaction.status,
-        Date: new Date(transaction.created_at).toLocaleDateString(),
-      }));
-
-      if (exportFormat === 'csv') {
-        const csvContent = [
-          Object.keys(data[0]).join(','),
-          ...data.map(item => Object.values(item).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `transactions_${new Date().toISOString()}.csv`;
-        a.click();
-      } else {
-        // Implement PDF export if needed
-        toast({
-          title: t('Info'),
-          description: t('PDF export not implemented yet'),
-        });
-      }
-
-      setShowExportModal(false);
-    } catch (error) {
-      toast({
-        title: t('Error'),
-        description: t('Failed to export transactions'),
-        variant: 'destructive',
-      });
-    }
+  // Export handlers
+  const handleExportCSV = () => {
+    const data = filteredTransactions.map(transaction => ({
+      ID: transaction.id,
+      User: transaction.user_name,
+      Type: transaction.type,
+      Amount: transaction.amount,
+      Status: transaction.status,
+      Method: transaction.method,
+      Date: new Date(transaction.created_at).toLocaleDateString(),
+    }));
+    const csvContent = [
+      Object.keys(data[0]).join(','),
+      ...data.map(item => Object.values(item).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions_${new Date().toISOString()}.csv`;
+    a.click();
+  };
+  const handleExportExcel = () => {
+    const data = filteredTransactions.map(transaction => ({
+      ID: transaction.id,
+      User: transaction.user_name,
+      Type: transaction.type,
+      Amount: transaction.amount,
+      Status: transaction.status,
+      Method: transaction.method,
+      Date: new Date(transaction.created_at).toLocaleDateString(),
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+    XLSX.writeFile(workbook, `transactions_${new Date().toISOString()}.xlsx`);
+  };
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Transaction History', 14, 16);
+    const tableColumn = ['ID', 'User', 'Type', 'Amount', 'Status', 'Method', 'Date'];
+    const tableRows = filteredTransactions.map(transaction => [
+      transaction.id,
+      transaction.user_name,
+      transaction.type,
+      transaction.amount,
+      transaction.status,
+      transaction.method,
+      new Date(transaction.created_at).toLocaleDateString(),
+    ]);
+    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+    doc.save(`transactions_${new Date().toISOString()}.pdf`);
   };
 
   const getStatusBadge = (status: string) => {
@@ -211,6 +227,11 @@ export default function TransactionsPage() {
     <div className="space-y-4 p-8">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">{t('admin.transactions')}</h2>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
+          <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
+          <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+        </div>
       </div>
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
@@ -343,32 +364,6 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Export Modal */}
-      <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('Export Transactions')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{t('Export Format')}</Label>
-              <Select value={exportFormat} onValueChange={(value: 'csv' | 'pdf') => setExportFormat(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('Select format')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="csv">CSV</SelectItem>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleExport}>
-              {t('Export')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 } 

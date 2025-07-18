@@ -9,6 +9,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Image as ImageIcon } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface DepositRequest {
   id: string;
@@ -151,6 +154,64 @@ export default function DepositRequestsPage() {
   // Reset to first page when filter changes
   useEffect(() => { setPage(1); }, [statusFilter]);
 
+  // Export handlers
+  const handleExportCSV = () => {
+    const data = filtered.map(req => ({
+      'Amount': req.amount,
+      'User Number': req.user_number || req.user_id,
+      'Target Number': req.target_number || '-',
+      'Screenshot': req.screenshot_url ? req.screenshot_url : '-',
+      'Status': req.status,
+      'Date': new Date(req.created_at).toLocaleDateString(),
+    }));
+    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    const csvContent = [
+      Object.keys(data[0]).join(','),
+      ...data.map(item => Object.values(item).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `deposit_requests_${new Date().toISOString()}.csv`;
+    a.click();
+  };
+  const handleExportExcel = () => {
+    const data = filtered.map(req => ({
+      'Amount': req.amount,
+      'User Number': req.user_number || req.user_id,
+      'Target Number': req.target_number || '-',
+      'Screenshot': req.screenshot_url ? req.screenshot_url : '-',
+      'Status': req.status,
+      'Date': new Date(req.created_at).toLocaleDateString(),
+    }));
+    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Deposit Requests');
+    XLSX.writeFile(workbook, `deposit_requests_${new Date().toISOString()}.xlsx`);
+  };
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.text('Deposit Requests', 14, 16);
+      const tableColumn = ['Amount', 'User Number', 'Target Number', 'Screenshot', 'Status', 'Date'];
+      const tableRows = filtered.map(req => [
+        req.amount,
+        req.user_number || req.user_id,
+        req.target_number || '-',
+        req.screenshot_url ? req.screenshot_url : '-',
+        req.status,
+        new Date(req.created_at).toLocaleDateString(),
+      ]);
+      if (tableRows.length === 0) throw new Error('No data to export');
+      autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
+      doc.save(`deposit_requests_${new Date().toISOString()}.pdf`);
+    } catch (err) {
+      toast({ title: t('Error'), description: 'Failed to export PDF: ' + (err.message || err), variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-4 p-4 sm:p-8">
       <Card className="shadow-card w-full bg-background border border-border dark:bg-muted/40 dark:border-muted-foreground/10 rounded-2xl">
@@ -158,6 +219,11 @@ export default function DepositRequestsPage() {
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-primary" />
             {t('deposit.requests') || 'Deposit Requests'}
+            <div className="flex gap-2 ml-auto">
+              <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
+              <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
+              <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>

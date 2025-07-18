@@ -10,6 +10,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function Transactions() {
   const { t } = useLanguage();
@@ -104,6 +107,43 @@ export default function Transactions() {
     return matchesFilter && matchesSearch;
   });
 
+  // Export handlers
+  const handleExportExcel = () => {
+    const data = filteredTransactions.map(txn => ({
+      'ID': txn.id,
+      'Type': txn.type,
+      'Amount': txn.amount,
+      'Status': txn.status,
+      'Date': txn.date,
+      'Description': txn.description,
+      'Method': txn.method,
+      'Rejection Reason': txn.rejectionReason || '',
+      'Admin Note': txn.adminNote || '',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+    XLSX.writeFile(workbook, `transactions_${new Date().toISOString()}.xlsx`);
+  };
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Transaction History', 14, 16);
+    const tableColumn = ['ID', 'Type', 'Amount', 'Status', 'Date', 'Description', 'Method', 'Rejection Reason', 'Admin Note'];
+    const tableRows = filteredTransactions.map(txn => [
+      txn.id,
+      txn.type,
+      txn.amount,
+      txn.status,
+      txn.date,
+      txn.description,
+      txn.method,
+      txn.rejectionReason || '',
+      txn.adminNote || '',
+    ]);
+    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+    doc.save(`transactions_${new Date().toISOString()}.pdf`);
+  };
+
   return (
     <div className="min-h-screen py-20">
       {/* Alert for incomplete account information */}
@@ -125,6 +165,10 @@ export default function Transactions() {
             <p className="text-xl text-muted-foreground">
               {t('transactions.subtitle')}
             </p>
+            <div className="flex gap-2 justify-center mt-4">
+              <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
+              <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+            </div>
           </div>
 
           {/* Filters */}

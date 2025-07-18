@@ -13,6 +13,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function WithdrawalRequestsPage() {
   const { t } = useLanguage();
@@ -269,6 +272,61 @@ export default function WithdrawalRequestsPage() {
     setPackageLimits(newLimits);
   };
 
+  // Export handlers
+  const handleExportCSV = () => {
+    const data = withdrawals.map(w => ({
+      'User': w.user_name,
+      'Amount': w.amount,
+      'Method': w.method,
+      'Status': w.status,
+      'Date': new Date(w.created_at).toLocaleDateString(),
+    }));
+    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    const csvContent = [
+      Object.keys(data[0]).join(','),
+      ...data.map(item => Object.values(item).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `withdrawals_${new Date().toISOString()}.csv`;
+    a.click();
+  };
+  const handleExportExcel = () => {
+    const data = withdrawals.map(w => ({
+      'User': w.user_name,
+      'Amount': w.amount,
+      'Method': w.method,
+      'Status': w.status,
+      'Date': new Date(w.created_at).toLocaleDateString(),
+    }));
+    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Withdrawals');
+    XLSX.writeFile(workbook, `withdrawals_${new Date().toISOString()}.xlsx`);
+  };
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.text('Withdrawal Requests', 14, 16);
+      const tableColumn = ['User', 'Amount', 'Method', 'Status', 'Date'];
+      const tableRows = withdrawals.map(w => [
+        w.user_name,
+        w.amount,
+        w.method,
+        w.status,
+        new Date(w.created_at).toLocaleDateString(),
+      ]);
+      if (tableRows.length === 0) throw new Error('No data to export');
+      autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
+      doc.save(`withdrawals_${new Date().toISOString()}.pdf`);
+    } catch (err) {
+      toast({ title: t('Error'), description: 'Failed to export PDF: ' + (err.message || err), variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-4 p-8">
       <div className="flex justify-between items-center">
@@ -409,8 +467,13 @@ export default function WithdrawalRequestsPage() {
         </DialogContent>
       </Dialog>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <CardTitle>{t('admin.withdrawals.requestsList')}</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
+            <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
+            <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>

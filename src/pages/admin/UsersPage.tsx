@@ -15,6 +15,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Search, Filter, Edit, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface UserInfo {
   user_uid: string;
@@ -226,6 +229,70 @@ export default function UsersPage() {
     fetchUsers();
   };
 
+  // Export handlers
+  const handleExportCSV = () => {
+    const data = filteredUsers.map(u => ({
+      'Name': `${u.first_name} ${u.last_name}`,
+      'Email': u.email,
+      'Phone': u.phone,
+      'Status': u.verified ? 'Verified' : 'Unverified',
+      'Level': u.level,
+      'Balance': u.balance,
+      'Referrals': u.referral_count,
+      'Registration Date': new Date(u.created_at).toLocaleDateString(),
+    }));
+    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    const csvContent = [
+      Object.keys(data[0]).join(','),
+      ...data.map(item => Object.values(item).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users_${new Date().toISOString()}.csv`;
+    a.click();
+  };
+  const handleExportExcel = () => {
+    const data = filteredUsers.map(u => ({
+      'Name': `${u.first_name} ${u.last_name}`,
+      'Email': u.email,
+      'Phone': u.phone,
+      'Status': u.verified ? 'Verified' : 'Unverified',
+      'Level': u.level,
+      'Balance': u.balance,
+      'Referrals': u.referral_count,
+      'Registration Date': new Date(u.created_at).toLocaleDateString(),
+    }));
+    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+    XLSX.writeFile(workbook, `users_${new Date().toISOString()}.xlsx`);
+  };
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.text('User Data', 14, 16);
+      const tableColumn = ['Name', 'Email', 'Phone', 'Status', 'Level', 'Balance', 'Referrals', 'Registration Date'];
+      const tableRows = filteredUsers.map(u => [
+        `${u.first_name} ${u.last_name}`,
+        u.email,
+        u.phone,
+        u.verified ? 'Verified' : 'Unverified',
+        u.level,
+        u.balance,
+        u.referral_count,
+        new Date(u.created_at).toLocaleDateString(),
+      ]);
+      if (tableRows.length === 0) throw new Error('No data to export');
+      autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
+      doc.save(`users_${new Date().toISOString()}.pdf`);
+    } catch (err) {
+      toast({ title: t('Error'), description: 'Failed to export PDF: ' + (err.message || err), variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -303,10 +370,15 @@ export default function UsersPage() {
 
       {/* Users Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <CardTitle>
             {t('admin.users')} ({userCount})
           </CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
+            <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
+            <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loadingUsers ? (
