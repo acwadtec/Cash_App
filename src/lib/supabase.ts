@@ -8,7 +8,109 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Enhanced Supabase client with performance optimizations
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'cash-app-web',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
+
+// Simple in-memory cache for frequently accessed data
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+const getCacheKey = (table: string, query: any): string => {
+  return `${table}:${JSON.stringify(query)}`;
+};
+
+const isExpired = (timestamp: number, ttl: number): boolean => {
+  return Date.now() - timestamp > ttl;
+};
+
+// Optimized query function with caching
+export const optimizedQuery = async <T = any>(
+  table: string,
+  query: any = {},
+  options: { ttl?: number; select?: string } = {}
+): Promise<{ data: T | null; error: any }> => {
+  const { ttl = 5 * 60 * 1000, select = '*' } = options; // 5 minutes default TTL
+  const cacheKey = getCacheKey(table, query);
+
+  // Check cache first
+  const cached = cache.get(cacheKey);
+  if (cached && !isExpired(cached.timestamp, cached.ttl)) {
+    return { data: cached.data as T, error: null };
+  }
+
+  try {
+    let supabaseQuery = supabase.from(table).select(select);
+
+    // Apply query filters
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          supabaseQuery = supabaseQuery.in(key, value);
+        } else {
+          supabaseQuery = supabaseQuery.eq(key, value);
+        }
+      }
+    });
+
+    const { data, error } = await supabaseQuery;
+
+    if (!error && data) {
+      // Cache the result
+      cache.set(cacheKey, {
+        data,
+        timestamp: Date.now(),
+        ttl,
+      });
+    }
+
+    return { data: data as T, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+// Clear cache for specific table or all
+export const clearCache = (table?: string) => {
+  if (table) {
+    for (const key of cache.keys()) {
+      if (key.startsWith(`${table}:`)) {
+        cache.delete(key);
+      }
+    }
+  } else {
+    cache.clear();
+  }
+};
+
+// Optimized batch queries
+export const batchQuery = async <T = any>(
+  queries: Array<{ table: string; query: any; select?: string }>
+): Promise<Array<{ data: T | null; error: any }>> => {
+  const results = await Promise.all(
+    queries.map(({ table, query, select }) =>
+      optimizedQuery<T>(table, query, { select })
+    )
+  );
+  return results;
+};
 
 // Test connection to user_info table
 export const testUserInfoTable = async (): Promise<boolean> => {
@@ -278,23 +380,16 @@ export const accrueDailyOfferProfits = async () => {
     processed.push({ join_id: join.id, user_id: join.user_id, profit: offer.daily_profit });
   }
   return processed;
-}; 
+};
 
-/**
- * Test function to simulate and verify daily profit accrual for offer joins.
- * Logs the processed joins and their profit.
- */
+// Test function for accrueDailyOfferProfits
 export const testAccrueDailyOfferProfits = async () => {
   try {
     const processed = await accrueDailyOfferProfits();
-    if (processed.length === 0) {
-      console.log('No offer joins were due for profit accrual.');
-    } else {
-      console.log('Processed offer joins for daily profit:', processed);
-    }
+    console.log('Processed daily profits:', processed);
     return processed;
   } catch (error) {
-    console.error('Error during daily profit accrual test:', error);
+    console.error('Error testing accrueDailyOfferProfits:', error);
     throw error;
   }
 }; 
