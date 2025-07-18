@@ -17,6 +17,17 @@ interface Offer {
   approved_at?: string;
 }
 
+interface Transaction {
+  id: string;
+  user_id: string;
+  type: string;
+  amount: number;
+  status: string;
+  description: string;
+  created_at: string;
+  source_user_id?: string;
+}
+
 const statusTabs = [
   { label: 'Pending', value: 'pending' },
   { label: 'Active', value: 'active' },
@@ -27,8 +38,20 @@ function getTimeLeftToNextProfit(offer: Offer, now: Date): string {
   const last = offer.last_profit_at || offer.approved_at;
   if (!last) return '-';
   const lastDate = new Date(last);
-  const nextProfit = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
+  const nextProfit = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000); // Exactly 24 hours
   const diff = nextProfit.getTime() - now.getTime();
+  
+  // Debug logging
+  console.log('Debug timer:', {
+    offerId: offer.id,
+    last: last,
+    lastDate: lastDate,
+    nextProfit: nextProfit,
+    now: now,
+    diff: diff,
+    hours: Math.floor(diff / (1000 * 60 * 60))
+  });
+  
   if (diff <= 0) return 'Available now';
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -45,23 +68,30 @@ function getDaysLeft(offer: Offer, now: Date): string {
   return `${days} day${days !== 1 ? 's' : ''}`;
 }
 
-function getTotalProfit(offer: Offer, now: Date): string {
-  if (offer.status !== 'active' || !offer.daily_profit) return '-';
-  const start = offer.approved_at || offer.joined_at;
-  if (!start) return '-';
-  const startDate = new Date(start);
-  const endDate = offer.deadline ? new Date(offer.deadline) : now;
-  const actualEnd = endDate > now ? now : endDate;
-  if (actualEnd < startDate) return '$0';
-  // Number of full days between start and now or deadline
-  const days = Math.floor((actualEnd.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  const total = days * Number(offer.daily_profit);
+function getTotalProfitFromTransactions(transactions: Transaction[], offerId: string): string {
+  // Filter transactions for this specific offer (daily_profit type)
+  const offerTransactions = transactions.filter(t => 
+    t.type === 'daily_profit' && 
+    t.description && 
+    t.description.includes(`offer ${offerId}`)
+  );
+  
+  const total = offerTransactions.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  
+  console.log('Debug transactions for offer:', {
+    offerId: offerId,
+    allTransactions: transactions,
+    offerTransactions: offerTransactions,
+    total: total
+  });
+  
   return `$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 const MyOffers: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('pending');
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [now, setNow] = useState<Date>(new Date());
@@ -76,9 +106,11 @@ const MyOffers: React.FC = () => {
 
   useEffect(() => {
     if (!userId) return;
-    const fetchOffers = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch offers
+      const { data: offersData, error: offersError } = await supabase
         .from('offer_joins')
         .select(`
           id,
@@ -90,30 +122,53 @@ const MyOffers: React.FC = () => {
           offer:offers (id, title, description, amount, cost, daily_profit, monthly_profit, image_url, deadline, active)
         `)
         .eq('user_id', userId);
-      if (error) {
+      
+      // Fetch transactions
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('type', 'daily_profit')
+        .eq('status', 'completed');
+      
+      if (offersError) {
+        console.error('Error fetching offers:', offersError);
         setOffers([]);
-        setLoading(false);
-        return;
+      } else {
+        const mapped = (offersData || []).map((row: any) => ({
+          id: row.offer?.id,
+          title: row.offer?.title,
+          description: row.offer?.description,
+          amount: row.offer?.amount,
+          cost: row.offer?.cost,
+          daily_profit: row.offer?.daily_profit,
+          monthly_profit: row.offer?.monthly_profit,
+          image_url: row.offer?.image_url,
+          deadline: row.offer?.deadline,
+          status: row.status === 'pending' ? 'pending' : (row.offer?.active ? 'active' : 'inactive'),
+          joined_at: row.joined_at,
+          last_profit_at: row.last_profit_at,
+          approved_at: row.approved_at,
+        }));
+        
+        // Debug logging
+        console.log('Raw offers data from database:', offersData);
+        console.log('Mapped offers:', mapped);
+        
+        setOffers(mapped);
       }
-      const mapped = (data || []).map((row: any) => ({
-        id: row.offer?.id,
-        title: row.offer?.title,
-        description: row.offer?.description,
-        amount: row.offer?.amount,
-        cost: row.offer?.cost,
-        daily_profit: row.offer?.daily_profit,
-        monthly_profit: row.offer?.monthly_profit,
-        image_url: row.offer?.image_url,
-        deadline: row.offer?.deadline,
-        status: row.status === 'pending' ? 'pending' : (row.offer?.active ? 'active' : 'inactive'),
-        joined_at: row.joined_at,
-        last_profit_at: row.last_profit_at,
-        approved_at: row.approved_at,
-      }));
-      setOffers(mapped);
+      
+      if (transactionsError) {
+        console.error('Error fetching transactions:', transactionsError);
+        setTransactions([]);
+      } else {
+        console.log('Raw transactions data:', transactionsData);
+        setTransactions(transactionsData || []);
+      }
+      
       setLoading(false);
     };
-    fetchOffers();
+    fetchData();
   }, [userId]);
 
   useEffect(() => {
@@ -159,7 +214,7 @@ const MyOffers: React.FC = () => {
                 <div className="text-xs text-gray-500">Status: {offer.status}</div>
                 <div className="text-xs text-blue-600 mt-1">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
                 <div className="text-xs text-orange-600 mt-1">Days left until offer ends: {getDaysLeft(offer, now)}</div>
-                <div className="text-xs text-green-700 mt-1 font-semibold">Total profit from this offer: {getTotalProfit(offer, now)}</div>
+                <div className="text-xs text-green-700 mt-1 font-semibold">Total profit from this offer: {getTotalProfitFromTransactions(transactions, offer.id)}</div>
               </li>
             ))}
           </ul>

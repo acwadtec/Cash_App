@@ -359,7 +359,7 @@ export const accrueDailyOfferProfits = async () => {
     const last = join.last_profit_at || join.approved_at;
     if (!last) continue;
     const lastDate = new Date(last);
-    if ((now.getTime() - lastDate.getTime()) < 3 * 60 * 1000) continue; // Not due yet (3 minutes for testing)
+    if ((now.getTime() - lastDate.getTime()) < 24 * 60 * 60 * 1000) continue; // Not due yet (24 hours)
     // 2. Get offer's daily profit
     const { data: offer, error: offerError } = await supabase
       .from('offers')
@@ -379,6 +379,18 @@ export const accrueDailyOfferProfits = async () => {
       .from('user_info')
       .update({ balance: newBalance })
       .eq('user_uid', join.user_id);
+    
+    // 3.5. Log the daily profit transaction
+    await supabase
+      .from('transactions')
+      .insert({
+        user_id: join.user_id,
+        type: 'daily_profit',
+        amount: offer.daily_profit,
+        status: 'completed',
+        description: `Daily profit from offer ${join.offer_id}`,
+        created_at: now.toISOString(),
+      });
     // 4. Referral team earnings logic
     let referralEarnings = [];
     let profit = Number(offer.daily_profit || 0);
