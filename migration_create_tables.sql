@@ -115,6 +115,10 @@ CREATE TABLE IF NOT EXISTS offers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Add join_limit and join_count columns to offers table
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS join_limit INTEGER DEFAULT NULL;
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS join_count INTEGER DEFAULT 0;
+
 -- Create badges table
 CREATE TABLE IF NOT EXISTS badges (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

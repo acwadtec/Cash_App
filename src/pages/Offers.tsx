@@ -22,6 +22,8 @@ interface Offer {
   type?: string;
   deadline?: string;
   minAmount?: number;
+  join_limit?: number | null;
+  join_count?: number;
 }
 
 export default function Offers() {
@@ -31,7 +33,8 @@ export default function Offers() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [joinedOffers, setJoinedOffers] = useState<string[]>([]);
+  // Change joinedOffers to an object mapping offerId to status
+  const [joinStatuses, setJoinStatuses] = useState<{ [offerId: string]: string }>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
 
@@ -89,11 +92,19 @@ export default function Offers() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        // Fetch offer_id and status for each join
         const { data: joins } = await supabase
           .from('offer_joins')
-          .select('offer_id')
+          .select('offer_id, status')
           .eq('user_id', user.id);
-        setJoinedOffers(joins ? joins.map(j => j.offer_id) : []);
+        // Map offer_id to status
+        const statusMap: { [offerId: string]: string } = {};
+        if (joins) {
+          joins.forEach((j: any) => {
+            statusMap[j.offer_id] = j.status;
+          });
+        }
+        setJoinStatuses(statusMap);
       }
     };
     fetchUserAndJoins();
@@ -104,6 +115,20 @@ export default function Offers() {
       toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
       return;
     }
+    // Fetch offer details including join_limit and join_count
+    const { data: offer, error: offerError } = await supabase
+      .from('offers')
+      .select('cost, join_limit, join_count')
+      .eq('id', offerId)
+      .single();
+    if (offerError || !offer) {
+      toast({ title: 'Error', description: 'Could not fetch offer details.', variant: 'destructive' });
+      return;
+    }
+    if (offer.join_limit !== null && offer.join_count >= offer.join_limit) {
+      toast({ title: 'Error', description: 'This offer is fully booked.', variant: 'destructive' });
+      return;
+    }
     // Fetch user balance
     const { data: userInfo, error: userError } = await supabase
       .from('user_info')
@@ -112,16 +137,6 @@ export default function Offers() {
       .single();
     if (userError || !userInfo) {
       toast({ title: 'Error', description: 'Could not fetch user balance.', variant: 'destructive' });
-      return;
-    }
-    // Fetch offer cost
-    const { data: offer, error: offerError } = await supabase
-      .from('offers')
-      .select('cost')
-      .eq('id', offerId)
-      .single();
-    if (offerError || !offer) {
-      toast({ title: 'Error', description: 'Could not fetch offer cost.', variant: 'destructive' });
       return;
     }
     const cost = Number(offer.cost) || 0;
@@ -153,10 +168,12 @@ export default function Offers() {
     const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId, status: 'pending', approved_at: now, last_profit_at: now }]);
     if (error) {
       toast({ title: 'Error', description: 'Failed to join offer.', variant: 'destructive' });
-    } else {
-      toast({ title: 'Success', description: 'Your join request is pending admin approval.' });
-      setJoinedOffers(prev => [...prev, offerId]);
+      return;
     }
+    // Increment join_count for the offer
+    await supabase.from('offers').update({ join_count: offer.join_count + 1 }).eq('id', offerId);
+    toast({ title: 'Success', description: 'Your join request is pending admin approval.' });
+    setJoinStatuses(prev => ({ ...prev, [offerId]: 'pending' }));
   };
 
   const getTypeColor = (type: string) => {
@@ -198,19 +215,30 @@ export default function Offers() {
             {offers.map((offer) => (
               <Card key={offer.id} className="shadow-card hover:shadow-glow transition-all duration-300">
                 <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    {offer.type && (
-                      <Badge className={getTypeColor(offer.type)}>
-                        {t(`offers.${offer.type}`) || offer.type}
-                      </Badge>
-                    )}
-                    <span className="text-2xl font-bold text-primary">
-                      {offer.amount}
-                    </span>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      {offer.type && (
+                        <Badge className={getTypeColor(offer.type)}>
+                          {t(`offers.${offer.type}`) || offer.type}
+                        </Badge>
+                      )}
+                      <CardTitle className="text-xl font-bold">
+                        {offer.title}
+                      </CardTitle>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-2xl font-bold text-primary">{offer.amount}</span>
+                      {offer.join_limit !== null && (
+                        offer.join_count >= (offer.join_limit || 0) ? (
+                          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 mt-1">Fully Booked</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 mt-1">
+                            {Math.max(0, (offer.join_limit || 0) - (offer.join_count || 0))} / {offer.join_limit} slots
+                          </Badge>
+                        )
+                      )}
+                    </div>
                   </div>
-                  <CardTitle className="text-xl">
-                    {offer.title}
-                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <img
@@ -255,11 +283,19 @@ export default function Offers() {
                     )}
                   </div>
                   <Button
-                    className="w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
+                    className={`w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 ${offer.join_limit !== null && offer.join_count >= offer.join_limit ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
                     onClick={() => handleJoinOffer(offer.id)}
-                    disabled={joinedOffers.includes(offer.id)}
+                    disabled={joinStatuses[offer.id] === 'approved' || joinStatuses[offer.id] === 'pending' || (offer.join_limit !== null && offer.join_count >= offer.join_limit)}
                   >
-                    {joinedOffers.includes(offer.id) ? t('offers.joined') : t('offers.join')}
+                    {joinStatuses[offer.id] === 'approved'
+                      ? t('offers.joined')
+                      : joinStatuses[offer.id] === 'pending'
+                        ? t('offers.pendingApproval') || 'Pending Approval'
+                        : joinStatuses[offer.id] === 'rejected'
+                          ? t('offers.rejected') || 'Request Rejected'
+                          : (offer.join_limit !== null && offer.join_count >= offer.join_limit)
+                            ? 'Fully Booked'
+                            : t('offers.join')}
                   </Button>
                 </CardContent>
               </Card>

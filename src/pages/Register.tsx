@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
   const { t } = useLanguage();
@@ -18,9 +19,12 @@ export default function Register() {
     email: '',
     password: '',
     referralCode: '',
+    passwordConfirm: '',
   });
   const [referrerInfo, setReferrerInfo] = useState<any>(null);
   const [loadingReferrer, setLoadingReferrer] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
   useEffect(() => {
     if (localStorage.getItem('cash-logged-in')) {
@@ -96,6 +100,14 @@ export default function Register() {
       toast({
         title: t('common.error'),
         description: t('register.required'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (formData.password !== formData.passwordConfirm) {
+      toast({
+        title: t('common.error'),
+        description: t('register.passwordsDontMatch') || 'Passwords do not match',
         variant: 'destructive',
       });
       return;
@@ -304,15 +316,47 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">{t('register.password') || t('login.password') || 'Password'}</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  className="h-12"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    className="h-12 pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((v) => !v)}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passwordConfirm">{t('register.passwordConfirm') || 'Confirm Password'}</Label>
+                <div className="relative">
+                  <Input
+                    id="passwordConfirm"
+                    name="passwordConfirm"
+                    type={showPasswordConfirm ? 'text' : 'password'}
+                    value={formData.passwordConfirm}
+                    onChange={handleInputChange}
+                    required
+                    className="h-12 pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground"
+                    tabIndex={-1}
+                    onClick={() => setShowPasswordConfirm((v) => !v)}
+                  >
+                    {showPasswordConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
               
               {/* Referral Code Field */}
