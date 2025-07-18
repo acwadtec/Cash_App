@@ -689,6 +689,7 @@ const translations = {
     'help.liveChat': 'الدردشة المباشرة',
     // Offers Additional
     'offers.joined': 'تم الانضمام',
+    'offers.notJoined': 'لم ينضم',
     'offers.rejected': 'تم رفض الطلب',
     'offers.pendingApproval': 'بانتظار الموافقة',
     'offers.cost': 'التكلفة:',
@@ -1500,6 +1501,7 @@ const translations = {
     'help.liveChat': 'Live Chat',
     // Offers Additional
     'offers.joined': 'Joined',
+    'offers.notJoined': 'Not Joined',
     'offers.rejected': 'Request Rejected',
     'offers.pendingApproval': 'Pending Approval',
     'offers.cost': 'Cost:',
