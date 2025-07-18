@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useEffect, useState } from 'react';
-import { supabase, checkIfUserIsAdmin, testAccrueDailyOfferProfits } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin, testAccrueDailyOfferProfits, testAccrueMonthlyOfferProfits } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
@@ -22,20 +22,6 @@ interface Offer {
   type?: string;
   deadline?: string;
   minAmount?: number;
-}
-
-function TestProfitButton() {
-  const handleTest = async () => {
-    const result = await testAccrueDailyOfferProfits();
-    console.log('Profit accrual result:', result);
-    alert('Check the console for profit accrual results!');
-  };
-
-  return (
-    <button onClick={handleTest} style={{ margin: '16px', padding: '8px', background: '#4f46e5', color: 'white', borderRadius: '4px' }}>
-      Test Daily Profit Accrual
-    </button>
-  );
 }
 
 export default function Offers() {
@@ -184,7 +170,7 @@ export default function Offers() {
 
   return (
     <div className="min-h-screen py-20">
-      <TestProfitButton />
+      {/* Removed test buttons for profit accrual */}
       {/* Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">

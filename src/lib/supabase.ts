@@ -420,14 +420,100 @@ export const accrueDailyOfferProfits = async () => {
   return processed;
 };
 
-// Test function for accrueDailyOfferProfits
-export const testAccrueDailyOfferProfits = async () => {
-  try {
-    const processed = await accrueDailyOfferProfits();
-    console.log('Processed daily profits:', processed);
-    return processed;
-  } catch (error) {
-    console.error('Error testing accrueDailyOfferProfits:', error);
-    throw error;
+/**
+ * Accrues both daily and monthly profits for all approved offer joins that are due.
+ * Intended to be called from a backend job or scheduled function.
+ * Returns a summary of both daily and monthly processed joins.
+ */
+export const accrueAllOfferProfits = async () => {
+  const daily = await accrueDailyOfferProfits();
+  const monthly = await accrueMonthlyOfferProfits();
+  return { daily, monthly };
+};
+
+/**
+ * Accrues monthly profit for all approved offer joins that are due (30 days since last monthly profit or approval).
+ * Adds the offer's monthly_profit to the user's balance and updates last_monthly_profit_at.
+ * Returns a summary of processed joins for testing.
+ */
+export const accrueMonthlyOfferProfits = async () => {
+  const now = new Date();
+  // 1. Get all approved offer joins
+  const { data: joins, error: joinsError } = await supabase
+    .from('offer_joins')
+    .select('id, user_id, offer_id, approved_at, last_monthly_profit_at, status')
+    .eq('status', 'approved');
+  if (joinsError) throw joinsError;
+  const processed = [];
+  // Preload all user_info for referral lookups
+  const { data: allUsers, error: allUsersError } = await supabase
+    .from('user_info')
+    .select('user_uid, referral_code, referred_by, team_earnings');
+  if (allUsersError) throw allUsersError;
+  const userMap = new Map(allUsers.map(u => [u.user_uid, u]));
+  const codeMap = new Map(allUsers.map(u => [u.referral_code, u]));
+  for (const join of joins) {
+    const last = join.last_monthly_profit_at || join.approved_at;
+    if (!last) continue;
+    const lastDate = new Date(last);
+    // Check if 30 days (2592000000 ms) have passed
+    if ((now.getTime() - lastDate.getTime()) < 30 * 24 * 60 * 60 * 1000) continue;
+    // 2. Get offer's monthly profit
+    const { data: offer, error: offerError } = await supabase
+      .from('offers')
+      .select('monthly_profit')
+      .eq('id', join.offer_id)
+      .single();
+    if (offerError || !offer) continue;
+    // 3. Add to user balance
+    const { data: user, error: userError } = await supabase
+      .from('user_info')
+      .select('balance')
+      .eq('user_uid', join.user_id)
+      .single();
+    if (userError || !user) continue;
+    const newBalance = (user.balance || 0) + (offer.monthly_profit || 0);
+    await supabase
+      .from('user_info')
+      .update({ balance: newBalance })
+      .eq('user_uid', join.user_id);
+    // 4. Referral team earnings logic (same as daily, but for monthly profit)
+    let referralEarnings = [];
+    let profit = Number(offer.monthly_profit || 0);
+    let currentUser = userMap.get(join.user_id);
+    let level = 1;
+    let percentages = [0.03, 0.02, 0.01];
+    while (currentUser && currentUser.referred_by && level <= 3) {
+      const referrer = codeMap.get(currentUser.referred_by);
+      if (!referrer) break;
+      const percent = percentages[level - 1];
+      const earning = profit * percent;
+      const newTeamEarnings = Number(referrer.team_earnings || 0) + earning;
+      await supabase
+        .from('user_info')
+        .update({ team_earnings: newTeamEarnings })
+        .eq('user_uid', referrer.user_uid);
+      // Log transaction for team earnings
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: referrer.user_uid,
+          type: 'team_earnings',
+          amount: earning,
+          status: 'completed',
+          description: `Team earnings from referral level ${level} (monthly)` ,
+          created_at: now.toISOString(),
+        });
+      referralEarnings.push({ level, referrer_id: referrer.user_uid, earning });
+      currentUser = referrer;
+      level++;
+    }
+    // 5. Update last_monthly_profit_at
+    await supabase
+      .from('offer_joins')
+      .update({ last_monthly_profit_at: now.toISOString() })
+      .eq('id', join.id);
+    processed.push({ join_id: join.id, user_id: join.user_id, profit: offer.monthly_profit, referralEarnings });
   }
+  return processed;
 }; 

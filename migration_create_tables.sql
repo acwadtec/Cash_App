@@ -239,3 +239,6 @@ ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pen
 -- Add approved_at and last_profit_at columns to offer_joins for profit scheduling
 ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
 ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS last_profit_at TIMESTAMP; 
+
+-- Add last_monthly_profit_at column to offer_joins for monthly profit scheduling
+ALTER TABLE offer_joins ADD COLUMN IF NOT EXISTS last_monthly_profit_at TIMESTAMP; 
