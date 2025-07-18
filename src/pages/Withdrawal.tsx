@@ -143,6 +143,21 @@ export default function Withdrawal() {
     };
   }
 
+  // Helper to check if all offers are past their deadline
+  const [offers, setOffers] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchOffers = async () => {
+      const { data } = await supabase.from('offers').select('deadline').eq('active', true);
+      setOffers(data || []);
+    };
+    fetchOffers();
+  }, []);
+  const isAfterAllDeadlines = () => {
+    if (!offers.length) return false;
+    const now = new Date();
+    return offers.every(o => o.deadline && new Date(o.deadline) < now);
+  };
+
   // Fetch user info and package on mount
   useEffect(() => {
     const loadData = async () => {
@@ -281,6 +296,25 @@ export default function Withdrawal() {
       toast({
         title: t('withdrawal.error.limit'),
         description: limitCheck.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check max withdrawal amount
+    if (amount > 6000) {
+      toast({
+        title: t('withdrawal.error.maxAmount'),
+        description: 'Maximum withdrawal per request is 6000.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Check if after offer deadline
+    if (!isAfterAllDeadlines()) {
+      toast({
+        title: t('withdrawal.error.limit'),
+        description: 'Withdrawals are only allowed after the offer deadline has passed.',
         variant: 'destructive',
       });
       return;
@@ -512,7 +546,7 @@ export default function Withdrawal() {
                         <Button 
                           type="submit" 
                           className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
-                          disabled={!isWithinTimeSlot() || loading}
+                          disabled={!isWithinTimeSlot() || loading || !isAfterAllDeadlines()}
                         >
                           {loading ? t('common.loading') : t('withdrawal.submit')}
                         </Button>
