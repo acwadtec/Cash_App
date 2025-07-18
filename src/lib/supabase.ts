@@ -348,11 +348,18 @@ export const accrueDailyOfferProfits = async () => {
     .eq('status', 'approved');
   if (joinsError) throw joinsError;
   const processed = [];
+  // Preload all user_info for referral lookups
+  const { data: allUsers, error: allUsersError } = await supabase
+    .from('user_info')
+    .select('user_uid, referral_code, referred_by, team_earnings');
+  if (allUsersError) throw allUsersError;
+  const userMap = new Map(allUsers.map(u => [u.user_uid, u]));
+  const codeMap = new Map(allUsers.map(u => [u.referral_code, u]));
   for (const join of joins) {
     const last = join.last_profit_at || join.approved_at;
     if (!last) continue;
     const lastDate = new Date(last);
-    if ((now.getTime() - lastDate.getTime()) < 24 * 60 * 60 * 1000) continue; // Not due yet
+    if ((now.getTime() - lastDate.getTime()) < 3 * 60 * 1000) continue; // Not due yet (3 minutes for testing)
     // 2. Get offer's daily profit
     const { data: offer, error: offerError } = await supabase
       .from('offers')
@@ -372,12 +379,43 @@ export const accrueDailyOfferProfits = async () => {
       .from('user_info')
       .update({ balance: newBalance })
       .eq('user_uid', join.user_id);
-    // 4. Update last_profit_at
+    // 4. Referral team earnings logic
+    let referralEarnings = [];
+    let profit = Number(offer.daily_profit || 0);
+    let currentUser = userMap.get(join.user_id);
+    let level = 1;
+    let percentages = [0.03, 0.02, 0.01];
+    while (currentUser && currentUser.referred_by && level <= 3) {
+      const referrer = codeMap.get(currentUser.referred_by);
+      if (!referrer) break;
+      const percent = percentages[level - 1];
+      const earning = profit * percent;
+      const newTeamEarnings = Number(referrer.team_earnings || 0) + earning;
+      await supabase
+        .from('user_info')
+        .update({ team_earnings: newTeamEarnings })
+        .eq('user_uid', referrer.user_uid);
+      // Log transaction for team earnings
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: referrer.user_uid,
+          type: 'team_earnings',
+          amount: earning,
+          status: 'completed',
+          description: `Team earnings from referral level ${level}`,
+          created_at: now.toISOString(),
+        });
+      referralEarnings.push({ level, referrer_id: referrer.user_uid, earning });
+      currentUser = referrer;
+      level++;
+    }
+    // 5. Update last_profit_at
     await supabase
       .from('offer_joins')
       .update({ last_profit_at: now.toISOString() })
       .eq('id', join.id);
-    processed.push({ join_id: join.id, user_id: join.user_id, profit: offer.daily_profit });
+    processed.push({ join_id: join.id, user_id: join.user_id, profit: offer.daily_profit, referralEarnings });
   }
   return processed;
 };

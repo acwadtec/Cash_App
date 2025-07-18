@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Badge } from '@/components/ui/badge';
 
 export default function ReferralNetwork() {
   const { t, isRTL } = useLanguage();
@@ -10,6 +11,7 @@ export default function ReferralNetwork() {
   const [level1Referrals, setLevel1Referrals] = useState<any[]>([]);
   const [level2Referrals, setLevel2Referrals] = useState<any[]>([]);
   const [level3Referrals, setLevel3Referrals] = useState<any[]>([]);
+  const [teamEarnings, setTeamEarnings] = useState<{[level: string]: number}>({});
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -22,6 +24,21 @@ export default function ReferralNetwork() {
         .eq('user_uid', userData.user.id)
         .single();
       if (data) setUserInfo(data);
+      // Fetch team earnings breakdown
+      const { data: txns, error: txnError } = await supabase
+        .from('transactions')
+        .select('amount, description')
+        .eq('user_id', userData.user.id)
+        .eq('type', 'team_earnings');
+      if (txns) {
+        const earnings: {[level: string]: number} = { '1': 0, '2': 0, '3': 0 };
+        for (const txn of txns) {
+          const match = txn.description && txn.description.match(/level (\d)/);
+          const level = match ? match[1] : '1';
+          earnings[level] = (earnings[level] || 0) + Number(txn.amount || 0);
+        }
+        setTeamEarnings(earnings);
+      }
     };
     fetchUser();
   }, []);
@@ -109,6 +126,21 @@ export default function ReferralNetwork() {
                 <CardTitle className="text-foreground">{t('referral.networkTitle') || 'Referral Network'}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Team Earnings Breakdown */}
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-success/10 rounded-lg">
+                    <div className="text-lg font-bold text-success">{teamEarnings['1']?.toFixed(2) || '0.00'} EGP</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 Earnings'}</div>
+                  </div>
+                  <div className="text-center p-4 bg-primary/10 rounded-lg">
+                    <div className="text-lg font-bold text-primary">{teamEarnings['2']?.toFixed(2) || '0.00'} EGP</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level2') || 'Level 2 Earnings'}</div>
+                  </div>
+                  <div className="text-center p-4 bg-warning/10 rounded-lg">
+                    <div className="text-lg font-bold text-warning">{teamEarnings['3']?.toFixed(2) || '0.00'} EGP</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3 Earnings'}</div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                   <div className="text-center p-4 bg-success/10 rounded-lg">
                     <div className="text-2xl font-bold text-success">{level1Referrals.length}</div>

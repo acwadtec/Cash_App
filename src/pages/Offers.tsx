@@ -118,6 +118,51 @@ export default function Offers() {
       toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
       return;
     }
+    // Fetch user balance
+    const { data: userInfo, error: userError } = await supabase
+      .from('user_info')
+      .select('balance')
+      .eq('user_uid', userId)
+      .single();
+    if (userError || !userInfo) {
+      toast({ title: 'Error', description: 'Could not fetch user balance.', variant: 'destructive' });
+      return;
+    }
+    // Fetch offer cost
+    const { data: offer, error: offerError } = await supabase
+      .from('offers')
+      .select('cost')
+      .eq('id', offerId)
+      .single();
+    if (offerError || !offer) {
+      toast({ title: 'Error', description: 'Could not fetch offer cost.', variant: 'destructive' });
+      return;
+    }
+    const cost = Number(offer.cost) || 0;
+    if (userInfo.balance < cost) {
+      toast({ title: 'Error', description: 'Insufficient balance to join this offer.', variant: 'destructive' });
+      return;
+    }
+    // Subtract cost from user balance
+    const newBalance = userInfo.balance - cost;
+    const { error: updateError } = await supabase
+      .from('user_info')
+      .update({ balance: newBalance })
+      .eq('user_uid', userId);
+    if (updateError) {
+      toast({ title: 'Error', description: 'Failed to update balance.', variant: 'destructive' });
+      return;
+    }
+    // Log transaction for capital deposit (offer buy-in)
+    await supabase.from('transactions').insert({
+      user_id: userId,
+      type: 'capital_deposit',
+      amount: cost,
+      status: 'completed',
+      description: `Capital deposit for joining offer`,
+      created_at: new Date().toISOString(),
+    });
+    // Insert join record
     const now = new Date().toISOString();
     const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId, status: 'pending', approved_at: now, last_profit_at: now }]);
     if (error) {
