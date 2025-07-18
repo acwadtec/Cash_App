@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/use-debounce';
 
 // Services
 import { supabase } from '@/lib/supabase';
@@ -64,8 +65,28 @@ export default function NotificationsPage() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<any[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const debouncedUserSearch = useDebounce(userSearch, 300);
 
   useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => {
+    if (notificationData.target === 'user' && debouncedUserSearch.length >= 2) {
+      setUserSearchLoading(true);
+      supabase
+        .from('user_info')
+        .select('user_uid, first_name, last_name, phone, email')
+        .or(`first_name.ilike.%${debouncedUserSearch}%,last_name.ilike.%${debouncedUserSearch}%,phone.ilike.%${debouncedUserSearch}%,email.ilike.%${debouncedUserSearch}%`)
+        .limit(10)
+        .then(({ data }) => {
+          setUserResults(data || []);
+          setUserSearchLoading(false);
+        });
+    } else {
+      setUserResults([]);
+    }
+  }, [debouncedUserSearch, notificationData.target]);
 
   const fetchNotifications = async () => {
       setLoadingNotifications(true);
@@ -191,12 +212,32 @@ export default function NotificationsPage() {
                   <option value="user">{t('admin.notifications.target.user')}</option>
                 </select>
                 {notificationData.target === 'user' && (
-              <Input
-                    value={notificationData.targetValue}
-                    onChange={e => setNotificationData(prev => ({ ...prev, targetValue: e.target.value }))}
-                    placeholder={t('admin.notifications.target.placeholder')}
-                    className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
-                  />
+                  <div className="relative">
+                    <Input
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                      placeholder="Search by name, phone, or email"
+                      className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                    />
+                    {userSearchLoading && <div className="absolute right-2 top-2 text-xs text-muted-foreground">Loading...</div>}
+                    {userResults.length > 0 && (
+                      <div className="absolute z-10 bg-card border border-border rounded shadow w-full mt-1 max-h-48 overflow-y-auto">
+                        {userResults.map(user => (
+                          <div
+                            key={user.user_uid}
+                            className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                            onClick={() => {
+                              setNotificationData(prev => ({ ...prev, targetValue: user.user_uid }));
+                              setUserSearch(`${user.first_name || ''} ${user.last_name || ''} (${user.phone || user.email})`);
+                              setUserResults([]);
+                            }}
+                          >
+                            <span className="font-medium">{user.first_name} {user.last_name}</span> <span className="text-muted-foreground">{user.phone || user.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
             </div>
               <div className="flex items-center gap-2">

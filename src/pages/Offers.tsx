@@ -24,6 +24,7 @@ interface Offer {
   minAmount?: number;
   join_limit?: number | null;
   join_count?: number;
+  user_join_limit?: number | null;
 }
 
 export default function Offers() {
@@ -35,6 +36,8 @@ export default function Offers() {
   const { toast } = useToast();
   // Change joinedOffers to an object mapping offerId to status
   const [joinStatuses, setJoinStatuses] = useState<{ [offerId: string]: string }>({});
+  // Track how many times the user has joined each offer
+  const [userJoinCounts, setUserJoinCounts] = useState<{ [offerId: string]: number }>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
 
@@ -97,14 +100,17 @@ export default function Offers() {
           .from('offer_joins')
           .select('offer_id, status')
           .eq('user_id', user.id);
-        // Map offer_id to status
+        // Map offer_id to status and count
         const statusMap: { [offerId: string]: string } = {};
+        const countMap: { [offerId: string]: number } = {};
         if (joins) {
           joins.forEach((j: any) => {
             statusMap[j.offer_id] = j.status;
+            countMap[j.offer_id] = (countMap[j.offer_id] || 0) + 1;
           });
         }
         setJoinStatuses(statusMap);
+        setUserJoinCounts(countMap);
       }
     };
     fetchUserAndJoins();
@@ -115,14 +121,20 @@ export default function Offers() {
       toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
       return;
     }
-    // Fetch offer details including join_limit and join_count
+    // Fetch offer details including join_limit, join_count, and user_join_limit
     const { data: offer, error: offerError } = await supabase
       .from('offers')
-      .select('cost, join_limit, join_count')
+      .select('cost, join_limit, join_count, user_join_limit')
       .eq('id', offerId)
       .single();
     if (offerError || !offer) {
       toast({ title: 'Error', description: 'Could not fetch offer details.', variant: 'destructive' });
+      return;
+    }
+    // Check per-user join limit
+    const userJoins = userJoinCounts[offerId] || 0;
+    if (offer.user_join_limit && userJoins >= offer.user_join_limit) {
+      toast({ title: 'Error', description: `You have reached the maximum number of joins for this offer (${offer.user_join_limit}).`, variant: 'destructive' });
       return;
     }
     if (offer.join_limit !== null && offer.join_count >= offer.join_limit) {
@@ -174,6 +186,8 @@ export default function Offers() {
     await supabase.from('offers').update({ join_count: offer.join_count + 1 }).eq('id', offerId);
     toast({ title: 'Success', description: 'Your join request is pending admin approval.' });
     setJoinStatuses(prev => ({ ...prev, [offerId]: 'pending' }));
+    // After successful join, update userJoinCounts
+    setUserJoinCounts(prev => ({ ...prev, [offerId]: (prev[offerId] || 0) + 1 }));
   };
 
   const getTypeColor = (type: string) => {
@@ -285,18 +299,22 @@ export default function Offers() {
                   <Button
                     className={`w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 ${offer.join_limit !== null && offer.join_count >= offer.join_limit ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
                     onClick={() => handleJoinOffer(offer.id)}
-                    disabled={joinStatuses[offer.id] === 'approved' || joinStatuses[offer.id] === 'pending' || (offer.join_limit !== null && offer.join_count >= offer.join_limit)}
+                    disabled={
+                      (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit) ||
+                      (offer.join_limit !== null && offer.join_count >= offer.join_limit)
+                    }
                   >
-                    {joinStatuses[offer.id] === 'approved'
-                      ? t('offers.joined')
-                      : joinStatuses[offer.id] === 'pending'
-                        ? t('offers.pendingApproval') || 'Pending Approval'
-                        : joinStatuses[offer.id] === 'rejected'
-                          ? t('offers.rejected') || 'Request Rejected'
-                          : (offer.join_limit !== null && offer.join_count >= offer.join_limit)
-                            ? 'Fully Booked'
-                            : t('offers.join')}
+                    {(offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit)
+                      ? `Max joined (${offer.user_join_limit})`
+                      : (offer.join_limit !== null && offer.join_count >= offer.join_limit)
+                        ? 'Fully Booked'
+                        : t('offers.join')}
                   </Button>
+                  {offer.user_join_limit && (
+                    <div className="text-xs text-muted-foreground mt-1 text-center">
+                      Joined {userJoinCounts[offer.id] || 0} / {offer.user_join_limit} times
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

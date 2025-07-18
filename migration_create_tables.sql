@@ -119,6 +119,9 @@ CREATE TABLE IF NOT EXISTS offers (
 ALTER TABLE offers ADD COLUMN IF NOT EXISTS join_limit INTEGER DEFAULT NULL;
 ALTER TABLE offers ADD COLUMN IF NOT EXISTS join_count INTEGER DEFAULT 0;
 
+-- Add user_join_limit column to offers table for per-user join limit
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS user_join_limit INTEGER DEFAULT 1;
+
 -- Create badges table
 CREATE TABLE IF NOT EXISTS badges (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

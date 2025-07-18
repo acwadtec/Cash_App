@@ -40,7 +40,8 @@ export default function ManageOffersPage() {
     daily_profit: '',
     monthly_profit: '',
     deadline: '',
-    join_limit: ''
+    join_limit: '',
+    user_join_limit: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -98,7 +99,8 @@ export default function ManageOffersPage() {
         daily_profit: offer.daily_profit?.toString() || '',
         monthly_profit: offer.monthly_profit?.toString() || '',
         deadline: offer.deadline || '',
-        join_limit: offer.join_limit?.toString() || ''
+        join_limit: offer.join_limit?.toString() || '',
+        user_join_limit: offer.user_join_limit?.toString() || '1'
       });
       setImagePreview(offer.image_url || '');
       setImageFile(null);
@@ -112,7 +114,8 @@ export default function ManageOffersPage() {
         daily_profit: '',
         monthly_profit: '',
         deadline: '',
-        join_limit: ''
+        join_limit: '',
+        user_join_limit: '1'
       });
       setImagePreview('');
       setImageFile(null);
@@ -150,6 +153,7 @@ export default function ManageOffersPage() {
         daily_profit: Number(form.daily_profit) || 0,
         monthly_profit: Number(form.monthly_profit) || 0,
         join_limit: form.join_limit !== '' ? Number(form.join_limit) : null,
+        user_join_limit: form.user_join_limit !== '' ? Number(form.user_join_limit) : 1,
         image_url: imageUrl,
         deadline: form.deadline || null
       };
@@ -169,6 +173,7 @@ export default function ManageOffersPage() {
         daily_profit: Number(form.daily_profit) || 0,
         monthly_profit: Number(form.monthly_profit) || 0,
         join_limit: form.join_limit !== '' ? Number(form.join_limit) : null,
+        user_join_limit: form.user_join_limit !== '' ? Number(form.user_join_limit) : 1,
         deadline: form.deadline || null,
         image_url: null
       }
@@ -466,6 +471,20 @@ export default function ManageOffersPage() {
                         className="mt-1"
                         placeholder="Number of slots (leave blank for unlimited)"
                         min="0"
+                        step="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="user_join_limit" className="text-sm font-medium">Max Joins Per User</Label>
+                      <Input 
+                        id="user_join_limit" 
+                        name="user_join_limit" 
+                        type="number" 
+                        value={form.user_join_limit}
+                        onChange={handleChange}
+                        className="mt-1"
+                        placeholder="Max times a user can join (default 1)"
+                        min="1"
                         step="1"
                       />
                     </div>
