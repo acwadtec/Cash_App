@@ -24,6 +24,7 @@ interface Offer {
   image_url?: string;
   active: boolean;
   deadline?: string;
+  join_limit?: number;
 }
 
 export default function ManageOffersPage() {
@@ -38,7 +39,8 @@ export default function ManageOffersPage() {
     cost: '',
     daily_profit: '',
     monthly_profit: '',
-    deadline: '' 
+    deadline: '',
+    join_limit: ''
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -95,7 +97,8 @@ export default function ManageOffersPage() {
         cost: offer.cost?.toString() || '',
         daily_profit: offer.daily_profit?.toString() || '',
         monthly_profit: offer.monthly_profit?.toString() || '',
-        deadline: offer.deadline || '' 
+        deadline: offer.deadline || '',
+        join_limit: offer.join_limit?.toString() || ''
       });
       setImagePreview(offer.image_url || '');
       setImageFile(null);
@@ -108,7 +111,8 @@ export default function ManageOffersPage() {
         cost: '',
         daily_profit: '',
         monthly_profit: '',
-        deadline: '' 
+        deadline: '',
+        join_limit: ''
       });
       setImagePreview('');
       setImageFile(null);
@@ -145,6 +149,7 @@ export default function ManageOffersPage() {
         cost: Number(form.cost) || 0,
         daily_profit: Number(form.daily_profit) || 0,
         monthly_profit: Number(form.monthly_profit) || 0,
+        join_limit: form.join_limit !== '' ? Number(form.join_limit) : null,
         image_url: imageUrl,
         deadline: form.deadline || null
       };
@@ -163,6 +168,7 @@ export default function ManageOffersPage() {
         cost: Number(form.cost) || 0,
         daily_profit: Number(form.daily_profit) || 0,
         monthly_profit: Number(form.monthly_profit) || 0,
+        join_limit: form.join_limit !== '' ? Number(form.join_limit) : null,
         deadline: form.deadline || null,
         image_url: null
       }
@@ -446,6 +452,21 @@ export default function ManageOffersPage() {
                         value={form.deadline} 
                         onChange={handleChange} 
                         className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="join_limit" className="text-sm font-medium">Number of Slots</Label>
+                      <Input 
+                        id="join_limit" 
+                        name="join_limit" 
+                        type="number" 
+                        value={form.join_limit} 
+                        onChange={handleChange} 
+                        className="mt-1"
+                        placeholder="Number of slots (leave blank for unlimited)"
+                        min="0"
+                        step="1"
                       />
                     </div>
 

@@ -358,6 +358,8 @@ const translations = {
     'register.login': 'تسجيل الدخول',
     'register.required': 'جميع الحقول مطلوبة',
     'register.success': 'تم إرسال طلب التسجيل بنجاح',
+    'register.passwordConfirm': 'تأكيد كلمة المرور',
+    'register.passwordsDontMatch': 'كلمتا المرور غير متطابقتين',
     
     // Common
     'common.loading': 'جاري التحميل...',
@@ -687,6 +689,8 @@ const translations = {
     'help.liveChat': 'الدردشة المباشرة',
     // Offers Additional
     'offers.joined': 'تم الانضمام',
+    'offers.rejected': 'تم رفض الطلب',
+    'offers.pendingApproval': 'بانتظار الموافقة',
     'offers.cost': 'التكلفة:',
     'offers.dailyProfit': 'الربح اليومي:',
     'offers.monthlyProfit': 'الربح الشهري:',
@@ -1168,6 +1172,8 @@ const translations = {
     'register.login': 'Login',
     'register.required': 'All fields are required',
     'register.success': 'Registration request submitted successfully',
+    'register.passwordConfirm': 'Confirm Password',
+    'register.passwordsDontMatch': 'Passwords do not match',
     
     // Common
     'common.loading': 'Loading...',
@@ -1494,6 +1500,8 @@ const translations = {
     'help.liveChat': 'Live Chat',
     // Offers Additional
     'offers.joined': 'Joined',
+    'offers.rejected': 'Request Rejected',
+    'offers.pendingApproval': 'Pending Approval',
     'offers.cost': 'Cost:',
     'offers.dailyProfit': 'Daily Profit:',
     'offers.monthlyProfit': 'Monthly Profit:',
