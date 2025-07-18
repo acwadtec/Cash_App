@@ -297,18 +297,29 @@ export default function Offers() {
                     )}
                   </div>
                   <Button
-                    className={`w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 ${offer.join_limit !== null && offer.join_count >= offer.join_limit ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''}`}
+                    className={`w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 ${
+                      joinStatuses[offer.id] === 'rejected' ? 'bg-red-500 hover:bg-red-600 text-white' :
+                      joinStatuses[offer.id] === 'approved' ? 'bg-green-500 hover:bg-green-600 text-white' :
+                      joinStatuses[offer.id] === 'pending' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' :
+                      (offer.join_limit !== null && offer.join_count >= offer.join_limit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''
+                    }`}
                     onClick={() => handleJoinOffer(offer.id)}
                     disabled={
+                      joinStatuses[offer.id] === 'rejected' ||
+                      joinStatuses[offer.id] === 'approved' ||
+                      joinStatuses[offer.id] === 'pending' ||
                       (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit) ||
                       (offer.join_limit !== null && offer.join_count >= offer.join_limit)
                     }
                   >
-                    {(offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit)
-                      ? `Max joined (${offer.user_join_limit})`
-                      : (offer.join_limit !== null && offer.join_count >= offer.join_limit)
-                        ? 'Fully Booked'
-                        : t('offers.join')}
+                    {joinStatuses[offer.id] === 'rejected' ? t('offers.notJoined') :
+                     joinStatuses[offer.id] === 'approved' ? t('offers.joined') :
+                     joinStatuses[offer.id] === 'pending' ? t('offers.pendingApproval') :
+                     (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit)
+                       ? `Max joined (${offer.user_join_limit})`
+                       : (offer.join_limit !== null && offer.join_count >= offer.join_limit)
+                         ? 'Fully Booked'
+                         : t('offers.join')}
                   </Button>
                   {offer.user_join_limit && (
                     <div className="text-xs text-muted-foreground mt-1 text-center">
