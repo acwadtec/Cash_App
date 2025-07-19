@@ -21,6 +21,7 @@ interface InvestmentCertificate {
   description_ar: string;
   invested_amount: number;
   profit_rate: number;
+  profit_duration_months: number;
   next_profit_date: string;
   join_limit?: number | null;
   user_join_limit?: number | null;
@@ -64,6 +65,7 @@ export default function InvestmentCertificate() {
   const [showUserConfirm, setShowUserConfirm] = useState(false);
   const [pendingUserJoin, setPendingUserJoin] = useState<null | (() => void)>(null);
   const [pendingBalanceType, setPendingBalanceType] = useState<string | null>(null);
+  const [amountWarning, setAmountWarning] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -128,6 +130,36 @@ export default function InvestmentCertificate() {
     setPendingCertificate(certificate);
     setJoinAmount(certificate.invested_amount.toString());
     setShowBalanceModal(true);
+    setAmountWarning(null);
+  };
+
+  const checkAmountWarning = (amount: string) => {
+    if (!userBalances || !amount || isNaN(Number(amount))) {
+      setAmountWarning(null);
+      return;
+    }
+
+    const numAmount = Number(amount);
+    const warnings = [];
+
+    if (numAmount > userBalances.balance) {
+      warnings.push(t('profile.balance') || 'Balance');
+    }
+    if (numAmount > userBalances.total_points) {
+      warnings.push(t('profile.totalPoints') || 'Total Points');
+    }
+    if (numAmount > userBalances.bonuses) {
+      warnings.push(t('profile.bonuses') || 'Bonuses');
+    }
+    if (numAmount > userBalances.team_earnings) {
+      warnings.push(t('profile.teamEarnings') || 'Team Earnings');
+    }
+
+    if (warnings.length > 0) {
+      setAmountWarning(t('investment.amountExceedsWarning') || `Amount exceeds available ${warnings.join(', ')}`);
+    } else {
+      setAmountWarning(null);
+    }
   };
 
   // Add function to handle balance selection and join
@@ -186,7 +218,7 @@ export default function InvestmentCertificate() {
     // Create investment join record
     const now = new Date();
     const joinDate = now.toISOString();
-    const nextProfitDate = new Date(now.setMonth(now.getMonth() + 6)).toISOString();
+    const nextProfitDate = new Date(now.setMonth(now.getMonth() + (pendingCertificate.profit_duration_months || 6))).toISOString();
     
     const { error } = await supabase.from('investment_certificate_joins').insert({
       user_id: userId,
@@ -221,7 +253,7 @@ export default function InvestmentCertificate() {
     setJoining(true);
     const now = new Date();
     const joinDate = now.toISOString();
-    const nextProfitDate = new Date(now.setMonth(now.getMonth() + 6)).toISOString();
+    const nextProfitDate = new Date(now.setMonth(now.getMonth() + (pendingCertificate.profit_duration_months || 6))).toISOString();
     const { error } = await supabase.from('investment_certificate_joins').insert({
       user_id: userId,
       certificate_id: pendingCertificate.id,
@@ -299,7 +331,7 @@ export default function InvestmentCertificate() {
                         <img
                           src={cert.image_url}
                           alt={language === 'ar' ? (cert.title_ar || cert.title_en) : (cert.title_en || cert.title_ar)}
-                          className="w-full h-40 object-contain rounded mb-4 bg-white p-2 border"
+                          className="w-full h-40 object-contain rounded mb-4 bg-white dark:bg-gray-800 p-2 border border-border"
                           onError={e => e.currentTarget.src = '/placeholder.svg'}
                         />
                       )}
@@ -314,6 +346,10 @@ export default function InvestmentCertificate() {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t('investment.profitRate') || 'Profit Rate'}:</span>
                           <span>{cert.profit_rate}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('investment.profitDuration') || 'Profit Duration'}:</span>
+                          <span>{cert.profit_duration_months || 6} {t('investment.months') || 'months'}</span>
                         </div>
                         {join && (
                           <>
@@ -358,52 +394,127 @@ export default function InvestmentCertificate() {
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
-              <label className="block mb-1 font-medium">{t('investment.investmentAmount') || 'Investment Amount'} (EGP)</label>
+              <label className="block mb-1 font-medium text-foreground">{t('investment.investmentAmount') || 'Investment Amount'} (EGP)</label>
               <input
                 type="number"
                 value={joinAmount}
-                onChange={e => setJoinAmount(e.target.value)}
-                className="w-full border rounded p-2"
+                onChange={e => {
+                  setJoinAmount(e.target.value);
+                  checkAmountWarning(e.target.value);
+                }}
+                className="w-full border border-input bg-background text-foreground rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 min={pendingCertificate?.invested_amount || 1}
                 step="0.01"
               />
+              {amountWarning && (
+                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                  <div className="flex items-center">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mr-2" />
+                    <span className="text-sm text-yellow-800 dark:text-yellow-200">{amountWarning}</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-4">
               <button
-                className="flex items-center gap-3 p-4 rounded-lg border border-green-400 bg-green-50 hover:bg-green-100 transition"
+                className={`flex items-center gap-3 p-4 rounded-lg border transition ${
+                  !userBalances || userBalances.balance < Number(joinAmount)
+                    ? 'border-gray-300 bg-gray-50 text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed'
+                    : 'border-green-400 bg-green-50 hover:bg-green-100 dark:bg-green-950/20 dark:border-green-400/50 dark:hover:bg-green-950/40 dark:text-green-400'
+                }`}
                 onClick={() => handleSelectBalanceType('balance')}
                 disabled={!userBalances || userBalances.balance < Number(joinAmount)}
               >
-                <DollarSign className="w-6 h-6 text-green-500" />
-                <span className="font-bold text-green-700">{t('profile.balance') || 'Balance'}</span>
-                <span className="ml-auto text-green-700">{userBalances?.balance ?? 0} EGP</span>
+                <DollarSign className={`w-6 h-6 ${
+                  !userBalances || userBalances.balance < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-green-500 dark:text-green-400'
+                }`} />
+                <span className={`font-bold ${
+                  !userBalances || userBalances.balance < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-green-700 dark:text-green-400'
+                }`}>{t('profile.balance') || 'Balance'}</span>
+                <span className={`ml-auto ${
+                  !userBalances || userBalances.balance < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-green-700 dark:text-green-400'
+                }`}>{userBalances?.balance ?? 0} EGP</span>
               </button>
               <button
-                className="flex items-center gap-3 p-4 rounded-lg border border-blue-400 bg-blue-50 hover:bg-blue-100 transition"
+                className={`flex items-center gap-3 p-4 rounded-lg border transition ${
+                  !userBalances || userBalances.total_points < Number(joinAmount)
+                    ? 'border-gray-300 bg-gray-50 text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed'
+                    : 'border-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-400/50 dark:hover:bg-blue-950/40 dark:text-blue-400'
+                }`}
                 onClick={() => handleSelectBalanceType('total_points')}
                 disabled={!userBalances || userBalances.total_points < Number(joinAmount)}
               >
-                <Star className="w-6 h-6 text-blue-500" />
-                <span className="font-bold text-blue-700">{t('profile.totalPoints') || 'Total Points'}</span>
-                <span className="ml-auto text-blue-700">{userBalances?.total_points ?? 0}</span>
+                <Star className={`w-6 h-6 ${
+                  !userBalances || userBalances.total_points < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-blue-500 dark:text-blue-400'
+                }`} />
+                <span className={`font-bold ${
+                  !userBalances || userBalances.total_points < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-blue-700 dark:text-blue-400'
+                }`}>{t('profile.totalPoints') || 'Total Points'}</span>
+                <span className={`ml-auto ${
+                  !userBalances || userBalances.total_points < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-blue-700 dark:text-blue-400'
+                }`}>{userBalances?.total_points ?? 0}</span>
               </button>
               <button
-                className="flex items-center gap-3 p-4 rounded-lg border border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition"
+                className={`flex items-center gap-3 p-4 rounded-lg border transition ${
+                  !userBalances || userBalances.bonuses < Number(joinAmount)
+                    ? 'border-gray-300 bg-gray-50 text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed'
+                    : 'border-yellow-400 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-950/20 dark:border-yellow-400/50 dark:hover:bg-yellow-950/40 dark:text-yellow-400'
+                }`}
                 onClick={() => handleSelectBalanceType('bonuses')}
                 disabled={!userBalances || userBalances.bonuses < Number(joinAmount)}
               >
-                <Gift className="w-6 h-6 text-yellow-500" />
-                <span className="font-bold text-yellow-700">{t('profile.bonuses') || 'Bonuses'}</span>
-                <span className="ml-auto text-yellow-700">{userBalances?.bonuses ?? 0} EGP</span>
+                <Gift className={`w-6 h-6 ${
+                  !userBalances || userBalances.bonuses < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-yellow-500 dark:text-yellow-400'
+                }`} />
+                <span className={`font-bold ${
+                  !userBalances || userBalances.bonuses < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-yellow-700 dark:text-yellow-400'
+                }`}>{t('profile.bonuses') || 'Bonuses'}</span>
+                <span className={`ml-auto ${
+                  !userBalances || userBalances.bonuses < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-yellow-700 dark:text-yellow-400'
+                }`}>{userBalances?.bonuses ?? 0} EGP</span>
               </button>
               <button
-                className="flex items-center gap-3 p-4 rounded-lg border border-purple-400 bg-purple-50 hover:bg-purple-100 transition"
+                className={`flex items-center gap-3 p-4 rounded-lg border transition ${
+                  !userBalances || userBalances.team_earnings < Number(joinAmount)
+                    ? 'border-gray-300 bg-gray-50 text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500 cursor-not-allowed'
+                    : 'border-purple-400 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/20 dark:border-purple-400/50 dark:hover:bg-purple-950/40 dark:text-purple-400'
+                }`}
                 onClick={() => handleSelectBalanceType('team_earnings')}
                 disabled={!userBalances || userBalances.team_earnings < Number(joinAmount)}
               >
-                <Users className="w-6 h-6 text-purple-500" />
-                <span className="font-bold text-purple-700">{t('profile.teamEarnings') || 'Team Earnings'}</span>
-                <span className="ml-auto text-purple-700">{userBalances?.team_earnings ?? 0} EGP</span>
+                <Users className={`w-6 h-6 ${
+                  !userBalances || userBalances.team_earnings < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-purple-500 dark:text-purple-400'
+                }`} />
+                <span className={`font-bold ${
+                  !userBalances || userBalances.team_earnings < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-purple-700 dark:text-purple-400'
+                }`}>{t('profile.teamEarnings') || 'Team Earnings'}</span>
+                <span className={`ml-auto ${
+                  !userBalances || userBalances.team_earnings < Number(joinAmount)
+                    ? 'text-gray-400 dark:text-gray-500'
+                    : 'text-purple-700 dark:text-purple-400'
+                }`}>{userBalances?.team_earnings ?? 0} EGP</span>
               </button>
             </div>
           </div>
@@ -433,15 +544,26 @@ export default function InvestmentCertificate() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="block mb-1 font-medium">{t('investment.investmentAmount') || 'Investment Amount'} (EGP)</label>
+              <label className="block mb-1 font-medium text-foreground">{t('investment.investmentAmount') || 'Investment Amount'} (EGP)</label>
               <input
                 type="number"
                 value={joinAmount}
-                onChange={e => setJoinAmount(e.target.value)}
-                className="w-full border rounded p-2"
+                onChange={e => {
+                  setJoinAmount(e.target.value);
+                  checkAmountWarning(e.target.value);
+                }}
+                className="w-full border border-input bg-background text-foreground rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 min={pendingCertificate?.invested_amount || 1}
                 step="0.01"
               />
+              {amountWarning && (
+                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                  <div className="flex items-center">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mr-2" />
+                    <span className="text-sm text-yellow-800 dark:text-yellow-200">{amountWarning}</span>
+                  </div>
+                </div>
+              )}
             </div>
             <Button className="w-full" onClick={handleJoinSubmit} disabled={joining}>{joining ? t('common.loading') : t('investment.confirmJoin') || 'Confirm Join'}</Button>
           </div>

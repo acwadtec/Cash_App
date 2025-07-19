@@ -7,10 +7,12 @@ import { Table } from '@/components/ui/table';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { X, Upload, Users as UsersIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 
 interface InvestmentCertificate {
   id: string;
@@ -20,6 +22,7 @@ interface InvestmentCertificate {
   description_ar: string;
   invested_amount: number;
   profit_rate: number;
+  profit_duration_months: number;
   next_profit_date: string;
   join_limit?: number;
   user_join_limit?: number;
@@ -41,6 +44,7 @@ export default function ManageInvestmentCertificatesPage() {
     description_ar: '',
     invested_amount: '',
     profit_rate: '',
+    profit_duration_months: '6',
     next_profit_date: '',
     join_limit: '',
     user_join_limit: '',
@@ -54,6 +58,7 @@ export default function ManageInvestmentCertificatesPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [joinedUsers, setJoinedUsers] = useState<any[]>([]);
   const [selectedCertificate, setSelectedCertificate] = useState<InvestmentCertificate | null>(null);
+  const { toast } = useToast();
 
   // Fetch certificates from Supabase
   const fetchCertificates = async () => {
@@ -96,6 +101,7 @@ export default function ManageInvestmentCertificatesPage() {
         description_ar: cert.description_ar || '',
         invested_amount: cert.invested_amount?.toString() || '',
         profit_rate: cert.profit_rate?.toString() || '',
+        profit_duration_months: cert.profit_duration_months?.toString() || '6',
         next_profit_date: cert.next_profit_date || '',
         join_limit: cert.join_limit?.toString() || '',
         user_join_limit: cert.user_join_limit?.toString() || '1',
@@ -111,6 +117,7 @@ export default function ManageInvestmentCertificatesPage() {
         description_ar: '',
         invested_amount: '',
         profit_rate: '',
+        profit_duration_months: '6',
         next_profit_date: '',
         join_limit: '',
         user_join_limit: '1',
@@ -124,6 +131,14 @@ export default function ManageInvestmentCertificatesPage() {
   // Create or update certificate
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!form.title_en || !form.title_ar || !form.description_en || !form.description_ar || !form.invested_amount || !form.profit_rate) {
+      console.error('Missing required fields');
+      toast({ title: t('common.error'), description: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+    
     setUploading(true);
     if (editCert) {
       let imageUrl = editCert.image_url || '';
@@ -146,12 +161,19 @@ export default function ManageInvestmentCertificatesPage() {
         ...form,
         invested_amount: Number(form.invested_amount),
         profit_rate: Number(form.profit_rate),
+        profit_duration_months: Number(form.profit_duration_months),
         join_limit: form.join_limit !== '' ? Number(form.join_limit) : null,
         user_join_limit: form.user_join_limit !== '' ? Number(form.user_join_limit) : 1,
         image_url: imageUrl,
         next_profit_date: form.next_profit_date || null,
       };
       const { error } = await supabase.from('investment_certificates').update(payload).eq('id', editCert.id);
+      if (error) {
+        console.error('Error updating certificate:', error);
+        toast({ title: t('common.error'), description: error.message || 'Failed to update certificate', variant: 'destructive' });
+      } else {
+        toast({ title: t('common.success'), description: 'Certificate updated successfully' });
+      }
       setUploading(false);
       setShowDialog(false);
       fetchCertificates();
@@ -163,13 +185,17 @@ export default function ManageInvestmentCertificatesPage() {
         ...form,
         invested_amount: Number(form.invested_amount),
         profit_rate: Number(form.profit_rate),
+        profit_duration_months: Number(form.profit_duration_months),
         join_limit: form.join_limit !== '' ? Number(form.join_limit) : null,
         user_join_limit: form.user_join_limit !== '' ? Number(form.user_join_limit) : 1,
         next_profit_date: form.next_profit_date || null,
-        image_url: null
+        image_url: null,
+        active: true
       }
     ]).select().single();
     if (insertError || !insertData) {
+      console.error('Error creating certificate:', insertError);
+      toast({ title: t('common.error'), description: insertError?.message || 'Failed to create certificate', variant: 'destructive' });
       setUploading(false);
       setShowDialog(false);
       return;
@@ -188,19 +214,33 @@ export default function ManageInvestmentCertificatesPage() {
           .from(bucketName)
           .getPublicUrl(filePath);
         imageUrl = urlData.publicUrl;
+      } else {
+        console.error('Error uploading image:', uploadError);
       }
     }
     if (imageUrl) {
-      await supabase.from('investment_certificates').update({ image_url: imageUrl }).eq('id', insertData.id);
+      const { error: updateError } = await supabase.from('investment_certificates').update({ image_url: imageUrl }).eq('id', insertData.id);
+      if (updateError) {
+        console.error('Error updating image URL:', updateError);
+      }
     }
     setUploading(false);
     setShowDialog(false);
     fetchCertificates();
+    // Show success message
+    toast({ title: t('common.success'), description: 'Certificate created successfully' });
+    console.log('Certificate created successfully:', insertData);
   };
 
   // Delete certificate
   const handleDelete = async (id: string) => {
-    await supabase.from('investment_certificates').delete().eq('id', id);
+    const { error } = await supabase.from('investment_certificates').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting certificate:', error);
+      toast({ title: t('common.error'), description: error.message || 'Failed to delete certificate', variant: 'destructive' });
+    } else {
+      toast({ title: t('common.success'), description: 'Certificate deleted successfully' });
+    }
     fetchCertificates();
   };
 
@@ -248,9 +288,10 @@ export default function ManageInvestmentCertificatesPage() {
   // Approve/reject handlers
   const handleApprove = async (joinId: string) => {
     if (!selectedCertificate) return;
-    const now = new Date().toISOString();
+    const now = new Date();
+    const nextProfitDate = new Date(now.setMonth(now.getMonth() + (selectedCertificate.profit_duration_months || 6))).toISOString();
     await supabase.from('investment_certificate_joins')
-      .update({ status: 'approved', next_profit_date: now })
+      .update({ status: 'approved', next_profit_date: nextProfitDate })
       .eq('id', joinId);
     fetchJoinedUsers(selectedCertificate);
   };
@@ -290,6 +331,7 @@ export default function ManageInvestmentCertificatesPage() {
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('offers.description')}</th>
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('investment.investmentAmount') || 'Investment Amount'}</th>
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('investment.profitRate') || 'Profit Rate'}</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('investment.profitDuration') || 'Profit Duration'}</th>
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('investment.nextProfitDate') || 'Next Profit Date'}</th>
                       <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('admin.actions')}</th>
                     </tr>
@@ -301,7 +343,7 @@ export default function ManageInvestmentCertificatesPage() {
                           <img
                             src={cert.image_url || '/placeholder.svg'}
                             alt={cert.title_en}
-                            className="w-12 h-12 object-contain rounded-md bg-white p-1 border"
+                            className="w-12 h-12 object-contain rounded-md bg-white dark:bg-gray-800 p-1 border border-border"
                             onError={e => e.currentTarget.src = '/placeholder.svg'}
                           />
                         </td>
@@ -309,6 +351,7 @@ export default function ManageInvestmentCertificatesPage() {
                         <td className="text-left px-4 py-2 max-w-xs truncate text-gray-700 dark:text-gray-300" title={cert.description_en}>{cert.description_en}</td>
                         <td className="text-left px-4 py-2">{cert.invested_amount} EGP</td>
                         <td className="text-left px-4 py-2">{cert.profit_rate}%</td>
+                        <td className="text-left px-4 py-2">{cert.profit_duration_months || 6} {t('investment.months') || 'months'}</td>
                         <td className="text-left px-4 py-2">{cert.next_profit_date ? new Date(cert.next_profit_date).toLocaleDateString() : '-'}</td>
                         <td className="text-left px-4 py-2">
                           <Button size="icon" variant="ghost" onClick={() => fetchJoinedUsers(cert)} aria-label={t('admin.showJoinedUsers') || 'Show Joined Users'}>
@@ -366,6 +409,19 @@ export default function ManageInvestmentCertificatesPage() {
                       <Label htmlFor="profit_rate" className="text-sm font-medium">{t('investment.profitRate') || 'Profit Rate'} *</Label>
                       <Input id="profit_rate" name="profit_rate" type="number" value={form.profit_rate} onChange={handleChange} required className="mt-1" placeholder="Profit Rate..." min="0" step="0.01" />
                     </div>
+                    <div>
+                      <Label htmlFor="profit_duration_months" className="text-sm font-medium">{t('investment.profitDuration') || 'Profit Duration'} *</Label>
+                      <Select onValueChange={(value) => setForm({ ...form, profit_duration_months: value })} value={form.profit_duration_months} required>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('investment.profitDurationPlaceholder') || 'Select profit duration'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3 {t('investment.months') || 'months'}</SelectItem>
+                          <SelectItem value="6">6 {t('investment.months') || 'months'}</SelectItem>
+                          <SelectItem value="9">9 {t('investment.months') || 'months'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div>
@@ -387,7 +443,7 @@ export default function ManageInvestmentCertificatesPage() {
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             {imagePreview ? (
                               <div className="relative">
-                                <img src={imagePreview} alt="Preview" className="max-h-24 max-w-full object-contain" />
+                                <img src={imagePreview} alt="Preview" className="max-h-24 max-w-full object-contain bg-white dark:bg-gray-800 rounded" />
                                 <Button type="button" variant="destructive" size="sm" className="absolute -top-2 -right-2 h-6 w-6 p-0" onClick={() => { setImagePreview(''); setImageFile(null); }}>
                                   <X className="h-3 w-3" />
                                 </Button>
