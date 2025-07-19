@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { X, Upload, Users as UsersIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface Offer {
   id: string;
@@ -26,6 +27,10 @@ interface Offer {
   deadline?: string;
   join_limit?: number;
   user_join_limit?: number;
+  title_en?: string;
+  title_ar?: string;
+  description_en?: string;
+  description_ar?: string;
 }
 
 export default function ManageOffersPage() {
@@ -33,10 +38,13 @@ export default function ManageOffersPage() {
   const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [editOffer, setEditOffer] = useState<Offer | null>(null);
-  const [form, setForm] = useState({ 
-    title: '', 
-    description: '', 
-    amount: '', 
+  const [activeLang, setActiveLang] = useState<'en' | 'ar'>('en');
+  const [form, setForm] = useState({
+    title_en: '',
+    title_ar: '',
+    description_en: '',
+    description_ar: '',
+    amount: '',
     cost: '',
     daily_profit: '',
     monthly_profit: '',
@@ -92,31 +100,35 @@ export default function ManageOffersPage() {
   const openDialog = (offer?: Offer) => {
     if (offer) {
       setEditOffer(offer);
-      setForm({ 
-        title: offer.title, 
-        description: offer.description, 
-        amount: offer.amount.toString(), 
+      setForm({
+        title_en: offer.title_en || '',
+        title_ar: offer.title_ar || '',
+        description_en: offer.description_en || '',
+        description_ar: offer.description_ar || '',
+        amount: offer.amount?.toString() || '',
         cost: offer.cost?.toString() || '',
         daily_profit: offer.daily_profit?.toString() || '',
         monthly_profit: offer.monthly_profit?.toString() || '',
         deadline: offer.deadline || '',
         join_limit: offer.join_limit?.toString() || '',
-        user_join_limit: offer.join_limit?.toString() || '1'
+        user_join_limit: offer.user_join_limit?.toString() || '1',
       });
       setImagePreview(offer.image_url || '');
       setImageFile(null);
     } else {
       setEditOffer(null);
-      setForm({ 
-        title: '', 
-        description: '', 
-        amount: '', 
+      setForm({
+        title_en: '',
+        title_ar: '',
+        description_en: '',
+        description_ar: '',
+        amount: '',
         cost: '',
         daily_profit: '',
         monthly_profit: '',
         deadline: '',
         join_limit: '',
-        user_join_limit: '1'
+        user_join_limit: '1',
       });
       setImagePreview('');
       setImageFile(null);
@@ -158,6 +170,9 @@ export default function ManageOffersPage() {
         image_url: imageUrl,
         deadline: form.deadline || null
       };
+      // Remove old title/description fields if present
+      delete payload.title;
+      delete payload.description;
       const { error } = await supabase.from('offers').update(payload).eq('id', editOffer.id);
       setUploading(false);
       setShowDialog(false);
@@ -355,36 +370,25 @@ export default function ManageOffersPage() {
                   </Button>
                 </div>
 
+                {/* Replace the Tabs for language selection with all fields shown together: */}
+                <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="title_en" className="text-sm font-medium">Title (EN) *</Label>
+                    <Input id="title_en" name="title_en" value={form.title_en} onChange={handleChange} required className="mt-1" placeholder="Title in English..." />
+                    <Label htmlFor="description_en" className="text-sm font-medium mt-2">Description (EN) *</Label>
+                    <Textarea id="description_en" name="description_en" value={form.description_en} onChange={handleChange} required className="mt-1" placeholder="Description in English..." rows={3} />
+                  </div>
+                  <div>
+                    <Label htmlFor="title_ar" className="text-sm font-medium">العنوان (AR) *</Label>
+                    <Input id="title_ar" name="title_ar" value={form.title_ar} onChange={handleChange} required className="mt-1" placeholder="العنوان بالعربية..." dir="rtl" />
+                    <Label htmlFor="description_ar" className="text-sm font-medium mt-2">الوصف (AR) *</Label>
+                    <Textarea id="description_ar" name="description_ar" value={form.description_ar} onChange={handleChange} required className="mt-1" placeholder="الوصف بالعربية..." rows={3} dir="rtl" />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Column */}
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="title" className="text-sm font-medium">{t('admin.title')} *</Label>
-                      <Input 
-                        id="title" 
-                        name="title" 
-                        value={form.title} 
-                        onChange={handleChange} 
-                        required 
-                        className="mt-1"
-                        placeholder={t('admin.title') + '...'}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description" className="text-sm font-medium">{t('admin.description')} *</Label>
-                      <Textarea 
-                        id="description" 
-                        name="description" 
-                        value={form.description} 
-                        onChange={handleChange} 
-                        required 
-                        className="mt-1"
-                        placeholder={t('admin.description') + '...'}
-                        rows={3}
-                      />
-                    </div>
-
                     <div>
                       <Label htmlFor="amount" className="text-sm font-medium">{t('admin.reward')} *</Label>
                       <Input 

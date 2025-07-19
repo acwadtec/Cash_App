@@ -5,8 +5,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Offer {
   id: string;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   amount: number;
   cost: number;
   daily_profit: number;
@@ -15,6 +15,10 @@ interface Offer {
   type?: string;
   deadline?: string;
   active?: boolean;
+  title_en?: string;
+  title_ar?: string;
+  description_en?: string;
+  description_ar?: string;
 }
 
 interface OffersTableProps {
@@ -26,7 +30,7 @@ interface OffersTableProps {
 }
 
 const OffersTable: React.FC<OffersTableProps> = ({ offers, onEdit, onDelete, showActions = true, renderExtra }) => {
-  const { t } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -57,14 +61,16 @@ const OffersTable: React.FC<OffersTableProps> = ({ offers, onEdit, onDelete, sho
               <td className="text-left px-4 py-2">
                 <img
                   src={offer.image_url || '/placeholder.svg'}
-                  alt={offer.title}
+                  alt={language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
                   className="w-12 h-12 object-contain rounded-md bg-white p-1 border"
                   onError={e => e.currentTarget.src = '/placeholder.svg'}
                 />
               </td>
-              <td className="text-left px-4 py-2 font-medium text-gray-900 dark:text-gray-100">{offer.title}</td>
-              <td className="text-left px-4 py-2 max-w-xs truncate text-gray-700 dark:text-gray-300" title={offer.description}>
-                {offer.description}
+              <td className="text-left px-4 py-2 font-medium text-gray-900 dark:text-gray-100" dir={isRTL ? 'rtl' : 'ltr'}>
+                {language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
+              </td>
+              <td className="text-left px-4 py-2 max-w-xs truncate text-gray-700 dark:text-gray-300" title={language === 'ar' ? (offer.description_ar || offer.description_en) : (offer.description_en || offer.description_ar)} dir={isRTL ? 'rtl' : 'ltr'}>
+                {language === 'ar' ? (offer.description_ar || offer.description_en) : (offer.description_en || offer.description_ar)}
               </td>
               <td className="text-left px-4 py-2">
                 <Badge variant="secondary">${offer.amount.toLocaleString()}</Badge>

@@ -28,10 +28,14 @@ interface Offer {
   join_limit?: number | null;
   join_count?: number;
   user_join_limit?: number | null;
+  title_en?: string;
+  title_ar?: string;
+  description_en?: string;
+  description_ar?: string;
 }
 
 export default function Offers() {
-  const { t } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { theme } = useTheme();
   const navigate = useNavigate();
   const { requireVerification } = useVerificationGuard();
@@ -331,7 +335,7 @@ export default function Offers() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {offers.map((offer) => (
-              <Card key={offer.id} className="shadow-card hover:shadow-glow transition-all duration-300">
+              <Card key={offer.id} className="shadow-card hover:shadow-glow transition-all duration-300" dir={isRTL ? 'rtl' : 'ltr'}>
                 <CardHeader>
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
@@ -341,7 +345,7 @@ export default function Offers() {
                         </Badge>
                       )}
                       <CardTitle className="text-xl font-bold">
-                        {offer.title}
+                        {language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
                       </CardTitle>
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -361,12 +365,12 @@ export default function Offers() {
                 <CardContent>
                   <img
                     src={offer.image_url || '/placeholder.svg'}
-                    alt={offer.title}
+                    alt={language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
                     className="w-full h-40 object-contain rounded mb-4 bg-white p-2 border"
                     onError={e => e.currentTarget.src = '/placeholder.svg'}
                   />
                   <p className="text-muted-foreground mb-4 leading-relaxed">
-                    {offer.description}
+                    {language === 'ar' ? (offer.description_ar || offer.description_en) : (offer.description_en || offer.description_ar)}
                   </p>
                   <div className="space-y-2 mb-6 text-sm">
                     {offer.cost !== undefined && offer.cost !== 0 && (
