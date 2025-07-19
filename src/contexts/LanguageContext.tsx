@@ -247,6 +247,7 @@ const translations = {
     'offers.notification.button': 'اشترك في الإشعارات',
     
     // Profile Page
+    'profile.title': 'الملف الشخصي',
     'profile.totalEarnings': 'إجمالي الأرباح',
     'profile.recentActivity': 'النشاط الأخير',
     'profile.accountStatus': 'حالة الحساب',
@@ -1363,6 +1364,7 @@ const translations = {
     'offers.notification.button': 'Subscribe to Notifications',
     
     // Profile Page
+    'profile.title': 'Profile',
     'profile.totalEarnings': 'Total Earnings',
     'profile.recentActivity': 'Recent Activity',
     'profile.accountStatus': 'Account Status',
