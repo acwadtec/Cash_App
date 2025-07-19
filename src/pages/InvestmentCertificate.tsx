@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Gift, Users, Star } from 'lucide-react';
+import { Dialog as ConfirmDialog, DialogContent as ConfirmDialogContent, DialogHeader as ConfirmDialogHeader, DialogTitle as ConfirmDialogTitle } from '@/components/ui/dialog';
 
 interface InvestmentCertificate {
   id: string;
@@ -55,6 +56,14 @@ export default function InvestmentCertificate() {
   const [joining, setJoining] = useState(false);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
   const [pendingWithdraw, setPendingWithdraw] = useState<UserJoin | null>(null);
+  
+  // Add state for balance selection modal
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [pendingCertificateId, setPendingCertificateId] = useState<string | null>(null);
+  const [userBalances, setUserBalances] = useState<{ balance: number; bonuses: number; team_earnings: number; total_points: number } | null>(null);
+  const [showUserConfirm, setShowUserConfirm] = useState(false);
+  const [pendingUserJoin, setPendingUserJoin] = useState<null | (() => void)>(null);
+  const [pendingBalanceType, setPendingBalanceType] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -64,6 +73,26 @@ export default function InvestmentCertificate() {
     };
     fetchUser();
   }, []);
+
+  // Fetch user balances on mount
+  useEffect(() => {
+    const fetchBalances = async () => {
+      const { data, error } = await supabase
+        .from('user_info')
+        .select('balance, bonuses, team_earnings, total_points')
+        .eq('user_uid', userId)
+        .single();
+      if (!error && data) {
+        setUserBalances({
+          balance: data.balance ?? 0,
+          bonuses: data.bonuses ?? 0,
+          team_earnings: data.team_earnings ?? 0,
+          total_points: data.total_points ?? 0,
+        });
+      }
+    };
+    if (userId) fetchBalances();
+  }, [userId]);
 
   useEffect(() => {
     const fetchCertificates = async () => {
@@ -95,9 +124,96 @@ export default function InvestmentCertificate() {
   }, [userId]);
 
   const handleJoin = (certificate: InvestmentCertificate) => {
+    setPendingCertificateId(certificate.id);
     setPendingCertificate(certificate);
     setJoinAmount(certificate.invested_amount.toString());
-    setShowJoinModal(true);
+    setShowBalanceModal(true);
+  };
+
+  // Add function to handle balance selection and join
+  const handleSelectBalanceType = (type: 'balance' | 'bonuses' | 'team_earnings' | 'total_points') => {
+    setPendingBalanceType(type);
+    setShowUserConfirm(true);
+    setPendingUserJoin(() => () => doJoinWithBalanceType(type));
+  };
+
+  // Move the actual join logic to a new function
+  type BalanceType = 'balance' | 'bonuses' | 'team_earnings' | 'total_points';
+  const doJoinWithBalanceType = async (type: BalanceType) => {
+    setShowUserConfirm(false);
+    if (!pendingCertificateId || !pendingCertificate || !userBalances || !userId) return;
+    
+    const investmentAmount = Number(joinAmount);
+    if (investmentAmount <= 0) {
+      toast({ title: t('common.error'), description: t('error.invalidAmount'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+
+    // Check if user has sufficient balance
+    if (userBalances[type] < investmentAmount) {
+      toast({ title: t('common.error'), description: t('error.insufficientBalance'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+
+    setJoining(true);
+    
+    // Subtract investment amount from selected balance
+    const newBalances = { ...userBalances, [type]: userBalances[type] - investmentAmount };
+    const { error: updateError } = await supabase
+      .from('user_info')
+      .update({ [type]: newBalances[type] })
+      .eq('user_uid', userId);
+    
+    if (updateError) {
+      toast({ title: t('common.error'), description: t('error.failedToUpdateBalance'), variant: 'destructive' });
+      setJoining(false);
+      setShowBalanceModal(false);
+      return;
+    }
+
+    // Log transaction for investment
+    await supabase.from('transactions').insert({
+      user_id: userId,
+      type: `${type}_investment`,
+      amount: investmentAmount,
+      status: 'completed',
+      description: t('investment.certificateInvestment') || 'Investment Certificate Investment',
+      created_at: new Date().toISOString(),
+    });
+
+    // Create investment join record
+    const now = new Date();
+    const joinDate = now.toISOString();
+    const nextProfitDate = new Date(now.setMonth(now.getMonth() + 6)).toISOString();
+    
+    const { error } = await supabase.from('investment_certificate_joins').insert({
+      user_id: userId,
+      certificate_id: pendingCertificateId,
+      invested_amount: investmentAmount,
+      join_date: joinDate,
+      next_profit_date: nextProfitDate,
+      status: 'pending',
+    });
+
+    setJoining(false);
+    setShowBalanceModal(false);
+    
+    if (!error) {
+      toast({ title: t('common.success'), description: t('investment.joinRequestPending') || 'Join request submitted. Pending approval.' });
+      setUserJoins((prev) => ({ ...prev, [pendingCertificateId]: {
+        id: '', user_id: userId, certificate_id: pendingCertificateId, invested_amount: investmentAmount, join_date: joinDate, next_profit_date: nextProfitDate, status: 'pending'
+      }}));
+      // Update local balances
+      setUserBalances(newBalances);
+    } else {
+      toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    }
+    
+    setPendingCertificateId(null);
+    setPendingCertificate(null);
+    setJoinAmount('');
   };
 
   const handleJoinSubmit = async () => {
@@ -233,7 +349,83 @@ export default function InvestmentCertificate() {
           )}
         </div>
       </div>
-      {/* Join Modal */}
+      
+      {/* Balance Selection Modal */}
+      <Dialog open={showBalanceModal} onOpenChange={setShowBalanceModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('investment.selectBalanceType') || 'Select Balance Type'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="block mb-1 font-medium">{t('investment.investmentAmount') || 'Investment Amount'} (EGP)</label>
+              <input
+                type="number"
+                value={joinAmount}
+                onChange={e => setJoinAmount(e.target.value)}
+                className="w-full border rounded p-2"
+                min={pendingCertificate?.invested_amount || 1}
+                step="0.01"
+              />
+            </div>
+            <div className="flex flex-col gap-4">
+              <button
+                className="flex items-center gap-3 p-4 rounded-lg border border-green-400 bg-green-50 hover:bg-green-100 transition"
+                onClick={() => handleSelectBalanceType('balance')}
+                disabled={!userBalances || userBalances.balance < Number(joinAmount)}
+              >
+                <DollarSign className="w-6 h-6 text-green-500" />
+                <span className="font-bold text-green-700">{t('profile.balance') || 'Balance'}</span>
+                <span className="ml-auto text-green-700">{userBalances?.balance ?? 0} EGP</span>
+              </button>
+              <button
+                className="flex items-center gap-3 p-4 rounded-lg border border-blue-400 bg-blue-50 hover:bg-blue-100 transition"
+                onClick={() => handleSelectBalanceType('total_points')}
+                disabled={!userBalances || userBalances.total_points < Number(joinAmount)}
+              >
+                <Star className="w-6 h-6 text-blue-500" />
+                <span className="font-bold text-blue-700">{t('profile.totalPoints') || 'Total Points'}</span>
+                <span className="ml-auto text-blue-700">{userBalances?.total_points ?? 0}</span>
+              </button>
+              <button
+                className="flex items-center gap-3 p-4 rounded-lg border border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition"
+                onClick={() => handleSelectBalanceType('bonuses')}
+                disabled={!userBalances || userBalances.bonuses < Number(joinAmount)}
+              >
+                <Gift className="w-6 h-6 text-yellow-500" />
+                <span className="font-bold text-yellow-700">{t('profile.bonuses') || 'Bonuses'}</span>
+                <span className="ml-auto text-yellow-700">{userBalances?.bonuses ?? 0} EGP</span>
+              </button>
+              <button
+                className="flex items-center gap-3 p-4 rounded-lg border border-purple-400 bg-purple-50 hover:bg-purple-100 transition"
+                onClick={() => handleSelectBalanceType('team_earnings')}
+                disabled={!userBalances || userBalances.team_earnings < Number(joinAmount)}
+              >
+                <Users className="w-6 h-6 text-purple-500" />
+                <span className="font-bold text-purple-700">{t('profile.teamEarnings') || 'Team Earnings'}</span>
+                <span className="ml-auto text-purple-700">{userBalances?.team_earnings ?? 0} EGP</span>
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Join Confirmation Modal */}
+      <ConfirmDialog open={showUserConfirm} onOpenChange={setShowUserConfirm}>
+        <ConfirmDialogContent>
+          <ConfirmDialogHeader>
+            <ConfirmDialogTitle>
+              {t('investment.confirmInvestment') || 'Confirm Investment'} - {joinAmount} EGP using {pendingBalanceType === 'balance' ? (t('profile.balance') || 'Balance') : pendingBalanceType === 'bonuses' ? (t('profile.bonuses') || 'Bonuses') : pendingBalanceType === 'team_earnings' ? (t('profile.teamEarnings') || 'Team Earnings') : (t('profile.totalPoints') || 'Total Points')}?
+            </ConfirmDialogTitle>
+          </ConfirmDialogHeader>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setShowUserConfirm(false)}>{t('common.cancel') || 'Cancel'}</Button>
+            <Button onClick={() => { setShowUserConfirm(false); if (pendingUserJoin) pendingUserJoin(); }}>{t('common.confirm') || 'Confirm'}</Button>
+          </div>
+        </ConfirmDialogContent>
+      </ConfirmDialog>
+
+      {/* Join Modal - keeping for backward compatibility */}
       <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
         <DialogContent>
           <DialogHeader>
@@ -255,6 +447,7 @@ export default function InvestmentCertificate() {
           </div>
         </DialogContent>
       </Dialog>
+      
       {/* Withdraw Confirm Modal */}
       <Dialog open={showWithdrawConfirm} onOpenChange={setShowWithdrawConfirm}>
         <DialogContent>
