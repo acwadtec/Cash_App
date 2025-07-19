@@ -152,13 +152,13 @@ export default function Transactions() {
   };
 
   return (
-    <div className="min-h-screen py-20">
-      {/* Alert for incomplete account information */}
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Enhanced Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm shadow-2xl">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertDescription className="text-warning-foreground font-medium">
               {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
@@ -167,31 +167,49 @@ export default function Transactions() {
 
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('transactions.title')}</h1>
-            <p className="text-base md:text-xl text-muted-foreground px-4">
+          {/* Enhanced Header */}
+          <div className="text-center mb-12 md:mb-16">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {t('transactions.title')}
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground px-4 max-w-3xl mx-auto leading-relaxed">
               {t('transactions.subtitle')}
             </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4 px-4">
-              <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('transactions.exportExcel')}</Button>
-              <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('transactions.exportPDF')}</Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 px-4">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={handleExportExcel}
+                className="bg-gradient-to-r from-green-500 to-green-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-2xl px-6 py-3 font-bold"
+              >
+                📊 {t('transactions.exportExcel')}
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={handleExportPDF}
+                className="bg-gradient-to-r from-red-500 to-red-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-2xl px-6 py-3 font-bold"
+              >
+                📄 {t('transactions.exportPDF')}
+              </Button>
             </div>
           </div>
 
-          {/* Filters */}
-          <Card className="mb-4 md:mb-6 shadow-card">
-            <CardContent className="pt-4 md:pt-6">
-              <div className="flex flex-col gap-3 md:gap-4">
+          {/* Enhanced Filters */}
+          <Card className="mb-8 shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardContent className="pt-6 pb-6 relative">
+              <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <Input
                     placeholder={t('transactions.search')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-10 md:h-12"
+                    className="h-12 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                   />
                 </div>
                 <Select value={filter} onValueChange={setFilter}>
-                  <SelectTrigger className="w-full md:w-48 h-10 md:h-12">
+                  <SelectTrigger className="w-full md:w-48 h-12 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300">
                     <SelectValue placeholder={t('transactions.all')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -206,86 +224,130 @@ export default function Transactions() {
             </CardContent>
           </Card>
 
-          {/* Transactions List */}
+          {/* Enhanced Transactions List */}
           {loading ? (
-            <div className="text-center py-12">{t('common.loading')}</div>
+            <div className="text-center py-20">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 mx-auto"></div>
+                <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-primary mx-auto"></div>
+              </div>
+              <p className="mt-6 text-lg text-muted-foreground font-medium">{t('common.loading')}</p>
+            </div>
           ) : (
-            filteredTransactions.map((transaction) => (
-              <Card key={transaction.id} className="shadow-card hover:shadow-glow transition-all duration-300">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Badge variant="outline">{t(`transactions.${transaction.type}`)}</Badge>
-                        <Badge className={getStatusColor(transaction.status)}>
-                          {t(`transactions.${transaction.status}`)}
-                        </Badge>
-                      </div>
-                      <h3 className="font-semibold text-lg mb-1">{transaction.description}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {t('transactions.id')} {transaction.id} • {transaction.method}
-                      </p>
-                      {transaction.status === 'rejected' && transaction.rejectionReason && (
-                        <p className="text-sm text-red-600 mt-1">
-                          <strong>{t('withdrawal.rejectionReason')}:</strong> {transaction.rejectionReason}
+            <div className="space-y-6">
+              {filteredTransactions.map((transaction) => (
+                <Card key={transaction.id} className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden group hover:scale-105 transition-all duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <CardContent className="pt-6 pb-6 relative">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20 font-medium">
+                            {t(`transactions.${transaction.type}`)}
+                          </Badge>
+                          <Badge className={`${getStatusColor(transaction.status)} shadow-lg font-medium`}>
+                            {t(`transactions.${transaction.status}`)}
+                          </Badge>
+                        </div>
+                        <h3 className="font-bold text-xl mb-2 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                          {transaction.description}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          <span className="font-mono">{t('transactions.id')} {transaction.id}</span> • {transaction.method}
                         </p>
-                      )}
-                      {transaction.status === 'completed' && transaction.adminNote && (
-                        <p className="text-sm text-green-600 mt-1">
-                          <strong>{t('withdrawal.adminNote')}:</strong> {transaction.adminNote}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className={`text-2xl font-bold ${
-                        transaction.type === 'withdrawal' || transaction.type === 'expense' 
-                          ? 'text-destructive' 
-                          : 'text-success'
-                      }`}>
-                        {transaction.type === 'withdrawal' ? '-' : '+'}${transaction.amount.toLocaleString()} {t('deposit.amountUnit')}
+                        {transaction.status === 'rejected' && transaction.rejectionReason && (
+                          <div className="p-3 rounded-lg bg-gradient-to-r from-red-500/5 to-transparent border border-red-500/10">
+                            <p className="text-sm text-red-600 font-medium">
+                              <strong>{t('withdrawal.rejectionReason')}:</strong> {transaction.rejectionReason}
+                            </p>
+                          </div>
+                        )}
+                        {transaction.status === 'completed' && transaction.adminNote && (
+                          <div className="p-3 rounded-lg bg-gradient-to-r from-green-500/5 to-transparent border border-green-500/10">
+                            <p className="text-sm text-green-600 font-medium">
+                              <strong>{t('withdrawal.adminNote')}:</strong> {transaction.adminNote}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {transaction.date}
+                      
+                      <div className="text-right">
+                        <div className={`text-3xl font-bold mb-2 ${
+                          transaction.type === 'withdrawal' || transaction.type === 'expense' 
+                            ? 'text-red-600' 
+                            : 'text-green-600'
+                        }`}>
+                          {transaction.type === 'withdrawal' ? '-' : '+'}${transaction.amount.toLocaleString()} {t('deposit.amountUnit')}
+                        </div>
+                        <div className="text-sm text-muted-foreground font-medium">
+                          {transaction.date}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
           {filteredTransactions.length === 0 && !loading && (
-            <Card className="shadow-card">
-              <CardContent className="pt-8 text-center">
-                <p className="text-muted-foreground text-lg">{t('transactions.noResults')}</p>
+            <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+              <CardContent className="pt-16 pb-16 relative text-center">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 flex items-center justify-center">
+                  <div className="text-3xl">📋</div>
+                </div>
+                <p className="text-xl text-muted-foreground font-medium mb-2">
+                  {t('transactions.noResults')}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  No transactions match your current filters
+                </p>
               </CardContent>
             </Card>
           )}
 
-          {/* Summary Card */}
-          <Card className="mt-8 gradient-card shadow-glow">
-            <CardHeader>
-              <CardTitle className="text-center">{t('transactions.summary')}</CardTitle>
+          {/* Enhanced Summary Card */}
+          <Card className="mt-12 shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardHeader className="relative">
+              <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                {t('transactions.summary')}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-success mb-2">
+            <CardContent className="relative">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div className="group">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-500 to-green-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                      <div className="text-2xl">💰</div>
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">
                     ${transactions.filter(t => t.type !== 'withdrawal' && t.status === 'completed').reduce((sum, t) => sum + t.amount, 0).toLocaleString()} {t('deposit.amountUnit')}
                   </div>
-                  <div className="text-sm text-muted-foreground">{t('transactions.totalIncome')}</div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('transactions.totalIncome')}</div>
                 </div>
-                <div>
-                  <div className="text-3xl font-bold text-destructive mb-2">
+                <div className="group">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-red-500 to-red-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                      <div className="text-2xl">💸</div>
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-red-600 mb-2">
                     ${transactions.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0).toLocaleString()} {t('deposit.amountUnit')}
                   </div>
-                  <div className="text-sm text-muted-foreground">{t('transactions.totalWithdrawals')}</div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('transactions.totalWithdrawals')}</div>
                 </div>
-                <div>
-                  <div className="text-3xl font-bold text-primary mb-2">
+                <div className="group">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                      <div className="text-2xl">⏳</div>
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-yellow-600 mb-2">
                     {transactions.filter(t => t.status === 'pending').length}
                   </div>
-                  <div className="text-sm text-muted-foreground">{t('transactions.pendingCount')}</div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('transactions.pendingCount')}</div>
                 </div>
               </div>
             </CardContent>
