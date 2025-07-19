@@ -5,10 +5,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useEffect, useState } from 'react';
-import { supabase, checkIfUserIsAdmin, testAccrueDailyOfferProfits, testAccrueMonthlyOfferProfits } from '@/lib/supabase';
+import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
+import { useVerificationGuard } from '@/components/VerificationGuard';
 
 interface Offer {
   id: string;
@@ -31,6 +32,7 @@ export default function Offers() {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const { requireVerification } = useVerificationGuard();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -117,6 +119,18 @@ export default function Offers() {
   }, []);
 
   const handleJoinOffer = async (offerId: string) => {
+    // Check verification first
+    const canProceed = requireVerification(() => {
+      // This will only run if user is verified
+      joinOffer(offerId);
+    });
+    
+    if (!canProceed) {
+      return; // User is not verified, alert already shown
+    }
+  };
+
+  const joinOffer = async (offerId: string) => {
     if (!userId) {
       toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
       return;

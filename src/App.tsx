@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { VerificationProvider } from "@/contexts/VerificationContext";
 import { Layout } from "@/components/Layout";
 import { AdminLayout } from "@/components/AdminLayout";
 import ConnectionHandler from "@/components/ConnectionHandler";
@@ -46,52 +47,54 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <LanguageProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <ConnectionHandler>
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Layout />}>
-                      <Route index element={<Home />} />
-                      <Route path="register" element={<Register />} />
-                      <Route path="login" element={<Login />} />
-                      <Route path="offers" element={<Offers />} />
-                      <Route path="profile" element={<Profile />} />
-                      <Route path="update-account" element={<UpdateAccount />} />
-                      <Route path="transactions" element={<Transactions />} />
-                      <Route path="withdrawal" element={<Withdrawal />} />
-                      <Route path="deposit" element={<Deposit />} />
-                      <Route path="help" element={<HelpCenter />} />
-                      <Route path="manage-offers" element={<ManageOffers />} />
-                      <Route path="referral-network" element={<ReferralNetwork />} />
-                      <Route path="read-more" element={<ReadMore />} />
-                      <Route path="my-offers" element={<MyOffers />} />
-                    </Route>
+            <VerificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <ConnectionHandler>
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Layout />}>
+                        <Route index element={<Home />} />
+                        <Route path="register" element={<Register />} />
+                        <Route path="login" element={<Login />} />
+                        <Route path="offers" element={<Offers />} />
+                        <Route path="profile" element={<Profile />} />
+                        <Route path="update-account" element={<UpdateAccount />} />
+                        <Route path="transactions" element={<Transactions />} />
+                        <Route path="withdrawal" element={<Withdrawal />} />
+                        <Route path="deposit" element={<Deposit />} />
+                        <Route path="help" element={<HelpCenter />} />
+                        <Route path="manage-offers" element={<ManageOffers />} />
+                        <Route path="referral-network" element={<ReferralNetwork />} />
+                        <Route path="read-more" element={<ReadMore />} />
+                        <Route path="my-offers" element={<MyOffers />} />
+                      </Route>
 
-                    {/* Admin Routes */}
-                    <Route path="admin" element={<AdminLayout />}>
-                      <Route index element={<Navigate to="/admin/users" replace />} />
-                      <Route path="users" element={<UsersPage />} />
-                      <Route path="manage-wallet" element={<ManageWallet />} />
-                      <Route path="offers" element={<ManageOffersPage />} />
-                      <Route path="referrals" element={<ReferralsPage />} />
-                      <Route path="withdrawals" element={<WithdrawalRequestsPage />} />
-                      <Route path="transactions" element={<TransactionsPage />} />
-                      <Route path="analytics" element={<AnalyticsPage />} />
-                      <Route path="notifications" element={<NotificationsPage />} />
-                      <Route path="deposit-numbers" element={<DepositNumbersPage />} />
-                      <Route path="deposit-requests" element={<DepositRequestsPage />} />
-                      <Route path="support" element={<SupportPage />} />
-                      <Route path="gamification" element={<GamificationPage />} />
-                    </Route>
+                      {/* Admin Routes */}
+                      <Route path="admin" element={<AdminLayout />}>
+                        <Route index element={<Navigate to="/admin/users" replace />} />
+                        <Route path="users" element={<UsersPage />} />
+                        <Route path="manage-wallet" element={<ManageWallet />} />
+                        <Route path="offers" element={<ManageOffersPage />} />
+                        <Route path="referrals" element={<ReferralsPage />} />
+                        <Route path="withdrawals" element={<WithdrawalRequestsPage />} />
+                        <Route path="transactions" element={<TransactionsPage />} />
+                        <Route path="analytics" element={<AnalyticsPage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="deposit-numbers" element={<DepositNumbersPage />} />
+                        <Route path="deposit-requests" element={<DepositRequestsPage />} />
+                        <Route path="support" element={<SupportPage />} />
+                        <Route path="gamification" element={<GamificationPage />} />
+                      </Route>
 
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </ConnectionHandler>
-            </TooltipProvider>
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </ConnectionHandler>
+              </TooltipProvider>
+            </VerificationProvider>
           </LanguageProvider>
         </ThemeProvider>
       </QueryClientProvider>

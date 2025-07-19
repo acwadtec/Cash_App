@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useVerificationGuard } from '@/components/VerificationGuard';
 import { toast } from '@/hooks/use-toast';
 import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass } from 'lucide-react';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
@@ -37,6 +38,7 @@ interface WithdrawalRequest {
 export default function Withdrawal() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { requireVerification } = useVerificationGuard();
   const [formData, setFormData] = useState({
     type: '',
     amount: '',
@@ -259,6 +261,18 @@ export default function Withdrawal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check verification first
+    const canProceed = requireVerification(() => {
+      // This will only run if user is verified
+      submitWithdrawalRequest();
+    });
+    
+    if (!canProceed) {
+      return; // User is not verified, alert already shown
+    }
+  };
+
+  const submitWithdrawalRequest = async () => {
     if (!formData.type || !formData.amount || !formData.method) {
       toast({
         title: t('common.error'),
