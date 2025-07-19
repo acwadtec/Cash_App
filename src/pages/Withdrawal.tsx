@@ -352,12 +352,14 @@ export default function Withdrawal() {
   };
 
   const submitWithdrawalRequest = async () => {
+    setLoading(true);
     if (!formData.type || !formData.amount || !formData.method) {
       toast({
         title: t('common.error'),
         description: t('register.required'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
@@ -368,31 +370,37 @@ export default function Withdrawal() {
         description: t('withdrawal.error.timeSlotMessage'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
     const selectedType = withdrawalTypes.find(t => t.value === formData.type);
     const amount = parseFloat(formData.amount);
     
-    if (selectedType && amount > selectedType.amount) {
+    if (selectedType && amount > selectedType.balance) {
       toast({
         title: t('withdrawal.error.amount'),
         description: t('withdrawal.error.amountMessage'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
     // Check package limits (use correct userPackage)
     const limitCheck = checkPackageLimits(amount);
+    console.log('User wants to withdraw:', amount);
     if (!limitCheck.valid) {
+      console.log('Withdrawal result: ERROR:', limitCheck.message);
       toast({
         title: t('withdrawal.error.limit'),
         description: limitCheck.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
+    console.log('Withdrawal result: SUCCESS');
 
     // Check max withdrawal amount
     if (amount > 6000) {
@@ -401,6 +409,7 @@ export default function Withdrawal() {
         description: t('withdrawal.maxWithdrawalLimit'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
@@ -412,6 +421,7 @@ export default function Withdrawal() {
         description: t('withdrawal.userNotAuthenticated'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
     // Fetch user info
@@ -448,6 +458,7 @@ export default function Withdrawal() {
         description: insertError.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
     toast({
@@ -462,14 +473,24 @@ export default function Withdrawal() {
       .order('created_at', { ascending: false });
     if (!withdrawalError) {
       setWithdrawalHistory((withdrawalData || []).map(mapWithdrawalFields));
+      // Print the created_at time of the most recent withdrawal, the current local time, and the limit_activated_at time
+      if (withdrawalData && withdrawalData.length > 0) {
+        const latest = withdrawalData[0];
+        console.log('Supabase created_at:', latest.created_at);
+        console.log('Local time:', new Date().toISOString());
+        const packageLimit = settings.packageLimits[userPackage];
+        if (packageLimit && packageLimit.limit_activated_at) {
+          console.log('Limit activated at:', packageLimit.limit_activated_at);
+        }
+      }
     }
     // Reset form
-    setFormData({
+    setFormData(prev => ({
+      ...prev,
       type: '',
       amount: '',
-      method: '',
-      accountDetails: '',
-    });
+    }));
+    setLoading(false);
   };
 
   const getStatusIcon = (status: string) => {
@@ -703,8 +724,8 @@ export default function Withdrawal() {
                               <div>
                                 <div className="text-3xl font-extrabold text-purple-400 drop-shadow animate-pulse">{teamEarningsCount} EGP</div>
                                 <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.teamEarnings')}</div>
-                              </div>
-                            </div>
+                        </div>
+                          </div>
                           </TooltipTrigger>
                           <TooltipContent>Team earnings from your referral network.</TooltipContent>
                         </Tooltip>

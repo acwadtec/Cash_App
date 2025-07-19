@@ -591,7 +591,7 @@ export default function UsersPage() {
                             </div>
                           )}
                         </td>
-                        <td className="p-4 font-mono font-medium">${user.balance || 0}</td>
+                        <td className="p-4 font-mono font-medium">{user.balance || 0} EGP</td>
                         <td className="p-4 font-mono">{user.referral_count || 0}</td>
                         <td className="p-4">
                           <div className="flex flex-wrap gap-2">
