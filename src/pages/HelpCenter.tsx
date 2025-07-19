@@ -167,22 +167,22 @@ export default function HelpCenter() {
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 gradient-primary rounded-full flex items-center justify-center">
-                <HelpCircle className="w-10 h-10 text-primary-foreground" />
+          <div className="text-center mb-8 md:mb-12">
+            <div className="flex justify-center mb-4 md:mb-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 gradient-primary rounded-full flex items-center justify-center">
+                <HelpCircle className="w-8 h-8 md:w-10 md:h-10 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4">
               {t('help.title')}
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               {t('help.subtitle')}
             </p>
           </div>
 
           {/* Help Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
             {helpSections.map((section, index) => (
               <Card key={index} className="shadow-card hover:shadow-glow transition-all duration-300">
                 <CardHeader>

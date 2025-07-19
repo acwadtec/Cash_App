@@ -91,17 +91,17 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center h-12 flex-shrink-0 mr-4">
+          <Link to="/" className="flex items-center h-12 flex-shrink-0 mr-2 md:mr-4">
             <img
               src={theme === 'dark' ? DarkLogo : LightLogo}
               alt="Cash App Logo"
-              className="h-10 w-auto"
-              style={{ maxWidth: 160 }}
+              className="h-8 md:h-10 w-auto"
+              style={{ maxWidth: 120, maxWidth: 'min(120px, 25vw)' }}
             />
           </Link>
 
-          {/* Navigation Links and Actions */}
-          <div className="flex-1 flex items-center justify-center">
+          {/* Navigation Links and Actions - Hidden on Mobile */}
+          <div className="flex-1 hidden md:flex items-center justify-center">
             {isLoggedIn && !isAdmin && (
               <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 {navItems.map((item) => (
@@ -120,14 +120,28 @@ export function Navigation() {
           </div>
 
           {/* Actions (Theme, Language, Profile, etc.) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Admin Switch View Button */}
+          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden w-10 h-10 p-0 border border-border"
+              style={{ display: 'flex !important' }}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+            {/* Admin Switch View Button - Hidden on Mobile */}
             {isAdminUser && (
               <Button
                 onClick={handleSwitchView}
                 variant="default"
                 size="sm"
-                className="text-xs font-bold border-2 border-primary bg-primary text-white hover:bg-primary/90 ml-2"
+                className="hidden md:flex text-xs font-bold border-2 border-primary bg-primary text-white hover:bg-primary/90 ml-2"
                 style={{ minWidth: 120 }}
               >
                 {isAdmin ? (
@@ -190,7 +204,7 @@ export function Navigation() {
                     )}
                   </Avatar>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="hidden md:flex">
                   {t('nav.logout')}
                 </Button>
               </div>
@@ -207,23 +221,26 @@ export function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Navigation remains unchanged */}
+        {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <>
+            {/* Mobile Menu Overlay */}
+            <div className="md:hidden fixed inset-0 bg-black/20 z-40" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="md:hidden py-6 border-t bg-background shadow-lg relative z-50" style={{ display: 'block !important', minHeight: '200px' }}>
             {isLoggedIn && !isAdmin && (
-              <div className="space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                    className={`block px-4 py-2 text-sm font-medium transition-colors hover:text-primary ${
-                      isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
+              <div className="space-y-1">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={`block px-4 py-4 text-lg font-medium transition-colors hover:bg-muted/50 rounded-lg mx-2 border border-transparent hover:border-border ${
+                      isActive(item.href) ? 'text-primary bg-primary/10 border-primary/20' : 'text-foreground'
                     }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </div>
             )}
 
@@ -236,7 +253,7 @@ export function Navigation() {
                 }}
                 variant="outline"
                 size="sm"
-                className="w-full mt-2"
+                className="w-full mt-3 mx-2"
               >
                 {isAdmin ? (
                   <>
@@ -252,35 +269,38 @@ export function Navigation() {
               </Button>
             )}
 
-            <div className="flex items-center justify-between px-4 py-2 border-t mt-4">
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleTheme}
-                  className="w-9 h-9 p-0"
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="h-4 w-4" />
-                  ) : (
-                    <Moon className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-                  className="w-9 h-9 p-0 text-xs font-medium"
-                >
-                  {language === 'en' ? t('language.arabic') : t('language.english')}
-                </Button>
+            <div className="flex flex-col space-y-3 px-4 py-3 border-t mt-4">
+              {/* Theme and Language Controls */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleTheme}
+                    className="w-10 h-10 p-0"
+                  >
+                    {theme === 'dark' ? (
+                      <Sun className="h-5 w-5" />
+                    ) : (
+                      <Moon className="h-5 w-5" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                    className="w-10 h-10 p-0 text-sm font-medium"
+                  >
+                    {language === 'en' ? t('language.arabic') : t('language.english')}
+                  </Button>
+                </div>
               </div>
 
+              {/* User Actions */}
               {isLoggedIn ? (
-                <div className="flex items-center space-x-2">
-                  {/* Mobile User Profile Photo */}
-                  <Link to="/profile">
-                    <Avatar className="w-8 h-8">
+                <div className="flex items-center justify-between">
+                  <Link to="/profile" className="flex items-center space-x-3" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Avatar className="w-10 h-10">
                       {getProfilePhotoUrl() ? (
                         <img 
                           src={getProfilePhotoUrl()!} 
@@ -288,28 +308,32 @@ export function Navigation() {
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className="text-sm">
                           {getAvatarFallback()}
                         </AvatarFallback>
                       )}
                     </Avatar>
+                    <span className="text-sm font-medium">
+                      {userInfo?.first_name ? `${userInfo.first_name} ${userInfo.last_name || ''}` : 'Profile'}
+                    </span>
                   </Link>
                   <Button variant="ghost" size="sm" onClick={handleLogout}>
                     {t('nav.logout')}
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to="/login">{t('nav.login')}</Link>
+                <div className="flex flex-col space-y-2">
+                  <Button asChild variant="ghost" size="sm" className="w-full justify-start">
+                    <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.login')}</Link>
                   </Button>
-                  <Button asChild size="sm">
-                    <Link to="/register">{t('nav.register')}</Link>
+                  <Button asChild size="sm" className="w-full">
+                    <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.register')}</Link>
                   </Button>
                 </div>
               )}
             </div>
           </div>
+          </>
         )}
       </div>
     </nav>

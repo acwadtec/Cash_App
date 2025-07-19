@@ -331,8 +331,23 @@ export default function ReferralNetwork() {
     <div className={`min-h-screen py-20 ${isRTL ? 'rtl' : 'ltr'} bg-background text-foreground`}>
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-foreground">{t('referral.networkTitle') || 'Referral Network'}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-foreground">{t('referral.networkTitle') || 'Referral Network'}</h1>
           {userInfo?.referral_code && (
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+            <Card className="shadow-glow bg-card">
+              <CardHeader>
+                <CardTitle className="text-foreground">{t('referral.networkTitle') || 'Referral Network'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Team Earnings Breakdown */}
+                <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                  <div className="text-center p-4 bg-success/10 rounded-lg">
+                    <div className="text-lg font-bold text-success">{teamEarnings['1']?.toFixed(2) || '0.00'} EGP</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 Earnings'}</div>
+=======
+>>>>>>> Stashed changes
             <>
               <Card className="shadow-glow bg-card mb-6">
                 <CardHeader>
@@ -353,6 +368,10 @@ export default function ReferralNetwork() {
                       <div className="text-lg font-bold text-warning">{teamEarnings['3']?.toFixed(2) || '0.00'} EGP</div>
                       <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3 Earnings'}</div>
                     </div>
+<<<<<<< Updated upstream
+=======
+>>>>>>> d73a7b8628c022c86ff9089e6b5dc2058005a2dd
+>>>>>>> Stashed changes
                   </div>
                   {/* Team Earnings By User Breakdown */}
                   {earningsByUser.length > 0 && (
@@ -461,6 +480,60 @@ export default function ReferralNetwork() {
                           </div>
                         </div>
                       ))}
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+                    </ul>
+                  </div>
+                )}
+                <div className="grid grid-cols-3 gap-3 md:gap-4">
+                  <div className="text-center p-4 bg-success/10 rounded-lg">
+                    <div className="text-2xl font-bold text-success">{level1Referrals.length}</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 (Direct)'}</div>
+                  </div>
+                  <div className="text-center p-4 bg-primary/10 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{level2Referrals.length}</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level2') || 'Level 2 (Indirect)'}</div>
+                  </div>
+                  <div className="text-center p-4 bg-warning/10 rounded-lg">
+                    <div className="text-2xl font-bold text-warning">{level3Referrals.length}</div>
+                    <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3'}</div>
+                  </div>
+                </div>
+                {level1Referrals.length > 0 && (
+                  <div className="mt-4">
+                    <div className="font-semibold mb-2 text-foreground">{t('referral.level1List') || 'Level 1 Referrals:'}</div>
+                    <ul className="list-disc ml-6">
+                      {level1Referrals.map(u => (
+                        <li key={u.user_uid} className="text-muted-foreground">{u.first_name} {u.last_name} ({u.email})</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {level2Referrals.length > 0 && (
+                  <div className="mt-4">
+                    <div className="font-semibold mb-2 text-foreground">{t('referral.level2List') || 'Level 2 Referrals:'}</div>
+                    <ul className="list-disc ml-6">
+                      {level2Referrals.map(u => (
+                        <li key={u.user_uid} className="text-muted-foreground">{u.first_name} {u.last_name} ({u.email})</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {level3Referrals.length > 0 && (
+                  <div className="mt-4">
+                    <div className="font-semibold mb-2 text-foreground">{t('referral.level3List') || 'Level 3 Referrals:'}</div>
+                    <ul className="list-disc ml-6">
+                      {level3Referrals.map(u => (
+                        <li key={u.user_uid} className="text-muted-foreground">{u.first_name} {u.last_name} ({u.email})</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+=======
+>>>>>>> Stashed changes
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -473,6 +546,10 @@ export default function ReferralNetwork() {
                 </CardContent>
               </Card>
             </>
+<<<<<<< Updated upstream
+=======
+>>>>>>> d73a7b8628c022c86ff9089e6b5dc2058005a2dd
+>>>>>>> Stashed changes
           )}
         </div>
       </div>

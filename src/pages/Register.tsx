@@ -285,11 +285,11 @@ export default function Register() {
       <div className="container mx-auto px-4">
         <Card className="max-w-2xl mx-auto shadow-glow">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold gradient-primary bg-clip-text text-transparent">
+            <CardTitle className="text-2xl md:text-3xl font-bold gradient-primary bg-clip-text text-transparent">
               {t('register.title')}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="displayName">{t('register.displayName') || 'Display Name'}</Label>
