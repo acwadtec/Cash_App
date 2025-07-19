@@ -46,7 +46,7 @@ export default function Login() {
     if (error) {
       toast({
         title: t('common.error'),
-        description: error.message,
+        description: t('login.error'),
         variant: 'destructive',
       });
       return;

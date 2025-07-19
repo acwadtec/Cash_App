@@ -216,10 +216,10 @@ export default function NotificationsPage() {
                     <Input
                       value={userSearch}
                       onChange={e => setUserSearch(e.target.value)}
-                      placeholder="Search by name, phone, or email"
+                      placeholder={t('admin.notifications.searchUser')}
                       className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
                     />
-                    {userSearchLoading && <div className="absolute right-2 top-2 text-xs text-muted-foreground">Loading...</div>}
+                    {userSearchLoading && <div className="absolute right-2 top-2 text-xs text-muted-foreground">{t('admin.notifications.loading')}</div>}
                     {userResults.length > 0 && (
                       <div className="absolute z-10 bg-card border border-border rounded shadow w-full mt-1 max-h-48 overflow-y-auto">
                         {userResults.map(user => (
@@ -258,7 +258,7 @@ export default function NotificationsPage() {
                 <Label>{t('admin.notifications.image')}</Label>
                 <label className="block w-full cursor-pointer bg-muted border border-dashed border-primary/40 rounded-lg p-3 text-center hover:bg-primary/10 transition-all">
                   <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                  <span className="text-sm text-primary-foreground">{t('common.chooseFile') || 'Choose File'}</span>
+                  <span className="text-sm text-primary-foreground">{t('common.chooseFile')}</span>
                 </label>
                 {notificationData.imageUrl && (
                   <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] max-h-[40px] object-contain mt-3 rounded-lg border border-border shadow truncate overflow-x-auto" />
@@ -324,8 +324,8 @@ export default function NotificationsPage() {
                         {notif.image_url && <img src={notif.image_url} alt="notif" className="max-w-[60px] max-h-[40px] object-contain rounded-lg border border-border shadow truncate overflow-x-auto" />}
                       </TableCell>
                       <TableCell>
-                        <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEdit(notif)}>{t('common.edit') || 'Edit'}</Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete') || 'Delete'}</Button>
+                        <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEdit(notif)}>{t('common.edit')}</Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete')}</Button>
                       </TableCell>
                     </TableRow>
                   ))}

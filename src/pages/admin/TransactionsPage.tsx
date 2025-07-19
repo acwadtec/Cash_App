@@ -18,6 +18,13 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
 // Hooks and Contexts
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
@@ -87,7 +94,7 @@ export default function TransactionsPage() {
       // Format transactions
       const depositTxns = (deposits || []).map(deposit => {
         const userInfo = userInfoMap[deposit.user_uid];
-        const userName = userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email : (deposit.user_name || 'Unknown User');
+        const userName = userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email : (deposit.user_name || t('admin.transactions.unknownUser'));
         return {
           id: `deposit_${deposit.id}`,
           type: 'deposit',
@@ -95,7 +102,7 @@ export default function TransactionsPage() {
           user_uid: deposit.user_uid,
           amount: deposit.amount,
           status: deposit.status,
-          method: deposit.target_number || 'Mobile Transfer',
+          method: deposit.target_number || t('admin.transactions.mobileTransfer'),
           created_at: deposit.created_at,
           screenshot_url: deposit.screenshot_url,
           admin_note: deposit.admin_note,
@@ -104,7 +111,7 @@ export default function TransactionsPage() {
       });
       const withdrawalTxns = (withdrawals || []).map(withdrawal => {
         const userInfo = userInfoMap[withdrawal.user_uid];
-        const userName = userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email : (withdrawal.user_name || 'Unknown User');
+        const userName = userInfo ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.email : (withdrawal.user_name || t('admin.transactions.unknownUser'));
         return {
           id: `withdrawal_${withdrawal.id}`,
           type: 'withdrawal',
@@ -168,7 +175,7 @@ export default function TransactionsPage() {
   };
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    doc.text('Transaction History', 14, 16);
+    doc.text(t('admin.transactions.transactionHistory'), 14, 16);
     const tableColumn = ['ID', 'User', 'Type', 'Amount', 'Status', 'Method', 'Date'];
     const tableRows = filteredTransactions.map(transaction => [
       transaction.id,
@@ -228,9 +235,9 @@ export default function TransactionsPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">{t('admin.transactions')}</h2>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
-          <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
-          <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+          <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('export.csv')}</Button>
+          <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('export.excel')}</Button>
+          <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('export.pdf')}</Button>
         </div>
       </div>
       <div className="flex flex-col md:flex-row gap-4">

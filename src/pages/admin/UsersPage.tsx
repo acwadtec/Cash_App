@@ -241,7 +241,7 @@ export default function UsersPage() {
       'Referrals': u.referral_count,
       'Registration Date': new Date(u.created_at).toLocaleDateString(),
     }));
-    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    if (data.length === 0) return toast({ title: t('common.error'), description: t('admin.noDataToExport'), variant: 'destructive' });
     const csvContent = [
       Object.keys(data[0]).join(','),
       ...data.map(item => Object.values(item).join(','))
@@ -264,7 +264,7 @@ export default function UsersPage() {
       'Referrals': u.referral_count,
       'Registration Date': new Date(u.created_at).toLocaleDateString(),
     }));
-    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    if (data.length === 0) return toast({ title: t('common.error'), description: t('admin.noDataToExport'), variant: 'destructive' });
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
@@ -273,7 +273,7 @@ export default function UsersPage() {
   const handleExportPDF = () => {
     try {
       const doc = new jsPDF();
-      doc.text('User Data', 14, 16);
+      doc.text(t('admin.userData'), 14, 16);
       const tableColumn = ['Name', 'Email', 'Phone', 'Status', 'Level', 'Balance', 'Referrals', 'Registration Date'];
       const tableRows = filteredUsers.map(u => [
         `${u.first_name} ${u.last_name}`,
@@ -285,11 +285,11 @@ export default function UsersPage() {
         u.referral_count,
         new Date(u.created_at).toLocaleDateString(),
       ]);
-      if (tableRows.length === 0) throw new Error('No data to export');
+      if (tableRows.length === 0) throw new Error(t('admin.noDataToExport'));
       autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
       doc.save(`users_${new Date().toISOString()}.pdf`);
     } catch (err) {
-      toast({ title: t('Error'), description: 'Failed to export PDF: ' + (err.message || err), variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('admin.failedToExportPDF') + ': ' + (err.message || err), variant: 'destructive' });
     }
   };
 
@@ -375,9 +375,9 @@ export default function UsersPage() {
             {t('admin.users')} ({userCount})
           </CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
-            <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
-            <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+            <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('export.csv')}</Button>
+            <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('export.excel')}</Button>
+            <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('export.pdf')}</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -453,7 +453,7 @@ export default function UsersPage() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <span>Level {user.level || 1}</span>
+                              <span>{t('admin.levelPrefix')} {user.level || 1}</span>
                               <Button
                                 size="sm"
                                 variant="ghost"

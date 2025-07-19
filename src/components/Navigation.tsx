@@ -96,7 +96,7 @@ export function Navigation() {
               src={theme === 'dark' ? DarkLogo : LightLogo}
               alt="Cash App Logo"
               className="h-8 md:h-10 w-auto"
-              style={{ maxWidth: 120, maxWidth: 'min(120px, 25vw)' }}
+              style={{ maxWidth: 'min(120px, 25vw)' }}
             />
           </Link>
 

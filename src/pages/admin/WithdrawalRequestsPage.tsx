@@ -76,7 +76,7 @@ export default function WithdrawalRequestsPage() {
         ...w,
         user_name: userInfoMap[w.user_uid]
           ? `${userInfoMap[w.user_uid].first_name || ''} ${userInfoMap[w.user_uid].last_name || ''}`.trim() || userInfoMap[w.user_uid].email
-          : (w.user_name || 'Unknown User'),
+          : (w.user_name || t('common.unknownUser')),
       })));
     } else {
       setWithdrawals([]);
@@ -281,7 +281,7 @@ export default function WithdrawalRequestsPage() {
       'Status': w.status,
       'Date': new Date(w.created_at).toLocaleDateString(),
     }));
-    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    if (data.length === 0) return toast({ title: t('common.error'), description: t('common.noDataToExport'), variant: 'destructive' });
     const csvContent = [
       Object.keys(data[0]).join(','),
       ...data.map(item => Object.values(item).join(','))
@@ -301,7 +301,7 @@ export default function WithdrawalRequestsPage() {
       'Status': w.status,
       'Date': new Date(w.created_at).toLocaleDateString(),
     }));
-    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    if (data.length === 0) return toast({ title: t('common.error'), description: t('common.noDataToExport'), variant: 'destructive' });
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Withdrawals');
@@ -319,11 +319,11 @@ export default function WithdrawalRequestsPage() {
         w.status,
         new Date(w.created_at).toLocaleDateString(),
       ]);
-      if (tableRows.length === 0) throw new Error('No data to export');
+      if (tableRows.length === 0) throw new Error(t('common.noDataToExport'));
       autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
       doc.save(`withdrawals_${new Date().toISOString()}.pdf`);
     } catch (err) {
-      toast({ title: t('Error'), description: 'Failed to export PDF: ' + (err.message || err), variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('common.exportError') + ' ' + (err.message || err), variant: 'destructive' });
     }
   };
 
@@ -470,9 +470,9 @@ export default function WithdrawalRequestsPage() {
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <CardTitle>{t('admin.withdrawals.requestsList')}</CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
-            <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
-            <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+            <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('common.exportCSV')}</Button>
+            <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('common.exportExcel')}</Button>
+            <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('common.exportPDF')}</Button>
           </div>
         </CardHeader>
         <CardContent>

@@ -11,7 +11,7 @@ export default function SupportPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5 mr-2" />
-            {t('admin.supportChat') || 'Support Chat'}
+            {t('admin.supportChat')}
           </CardTitle>
         </CardHeader>
         <CardContent>

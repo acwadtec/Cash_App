@@ -25,6 +25,7 @@ interface Offer {
   active: boolean;
   deadline?: string;
   join_limit?: number;
+  user_join_limit?: number;
 }
 
 export default function ManageOffersPage() {
@@ -100,7 +101,7 @@ export default function ManageOffersPage() {
         monthly_profit: offer.monthly_profit?.toString() || '',
         deadline: offer.deadline || '',
         join_limit: offer.join_limit?.toString() || '',
-        user_join_limit: offer.user_join_limit?.toString() || '1'
+        user_join_limit: offer.join_limit?.toString() || '1'
       });
       setImagePreview(offer.image_url || '');
       setImageFile(null);
@@ -461,7 +462,7 @@ export default function ManageOffersPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="join_limit" className="text-sm font-medium">Number of Slots</Label>
+                      <Label htmlFor="join_limit" className="text-sm font-medium">{t('admin.numberOfSlots')}</Label>
                       <Input 
                         id="join_limit" 
                         name="join_limit" 
@@ -469,13 +470,13 @@ export default function ManageOffersPage() {
                         value={form.join_limit} 
                         onChange={handleChange} 
                         className="mt-1"
-                        placeholder="Number of slots (leave blank for unlimited)"
+                        placeholder={t('admin.numberOfSlotsPlaceholder')}
                         min="0"
                         step="1"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="user_join_limit" className="text-sm font-medium">Max Joins Per User</Label>
+                      <Label htmlFor="user_join_limit" className="text-sm font-medium">{t('admin.maxJoinsPerUser')}</Label>
                       <Input 
                         id="user_join_limit" 
                         name="user_join_limit" 
@@ -483,7 +484,7 @@ export default function ManageOffersPage() {
                         value={form.user_join_limit}
                         onChange={handleChange}
                         className="mt-1"
-                        placeholder="Max times a user can join (default 1)"
+                        placeholder={t('admin.maxJoinsPerUserPlaceholder')}
                         min="1"
                         step="1"
                       />
@@ -573,19 +574,19 @@ export default function ManageOffersPage() {
                 </h2>
               </div>
               {usersLoading ? (
-                <div className="py-8 flex justify-center items-center text-lg text-muted-foreground">{t('common.loading') || 'Loading...'}</div>
+                <div className="py-8 flex justify-center items-center text-lg text-muted-foreground">{t('common.loading')}</div>
               ) : usersError ? (
                 <div className="text-red-500 py-8 text-center">{usersError}</div>
               ) : joinedUsers.length === 0 ? (
-                <div className="text-muted-foreground py-8 text-center">{t('admin.noUsersJoined') || 'No users have joined this offer yet.'}</div>
+                <div className="text-muted-foreground py-8 text-center">{t('admin.noUsersJoined')}</div>
               ) : (
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 mb-2">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800">
-                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.name') || 'Name'}</th>
-                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.phone') || 'Mobile'}</th>
-                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">Status</th>
-                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">Actions</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.name')}</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('profile.phone')}</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('admin.status')}</th>
+                      <th className="text-left px-4 py-2 text-gray-900 dark:text-gray-100 font-medium">{t('admin.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -597,8 +598,8 @@ export default function ManageOffersPage() {
                         <td className="text-left px-4 py-2">
                           {user.status === 'pending' && (
                             <>
-                              <Button size="sm" className="bg-success mr-2" onClick={() => handleApprove(user.user_uid)}>Approve</Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleReject(user.user_uid)}>Reject</Button>
+                              <Button size="sm" className="bg-success mr-2" onClick={() => handleApprove(user.user_uid)}>{t('admin.approve')}</Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleReject(user.user_uid)}>{t('admin.reject')}</Button>
                             </>
                           )}
                         </td>

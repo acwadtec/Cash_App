@@ -132,7 +132,7 @@ export default function Offers() {
 
   const joinOffer = async (offerId: string) => {
     if (!userId) {
-      toast({ title: 'Error', description: 'You must be logged in to join an offer.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.mustLogin'), variant: 'destructive' });
       return;
     }
     // Fetch offer details including join_limit, join_count, and user_join_limit
@@ -142,17 +142,17 @@ export default function Offers() {
       .eq('id', offerId)
       .single();
     if (offerError || !offer) {
-      toast({ title: 'Error', description: 'Could not fetch offer details.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.couldNotFetchOffer'), variant: 'destructive' });
       return;
     }
     // Check per-user join limit
     const userJoins = userJoinCounts[offerId] || 0;
     if (offer.user_join_limit && userJoins >= offer.user_join_limit) {
-      toast({ title: 'Error', description: `You have reached the maximum number of joins for this offer (${offer.user_join_limit}).`, variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.maxJoinsReached'), variant: 'destructive' });
       return;
     }
     if (offer.join_limit !== null && offer.join_count >= offer.join_limit) {
-      toast({ title: 'Error', description: 'This offer is fully booked.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.offerFullyBooked'), variant: 'destructive' });
       return;
     }
     // Fetch user balance
@@ -162,12 +162,12 @@ export default function Offers() {
       .eq('user_uid', userId)
       .single();
     if (userError || !userInfo) {
-      toast({ title: 'Error', description: 'Could not fetch user balance.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.couldNotFetchBalance'), variant: 'destructive' });
       return;
     }
     const cost = Number(offer.cost) || 0;
     if (userInfo.balance < cost) {
-      toast({ title: 'Error', description: 'Insufficient balance to join this offer.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.insufficientBalance'), variant: 'destructive' });
       return;
     }
     // Subtract cost from user balance
@@ -177,7 +177,7 @@ export default function Offers() {
       .update({ balance: newBalance })
       .eq('user_uid', userId);
     if (updateError) {
-      toast({ title: 'Error', description: 'Failed to update balance.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.failedToUpdateBalance'), variant: 'destructive' });
       return;
     }
     // Log transaction for capital deposit (offer buy-in)
@@ -186,19 +186,19 @@ export default function Offers() {
       type: 'capital_deposit',
       amount: cost,
       status: 'completed',
-      description: `Capital deposit for joining offer`,
+      description: t('offers.capitalDeposit'),
       created_at: new Date().toISOString(),
     });
     // Insert join record
     const now = new Date().toISOString();
     const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId, status: 'pending', approved_at: now, last_profit_at: now }]);
     if (error) {
-      toast({ title: 'Error', description: 'Failed to join offer.', variant: 'destructive' });
+              toast({ title: t('common.error'), description: t('error.failedToJoinOffer'), variant: 'destructive' });
       return;
     }
     // Increment join_count for the offer
     await supabase.from('offers').update({ join_count: offer.join_count + 1 }).eq('id', offerId);
-    toast({ title: 'Success', description: 'Your join request is pending admin approval.' });
+            toast({ title: t('common.success'), description: t('success.joinRequestPending') });
     setJoinStatuses(prev => ({ ...prev, [offerId]: 'pending' }));
     // After successful join, update userJoinCounts
     setUserJoinCounts(prev => ({ ...prev, [offerId]: (prev[offerId] || 0) + 1 }));
@@ -222,7 +222,7 @@ export default function Offers() {
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              {t('common.completeProfile') || 'Please complete your account information to access offers. Redirecting to profile setup...'}
+              {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
@@ -230,9 +230,9 @@ export default function Offers() {
 
       <div className="container mx-auto px-4">
         <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('offers.title') || 'Available Offers'}</h1>
+          <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('offers.title')}</h1>
           <p className="text-base md:text-xl text-muted-foreground px-4">
-            {t('offers.subtitle') || 'Discover available offers and get additional rewards'}
+            {t('offers.subtitle')}
           </p>
         </div>
 
@@ -258,11 +258,11 @@ export default function Offers() {
                       <span className="text-2xl font-bold text-primary">{offer.amount}</span>
                       {offer.join_limit !== null && (
                         offer.join_count >= (offer.join_limit || 0) ? (
-                          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 mt-1">Fully Booked</Badge>
+                          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 mt-1">{t('offers.fullyBooked')}</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 mt-1">
-                            {Math.max(0, (offer.join_limit || 0) - (offer.join_count || 0))} / {offer.join_limit} slots
-                          </Badge>
+                                                      <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 mt-1">
+                              {Math.max(0, (offer.join_limit || 0) - (offer.join_count || 0))} / {offer.join_limit} {t('offers.slots')}
+                            </Badge>
                         )
                       )}
                     </div>
@@ -330,14 +330,14 @@ export default function Offers() {
                      joinStatuses[offer.id] === 'approved' ? t('offers.joined') :
                      joinStatuses[offer.id] === 'pending' ? t('offers.pendingApproval') :
                      (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit)
-                       ? `Max joined (${offer.user_join_limit})`
+                       ? `${t('offers.maxJoined')} (${offer.user_join_limit})`
                        : (offer.join_limit !== null && offer.join_count >= offer.join_limit)
-                         ? 'Fully Booked'
+                         ? t('offers.fullyBooked')
                          : t('offers.join')}
                   </Button>
                   {offer.user_join_limit && (
                     <div className="text-xs text-muted-foreground mt-1 text-center">
-                      Joined {userJoinCounts[offer.id] || 0} / {offer.user_join_limit} times
+                      {t('offers.joined')} {userJoinCounts[offer.id] || 0} / {offer.user_join_limit} {t('offers.times')}
                     </div>
                   )}
                 </CardContent>
@@ -351,11 +351,11 @@ export default function Offers() {
             <CardContent className="pt-8">
               <h3 className="text-2xl font-bold mb-4">{t('offers.notification.title')}</h3>
               <p className="text-muted-foreground mb-6">
-                {t('offers.notification.subtitle') || t('offers.stayTuned')}
+                {t('offers.notification.subtitle')}
               </p>
-              <Button variant="outline" size="lg" className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
-                {t('offers.notification.button') || t('offers.notifyMe')}
-              </Button>
+                              <Button variant="outline" size="lg" className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
+                  {t('offers.notification.button')}
+                </Button>
             </CardContent>
           </Card>
         </div>

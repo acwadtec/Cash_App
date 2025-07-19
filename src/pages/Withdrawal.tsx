@@ -319,7 +319,7 @@ export default function Withdrawal() {
     if (amount > 6000) {
       toast({
         title: t('withdrawal.error.maxAmount'),
-        description: 'Maximum withdrawal per request is 6000.',
+        description: t('withdrawal.maxWithdrawalLimit'),
         variant: 'destructive',
       });
       return;
@@ -328,7 +328,7 @@ export default function Withdrawal() {
     if (!isAfterAllDeadlines()) {
       toast({
         title: t('withdrawal.error.limit'),
-        description: 'Withdrawals are only allowed after the offer deadline has passed.',
+        description: t('withdrawal.deadlineRestriction'),
         variant: 'destructive',
       });
       return;
@@ -339,7 +339,7 @@ export default function Withdrawal() {
     if (!user) {
       toast({
         title: t('common.error'),
-        description: 'User not authenticated',
+        description: t('withdrawal.userNotAuthenticated'),
         variant: 'destructive',
       });
       return;
@@ -430,7 +430,7 @@ export default function Withdrawal() {
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              {t('common.completeProfile') || 'Please complete your account information to make withdrawals. Redirecting to profile setup...'}
+              {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
@@ -536,7 +536,7 @@ export default function Withdrawal() {
                             className="h-12 flex items-center px-3 rounded-md bg-gray-100 border border-input text-base text-gray-900"
                             style={{ minHeight: '3rem' }}
                           >
-                            {formData.method || <span className="text-gray-400">{t('withdrawal.methodPlaceholder') || '-'}</span>}
+                            {formData.method || <span className="text-gray-400">{t('withdrawal.placeholder')}</span>}
                           </div>
                         </div>
 
@@ -546,7 +546,7 @@ export default function Withdrawal() {
                             className="h-12 flex items-center px-3 rounded-md bg-gray-100 border border-input text-base text-gray-900"
                             style={{ minHeight: '3rem' }}
                           >
-                            {formData.accountDetails || <span className="text-gray-400">{t('withdrawal.accountPlaceholder') || '-'}</span>}
+                            {formData.accountDetails || <span className="text-gray-400">{t('withdrawal.placeholder')}</span>}
                           </div>
                         </div>
 
@@ -578,7 +578,7 @@ export default function Withdrawal() {
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex justify-between items-center p-3 rounded-lg bg-accent/20">
-                          <span className="font-medium">إجمالي الإيرادات</span>
+                          <span className="font-medium">{t('withdrawal.totalIncome')}</span>
                           <span className="font-bold text-primary">{balances ? `${balances.balance} ${t('deposit.amountUnit')}` : `${t('deposit.amountUnit')}`}</span>
                         </div>
                         {withdrawalTypes.map((type) => (
@@ -691,11 +691,11 @@ export default function Withdrawal() {
                                   className="mt-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                                   onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
                                 >
-                                  {t('withdrawal.viewProof') || 'View Proof'}
+                                  {t('withdrawal.viewProof')}
                                 </Button>
                               )}
                               {!withdrawal.rejectionReason && !withdrawal.adminNote && !(withdrawal.status === 'paid' && withdrawal.proofImageUrl) && (
-                                <span className="text-muted-foreground">{t('withdrawal.noDetails') || 'No additional details'}</span>
+                                <span className="text-muted-foreground">{t('withdrawal.noDetails')}</span>
                               )}
                             </TableCell>
                           </TableRow>
@@ -716,7 +716,7 @@ export default function Withdrawal() {
           <div className="bg-background p-4 rounded shadow-lg max-w-lg w-full flex flex-col items-center">
             <img src={modalImageUrl} alt="Proof" className="max-h-[70vh] max-w-full mb-4 rounded" />
             <Button onClick={() => setShowImageModal(false)} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
-              {t('common.close') || 'Close'}
+              {t('common.close')}
             </Button>
           </div>
         </div>

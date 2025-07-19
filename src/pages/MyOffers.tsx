@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, robustQuery } from '@/lib/supabase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Offer {
   id: string;
@@ -28,13 +29,7 @@ interface Transaction {
   source_user_id?: string;
 }
 
-const statusTabs = [
-  { label: 'Pending', value: 'pending' },
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
-];
-
-function getTimeLeftToNextProfit(offer: Offer, now: Date): string {
+function getTimeLeftToNextProfit(offer: Offer, now: Date, t: (key: string) => string): string {
   const last = offer.last_profit_at || offer.approved_at;
   if (!last) return '-';
   const lastDate = new Date(last);
@@ -52,20 +47,20 @@ function getTimeLeftToNextProfit(offer: Offer, now: Date): string {
     hours: Math.floor(diff / (1000 * 60 * 60))
   });
   
-  if (diff <= 0) return 'Available now';
+  if (diff <= 0) return t('myOffers.availableNow');
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
-function getDaysLeft(offer: Offer, now: Date): string {
+function getDaysLeft(offer: Offer, now: Date, t: (key: string) => string): string {
   if (!offer.deadline) return '-';
   const deadline = new Date(offer.deadline);
   const diff = deadline.getTime() - now.getTime();
-  if (diff <= 0) return 'Expired';
+  if (diff <= 0) return t('myOffers.expired');
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  return `${days} day${days !== 1 ? 's' : ''}`;
+  return `${days} ${days !== 1 ? t('myOffers.days') : t('myOffers.day')}`;
 }
 
 function getTotalProfitFromTransactions(transactions: Transaction[], offerId: string): string {
@@ -89,6 +84,7 @@ function getTotalProfitFromTransactions(transactions: Transaction[], offerId: st
 }
 
 const MyOffers: React.FC = () => {
+  const { t } = useLanguage();
   const [selectedTab, setSelectedTab] = useState('pending');
   const [offers, setOffers] = useState<Offer[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -182,11 +178,17 @@ const MyOffers: React.FC = () => {
 
   const filteredOffers = offers.filter((offer) => offer.status === selectedTab);
 
+  const statusTabs = [
+    { label: t('myOffers.pending'), value: 'pending' },
+    { label: t('myOffers.active'), value: 'active' },
+    { label: t('myOffers.inactive'), value: 'inactive' },
+  ];
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">My Offers</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">{t('myOffers.title')}</h1>
           <div className="flex flex-wrap justify-center gap-2 mb-6">
             {statusTabs.map((tab) => (
               <button
@@ -204,9 +206,9 @@ const MyOffers: React.FC = () => {
           </div>
           <div>
             {loading ? (
-              <p className="text-center text-muted-foreground">Loading...</p>
+              <p className="text-center text-muted-foreground">{t('myOffers.loading')}</p>
             ) : filteredOffers.length === 0 ? (
-              <p className="text-center text-muted-foreground">No {selectedTab} offers available.</p>
+              <p className="text-center text-muted-foreground">{t('myOffers.noOffers').replace('{status}', selectedTab)}</p>
             ) : (
               <ul className="space-y-3">
                 {filteredOffers.map((offer) => (
@@ -217,12 +219,12 @@ const MyOffers: React.FC = () => {
                     <div className="font-semibold text-lg mb-2">{offer.title}</div>
                     <div className="text-sm text-muted-foreground mb-3">{offer.description}</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="text-muted-foreground">Joined: {offer.joined_at ? new Date(offer.joined_at).toLocaleString() : '-'}</div>
-                      <div className="text-muted-foreground">Status: {offer.status}</div>
-                      <div className="text-blue-600">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
-                      <div className="text-orange-600">Days left until offer ends: {getDaysLeft(offer, now)}</div>
+                      <div className="text-muted-foreground">{t('myOffers.joined')} {offer.joined_at ? new Date(offer.joined_at).toLocaleString() : '-'}</div>
+                      <div className="text-muted-foreground">{t('myOffers.status')} {offer.status}</div>
+                      <div className="text-blue-600">{t('myOffers.timeToNextProfit')} {getTimeLeftToNextProfit(offer, now, t)}</div>
+                      <div className="text-orange-600">{t('myOffers.daysLeft')} {getDaysLeft(offer, now, t)}</div>
                     </div>
-                    <div className="text-sm text-green-700 mt-2 font-semibold">Total profit from this offer: {getTotalProfitFromTransactions(transactions, offer.id)}</div>
+                    <div className="text-sm text-green-700 mt-2 font-semibold">{t('myOffers.totalProfit')} {getTotalProfitFromTransactions(transactions, offer.id)}</div>
                   </li>
                 ))}
               </ul>

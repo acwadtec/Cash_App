@@ -52,23 +52,23 @@ export default function Register() {
 
       if (error || !data) {
         toast({
-          title: 'Invalid Referral Code',
-          description: 'The referral code you entered is not valid.',
+          title: t('register.invalidReferralCode'),
+          description: t('register.invalidReferralCodeDesc'),
           variant: 'destructive',
         });
         setFormData(prev => ({ ...prev, referralCode: '' }));
       } else if (!data.verified) {
         toast({
-          title: 'Invalid Referral Code',
-          description: 'The referral code belongs to an unverified account.',
+          title: t('register.unverifiedReferralCode'),
+          description: t('register.unverifiedReferralCodeDesc'),
           variant: 'destructive',
         });
         setFormData(prev => ({ ...prev, referralCode: '' }));
       } else {
         setReferrerInfo(data);
         toast({
-          title: 'Valid Referral Code',
-          description: `You'll be referred by ${data.first_name} ${data.last_name}`,
+          title: t('register.validReferralCode'),
+          description: t('register.validReferralCodeDesc').replace('{name}', `${data.first_name} ${data.last_name}`),
         });
       }
     } catch (error) {
@@ -107,7 +107,7 @@ export default function Register() {
     if (formData.password !== formData.passwordConfirm) {
       toast({
         title: t('common.error'),
-        description: t('register.passwordsDontMatch') || 'Passwords do not match',
+        description: t('register.passwordsDontMatch'),
         variant: 'destructive',
       });
       return;
@@ -292,7 +292,7 @@ export default function Register() {
           <CardContent className="px-4 md:px-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="displayName">{t('register.displayName') || 'Display Name'}</Label>
+                <Label htmlFor="displayName">{t('register.displayName')}</Label>
                 <Input
                   id="displayName"
                   name="displayName"
@@ -315,7 +315,7 @@ export default function Register() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t('register.password') || t('login.password') || 'Password'}</Label>
+                <Label htmlFor="password">{t('register.password')}</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -337,7 +337,7 @@ export default function Register() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="passwordConfirm">{t('register.passwordConfirm') || 'Confirm Password'}</Label>
+                <Label htmlFor="passwordConfirm">{t('register.passwordConfirm')}</Label>
                 <div className="relative">
                   <Input
                     id="passwordConfirm"

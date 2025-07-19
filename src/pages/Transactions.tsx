@@ -14,6 +14,13 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
 export default function Transactions() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -127,7 +134,7 @@ export default function Transactions() {
   };
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    doc.text('Transaction History', 14, 16);
+    doc.text(t('transactions.transactionHistory'), 14, 16);
     const tableColumn = ['ID', 'Type', 'Amount', 'Status', 'Date', 'Description', 'Method', 'Rejection Reason', 'Admin Note'];
     const tableRows = filteredTransactions.map(txn => [
       txn.id,
@@ -152,7 +159,7 @@ export default function Transactions() {
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              {t('common.completeProfile') || 'Please complete your account information to view transactions. Redirecting to profile setup...'}
+              {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
@@ -166,8 +173,8 @@ export default function Transactions() {
               {t('transactions.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4 px-4">
-              <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
-              <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+              <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('transactions.exportExcel')}</Button>
+              <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('transactions.exportPDF')}</Button>
             </div>
           </div>
 

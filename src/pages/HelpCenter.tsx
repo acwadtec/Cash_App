@@ -158,7 +158,7 @@ export default function HelpCenter() {
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              {t('common.completeProfile') || 'Please complete your account information to access help center. Redirecting to profile setup...'}
+              {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>

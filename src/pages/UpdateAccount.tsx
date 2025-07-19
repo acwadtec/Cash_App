@@ -153,17 +153,17 @@ export default function UpdateAccount() {
       // Process referral if pending
       const pendingReferralCode = localStorage.getItem('pendingReferralCode');
       if (pendingReferralCode) {
-        await processReferral(user.id, pendingReferralCode);
+        await processReferral(user.id, pendingReferralCode, t);
         localStorage.removeItem('pendingReferralCode');
       }
       
-      toast({ title: t('common.success'), description: 'تم حفظ البيانات بنجاح' });
+      toast({ title: t('common.success'), description: t('updateAccount.dataSaved') });
       form.reset();
       
       // Redirect to home page after successful update
       navigate('/');
     } catch (err: any) {
-      toast({ title: t('common.error'), description: err.message || 'حدث خطأ أثناء الحفظ' });
+      toast({ title: t('common.error'), description: err.message || t('updateAccount.saveError') });
     } finally {
       setUploading(false);
     }
@@ -176,10 +176,10 @@ export default function UpdateAccount() {
           <Card className="shadow-glow">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold gradient-primary bg-clip-text text-transparent">
-                {t('updateAccount.title') || 'Update Account Information'}
+                {t('updateAccount.title')}
               </CardTitle>
               <p className="text-muted-foreground mt-2">
-                {t('updateAccount.subtitle') || 'Please complete your account information to continue'}
+                {t('updateAccount.subtitle')}
               </p>
             </CardHeader>
             <CardContent>
@@ -187,7 +187,7 @@ export default function UpdateAccount() {
                 {/* Profile Photo Section */}
                 <div className="text-center">
                   <label className="block text-sm font-medium mb-4">
-                    {t('profile.profilePhoto') || 'Profile Photo'}
+                    {t('profile.profilePhoto')}
                   </label>
                   <div className="flex flex-col items-center space-y-4">
                     <div className="relative">
@@ -271,10 +271,10 @@ export default function UpdateAccount() {
                       <SelectValue placeholder={t('profile.selectWallet')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="vodafone cash">Vodafone Cash</SelectItem>
-                      <SelectItem value="etisalat cash">Etisalat Cash</SelectItem>
-                      <SelectItem value="orange cash">Orange Cash</SelectItem>
-                      <SelectItem value="we pay">We Pay</SelectItem>
+                      <SelectItem value="vodafone cash">{t('profile.walletVodafone')}</SelectItem>
+                      <SelectItem value="etisalat cash">{t('profile.walletEtisalat')}</SelectItem>
+                      <SelectItem value="orange cash">{t('profile.walletOrange')}</SelectItem>
+                      <SelectItem value="we pay">{t('profile.walletWePay')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -309,7 +309,7 @@ export default function UpdateAccount() {
                   className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                   disabled={uploading}
                 >
-                  {uploading ? t('common.loading') : t('updateAccount.submit') || 'Complete Registration'}
+                  {uploading ? t('common.loading') : t('updateAccount.submit')}
                 </Button>
               </form>
             </CardContent>
@@ -321,7 +321,7 @@ export default function UpdateAccount() {
 }
 
 // Helper function to process referral (same as in Profile.tsx)
-async function processReferral(newUserId: string, referralCode: string) {
+async function processReferral(newUserId: string, referralCode: string, t: any) {
   console.log('processReferral called', newUserId, referralCode);
   try {
     // Get referrer info (Level 1)
@@ -333,7 +333,7 @@ async function processReferral(newUserId: string, referralCode: string) {
     console.log('referrerData', referrerData, referrerError);
     if (referrerError || !referrerData) {
       console.error('Error getting referrer data:', referrerError);
-      toast({ title: 'Referral Error', description: 'Referrer not found or error', variant: 'destructive' });
+      toast({ title: t('referral.error'), description: t('referral.referrerNotFound'), variant: 'destructive' });
       return;
     }
 
@@ -346,7 +346,7 @@ async function processReferral(newUserId: string, referralCode: string) {
     console.log('settingsData', settingsData, settingsError);
     if (settingsError || !settingsData) {
       console.error('Error getting referral settings:', settingsError);
-      toast({ title: 'Referral Error', description: 'Settings not found or error', variant: 'destructive' });
+      toast({ title: t('referral.error'), description: t('referral.settingsNotFound'), variant: 'destructive' });
       return;
     }
 
@@ -364,7 +364,7 @@ async function processReferral(newUserId: string, referralCode: string) {
     console.log('updateErrorL1', updateErrorL1);
     if (updateErrorL1) {
       console.error('Error updating referrer stats:', updateErrorL1);
-      toast({ title: 'Referral Error', description: 'Failed to update referrer stats', variant: 'destructive' });
+      toast({ title: t('referral.error'), description: t('referral.updateStatsFailed'), variant: 'destructive' });
       return;
     }
 
@@ -381,7 +381,7 @@ async function processReferral(newUserId: string, referralCode: string) {
     console.log('insertErrorL1', insertErrorL1);
     if (insertErrorL1) {
       console.error('Error inserting referral record:', insertErrorL1);
-      toast({ title: 'Referral Error', description: 'Failed to record referral', variant: 'destructive' });
+      toast({ title: t('referral.error'), description: t('referral.recordFailed'), variant: 'destructive' });
       return;
     }
 
@@ -466,13 +466,13 @@ async function processReferral(newUserId: string, referralCode: string) {
     console.log('updateNewUserError', updateNewUserError);
     if (updateNewUserError) {
       console.error('Error updating new user referred_by:', updateNewUserError);
-      toast({ title: 'Referral Error', description: 'Failed to update new user', variant: 'destructive' });
+      toast({ title: t('referral.error'), description: t('referral.updateUserFailed'), variant: 'destructive' });
       return;
     }
 
-    toast({ title: 'Referral Success', description: `Referral processed for ${referrerData.email}` });
+    toast({ title: t('referral.success'), description: t('referral.processed').replace('{email}', referrerData.email) });
   } catch (error) {
     console.error('Error processing referral:', error);
-    toast({ title: 'Referral Error', description: 'Unexpected error', variant: 'destructive' });
+    toast({ title: t('referral.error'), description: t('referral.unexpectedError'), variant: 'destructive' });
   }
 } 

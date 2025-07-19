@@ -122,7 +122,7 @@ export default function Profile() {
       console.log('referrerData', referrerData, referrerError);
       if (referrerError || !referrerData) {
         console.error('Error getting referrer data:', referrerError);
-        toast({ title: 'Referral Error', description: 'Referrer not found or error', variant: 'destructive' });
+        toast({ title: t('referral.error'), description: t('referral.referrerNotFound'), variant: 'destructive' });
         return;
       }
 
@@ -135,7 +135,7 @@ export default function Profile() {
       console.log('settingsData', settingsData, settingsError);
       if (settingsError || !settingsData) {
         console.error('Error getting referral settings:', settingsError);
-        toast({ title: 'Referral Error', description: 'Settings not found or error', variant: 'destructive' });
+        toast({ title: t('referral.error'), description: t('referral.settingsNotFound'), variant: 'destructive' });
         return;
       }
 
@@ -153,7 +153,7 @@ export default function Profile() {
       console.log('updateErrorL1', updateErrorL1);
       if (updateErrorL1) {
         console.error('Error updating referrer stats:', updateErrorL1);
-        toast({ title: 'Referral Error', description: 'Failed to update referrer stats', variant: 'destructive' });
+        toast({ title: t('referral.error'), description: t('referral.updateStatsFailed'), variant: 'destructive' });
         return;
       }
 
@@ -170,7 +170,7 @@ export default function Profile() {
       console.log('insertErrorL1', insertErrorL1);
       if (insertErrorL1) {
         console.error('Error inserting referral record:', insertErrorL1);
-        toast({ title: 'Referral Error', description: 'Failed to record referral', variant: 'destructive' });
+        toast({ title: t('referral.error'), description: t('referral.recordFailed'), variant: 'destructive' });
         return;
       }
 
@@ -255,14 +255,14 @@ export default function Profile() {
       console.log('updateNewUserError', updateNewUserError);
       if (updateNewUserError) {
         console.error('Error updating new user referred_by:', updateNewUserError);
-        toast({ title: 'Referral Error', description: 'Failed to update new user', variant: 'destructive' });
+        toast({ title: t('referral.error'), description: t('referral.updateUserFailed'), variant: 'destructive' });
         return;
       }
 
-      toast({ title: 'Referral Success', description: `Referral processed for ${referrerData.email}` });
+      toast({ title: t('referral.success'), description: t('referral.processed').replace('{email}', referrerData.email) });
     } catch (error) {
       console.error('Error processing referral:', error);
-      toast({ title: 'Referral Error', description: 'Unexpected error', variant: 'destructive' });
+      toast({ title: t('referral.error'), description: t('referral.unexpectedError'), variant: 'destructive' });
     }
   }
 
@@ -330,12 +330,12 @@ export default function Profile() {
           <div className="max-w-2xl mx-auto text-center">
             <Card className="shadow-glow">
               <CardContent className="pt-6">
-                <h2 className="text-2xl font-bold mb-4">{t('profile.noData') || 'No Profile Data'}</h2>
+                <h2 className="text-2xl font-bold mb-4">{t('profile.noData')}</h2>
                 <p className="text-muted-foreground mb-6">
-                  {t('profile.noDataDesc') || 'Please complete your account information to view your profile.'}
+                  {t('profile.noDataDesc')}
                 </p>
                 <Button onClick={handleUpdateAccount} className="w-full">
-                  {t('profile.updateAccount') || 'Update Account Information'}
+                  {t('profile.updateAccount')}
                 </Button>
       </CardContent>
     </Card>
@@ -394,19 +394,19 @@ export default function Profile() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6">
               <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
                 <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.balance ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Balance</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.balance')}</div>
               </div>
               <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
                 <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.total_points ?? 0}</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Total Points</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.totalPoints')}</div>
               </div>
               <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
                 <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.bonuses ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Bonuses</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.bonuses')}</div>
               </div>
               <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
                 <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.team_earnings ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Team Earnings</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.teamEarnings')}</div>
               </div>
           </div>
           )}
@@ -416,24 +416,24 @@ export default function Profile() {
           {/* Gamification: Level and Badges */}
           <Card className="shadow-glow bg-card">
               <CardHeader>
-              <CardTitle className="text-foreground">{t('profile.achievements') || 'Achievements'}</CardTitle>
+                              <CardTitle className="text-foreground">{t('profile.achievements')}</CardTitle>
               </CardHeader>
               <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Level */}
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">{t('profile.level') || 'Level'}</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-foreground">{t('profile.level')}</h3>
                   <div className="text-3xl font-bold text-primary mb-2">
                     {userInfo?.level || 1}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {t('profile.levelDesc') || 'Your current level'}
+                    {t('profile.levelDesc')}
                   </p>
                 </div>
 
                 {/* Badges */}
                     <div>
-                  <h3 className="text-lg font-semibold mb-4 text-foreground">{t('profile.badges') || 'Badges'}</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">{t('profile.badges')}</h3>
                   {userBadges.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {userBadges.map((badge: any, index: number) => (
@@ -444,7 +444,7 @@ export default function Profile() {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      {t('profile.noBadges') || 'No badges earned yet'}
+                      {t('profile.noBadges')}
                     </p>
                   )}
                     </div>
@@ -456,9 +456,9 @@ export default function Profile() {
           <Card className="shadow-glow bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground">{t('profile.accountInfo') || 'Account Information'}</CardTitle>
+                <CardTitle className="text-foreground">{t('profile.accountInfo')}</CardTitle>
                 <Button onClick={handleUpdateAccount} variant="outline" size="sm">
-                  {t('profile.edit') || 'Edit'}
+                  {t('profile.edit')}
                 </Button>
               </div>
             </CardHeader>
@@ -497,7 +497,7 @@ export default function Profile() {
                 {userInfo?.profile_photo_url && (
                     <div>
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                      {t('profile.profilePhoto') || 'Profile Photo'}
+                      {t('profile.profilePhoto')}
                     </label>
                     <div className="flex items-center gap-4">
                       <Avatar className="w-16 h-16">
@@ -516,7 +516,7 @@ export default function Profile() {
                         }}
                         className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                       >
-                        {t('profile.view') || 'View'}
+                        {t('profile.view')}
                       </Button>
                     </div>
                   </div>
@@ -526,31 +526,31 @@ export default function Profile() {
                 {(userInfo?.id_front_url || userInfo?.id_back_url) && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                      {t('profile.idPhotos') || 'ID Photos'}
+                      {t('profile.idPhotos')}
                     </label>
                     <div className="flex gap-4">
                       {userInfo?.id_front_url && (
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">
-                            {t('profile.idFront') || 'Front'}
+                            {t('profile.idFront')}
                           </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setModalImageUrl(getImageUrl('front'));
-                              setShowImageModal(true);
-                            }}
-                            className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
-                          >
-                            {t('profile.view') || 'View'}
-                          </Button>
+                                                      <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setModalImageUrl(getImageUrl('front'));
+                                setShowImageModal(true);
+                              }}
+                              className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
+                            >
+                              {t('profile.view')}
+                            </Button>
                   </div>
                       )}
                       {userInfo?.id_back_url && (
-                  <div>
+                                          <div>
                           <p className="text-xs text-muted-foreground mb-1">
-                            {t('profile.idBack') || 'Back'}
+                            {t('profile.idBack')}
                           </p>
                           <Button
                             variant="outline"
@@ -561,7 +561,7 @@ export default function Profile() {
                             }}
                             className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
                           >
-                            {t('profile.view') || 'View'}
+                            {t('profile.view')}
                           </Button>
                         </div>
                       )}

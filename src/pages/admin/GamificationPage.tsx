@@ -149,8 +149,8 @@ const GamificationPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching badges:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to fetch badges'),
+        title: t('common.error'),
+        description: t('admin.error.fetchBadgesFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -196,8 +196,8 @@ const GamificationPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching user badges:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to fetch user badges'),
+        title: t('common.error'),
+        description: t('admin.error.fetchUserBadgesFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -224,8 +224,8 @@ const GamificationPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching levels:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to fetch levels'),
+        title: t('common.error'),
+        description: t('admin.error.fetchLevelsFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -252,7 +252,7 @@ const GamificationPage: React.FC = () => {
           .eq('id', selectedBadge.id);
 
         if (error) throw error;
-        toast({ title: t('Success'), description: t('Badge updated successfully') });
+        toast({ title: t('common.success'), description: t('admin.success.badgeUpdated') });
       } else {
         // Create new badge
         const { error } = await supabase
@@ -260,7 +260,7 @@ const GamificationPage: React.FC = () => {
           .insert([badgeForm]);
 
         if (error) throw error;
-        toast({ title: t('Success'), description: t('Badge created successfully') });
+        toast({ title: t('common.success'), description: t('admin.success.badgeCreated') });
       }
 
       setShowBadgeModal(false);
@@ -271,8 +271,8 @@ const GamificationPage: React.FC = () => {
     } catch (error) {
       console.error('Error saving badge:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to save badge'),
+        title: t('common.error'),
+        description: t('admin.error.saveBadgeFailed'),
         variant: 'destructive',
       });
     }
@@ -297,15 +297,15 @@ const GamificationPage: React.FC = () => {
           : ub
       ));
 
-      toast({ title: t('Success'), description: t('User badge updated successfully') });
+      toast({ title: t('common.success'), description: t('admin.success.userBadgeUpdated') });
       setShowUserBadgeModal(false);
       setSelectedUserBadge(null);
       setUserBadgeForm({ points_earned: 0 });
     } catch (error) {
       console.error('Error updating user badge:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to update user badge'),
+        title: t('common.error'),
+        description: t('admin.error.updateUserBadgeFailed'),
         variant: 'destructive',
       });
     }
@@ -313,7 +313,7 @@ const GamificationPage: React.FC = () => {
 
   // Handle badge deletion
   const handleDeleteBadge = async (badgeId: string) => {
-    if (!confirm(t('Are you sure you want to delete this badge?'))) return;
+    if (!confirm(t('admin.confirm.deleteBadge'))) return;
 
     try {
       const { error } = await supabase
@@ -323,14 +323,14 @@ const GamificationPage: React.FC = () => {
 
       if (error) throw error;
 
-      toast({ title: t('Success'), description: t('Badge deleted successfully') });
+      toast({ title: t('common.success'), description: t('admin.success.badgeDeleted') });
       clearCache('badges');
       fetchBadges();
     } catch (error) {
       console.error('Error deleting badge:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to delete badge'),
+        title: t('common.error'),
+        description: t('admin.error.deleteBadgeFailed'),
         variant: 'destructive',
       });
     }
@@ -338,7 +338,7 @@ const GamificationPage: React.FC = () => {
 
   // Handle user badge deletion
   const handleDeleteUserBadge = async (userBadgeId: string) => {
-    if (!confirm(t('Are you sure you want to delete this user badge?'))) return;
+    if (!confirm(t('admin.confirm.deleteUserBadge'))) return;
 
     try {
       const { error } = await supabase
@@ -351,12 +351,12 @@ const GamificationPage: React.FC = () => {
       // Update local state
       setUserBadges(prev => prev.filter(ub => ub.id !== userBadgeId));
 
-      toast({ title: t('Success'), description: t('User badge deleted successfully') });
+      toast({ title: t('common.success'), description: t('admin.success.userBadgeDeleted') });
     } catch (error) {
       console.error('Error deleting user badge:', error);
       toast({
-        title: t('Error'),
-        description: t('Failed to delete user badge'),
+        title: t('common.error'),
+        description: t('admin.error.deleteUserBadgeFailed'),
         variant: 'destructive',
       });
     }
@@ -380,9 +380,9 @@ const GamificationPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">{t('Gamification')}</h1>
+        <h1 className="text-3xl font-bold">{t('admin.gamification')}</h1>
         <Button onClick={handleRefresh}>
-          {t('Refresh')}
+          {t('common.refresh')}
         </Button>
       </div>
 
@@ -391,17 +391,17 @@ const GamificationPage: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            {t('Filters')}
+            {t('admin.filters')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t('Search')}</Label>
+              <Label>{t('admin.search')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={t('Search badges...')}
+                  placeholder={t('admin.search.badges')}
                   onChange={(e) => debouncedSearch(e.target.value)}
                   className="pl-10"
                 />
@@ -409,17 +409,17 @@ const GamificationPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('Type')}</Label>
+              <Label>{t('admin.type')}</Label>
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('All Types')}</SelectItem>
-                  <SelectItem value="referral">{t('Referral')}</SelectItem>
-                  <SelectItem value="deposit">{t('Deposit')}</SelectItem>
-                  <SelectItem value="withdrawal">{t('Withdrawal')}</SelectItem>
-                  <SelectItem value="profile">{t('Profile')}</SelectItem>
+                  <SelectItem value="all">{t('admin.filters.allTypes')}</SelectItem>
+                  <SelectItem value="referral">{t('admin.badgeType.referral')}</SelectItem>
+                  <SelectItem value="deposit">{t('admin.badgeType.deposit')}</SelectItem>
+                  <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal')}</SelectItem>
+                  <SelectItem value="profile">{t('admin.badgeType.profile')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -430,15 +430,15 @@ const GamificationPage: React.FC = () => {
       {/* Badges Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t('Badges')}</CardTitle>
+          <CardTitle>{t('admin.badges')}</CardTitle>
           <Button onClick={() => setShowBadgeModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            {t('Add Badge')}
+            {t('admin.addBadge')}
           </Button>
         </CardHeader>
         <CardContent>
           {loadingBadges ? (
-            <div className="text-center py-8">{t('Loading...')}</div>
+            <div className="text-center py-8">{t('common.loading')}</div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -522,11 +522,11 @@ const GamificationPage: React.FC = () => {
       {/* Levels Section */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('Levels')}</CardTitle>
+          <CardTitle>{t('admin.levels')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loadingLevels ? (
-            <div className="text-center py-8">{t('Loading...')}</div>
+            <div className="text-center py-8">{t('common.loading')}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {levels.map((level) => (
@@ -550,23 +550,23 @@ const GamificationPage: React.FC = () => {
       {/* User Badges Section */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('User Badges')}</CardTitle>
+          <CardTitle>{t('admin.userBadges')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loadingUserBadges ? (
-            <div className="text-center py-8">{t('Loading...')}</div>
+            <div className="text-center py-8">{t('common.loading')}</div>
           ) : (
             <div className="space-y-4">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2">{t('User')}</th>
-                      <th className="text-left p-2">{t('Badge')}</th>
-                      <th className="text-left p-2">{t('Type')}</th>
-                      <th className="text-left p-2">{t('Points Earned')}</th>
-                      <th className="text-left p-2">{t('Earned At')}</th>
-                      <th className="text-left p-2">{t('Actions')}</th>
+                      <th className="text-left p-2">{t('admin.user')}</th>
+                      <th className="text-left p-2">{t('admin.badge')}</th>
+                      <th className="text-left p-2">{t('admin.type')}</th>
+                      <th className="text-left p-2">{t('admin.pointsEarned')}</th>
+                      <th className="text-left p-2">{t('admin.earnedAt')}</th>
+                      <th className="text-left p-2">{t('admin.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -662,40 +662,40 @@ const GamificationPage: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedBadge ? t('Edit Badge') : t('Add Badge')}
+              {selectedBadge ? t('admin.editBadge') : t('admin.addBadge')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{t('Name')}</Label>
+              <Label>{t('admin.badgeName')}</Label>
               <Input
                 value={badgeForm.name}
                 onChange={(e) => setBadgeForm(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div>
-              <Label>{t('Description')}</Label>
+              <Label>{t('admin.badgeDescription')}</Label>
               <Input
                 value={badgeForm.description}
                 onChange={(e) => setBadgeForm(prev => ({ ...prev, description: e.target.value }))}
               />
             </div>
             <div>
-              <Label>{t('Type')}</Label>
+              <Label>{t('admin.badgeType')}</Label>
               <Select value={badgeForm.type} onValueChange={(value) => setBadgeForm(prev => ({ ...prev, type: value }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="referral">{t('Referral')}</SelectItem>
-                  <SelectItem value="deposit">{t('Deposit')}</SelectItem>
-                  <SelectItem value="withdrawal">{t('Withdrawal')}</SelectItem>
-                  <SelectItem value="profile">{t('Profile')}</SelectItem>
+                  <SelectItem value="referral">{t('admin.badgeType.referral')}</SelectItem>
+                  <SelectItem value="deposit">{t('admin.badgeType.deposit')}</SelectItem>
+                  <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal')}</SelectItem>
+                  <SelectItem value="profile">{t('admin.badgeType.profile')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>{t('Requirement')}</Label>
+              <Label>{t('admin.badgeRequirement')}</Label>
               <Input
                 type="number"
                 value={badgeForm.requirement}
@@ -704,10 +704,10 @@ const GamificationPage: React.FC = () => {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowBadgeModal(false)}>
-                {t('Cancel')}
+                {t('admin.cancel')}
               </Button>
               <Button onClick={handleBadgeSubmit}>
-                {selectedBadge ? t('Update') : t('Create')}
+                {selectedBadge ? t('admin.update') : t('admin.create')}
               </Button>
             </div>
           </div>
@@ -718,11 +718,11 @@ const GamificationPage: React.FC = () => {
       <Dialog open={showUserBadgeModal} onOpenChange={setShowUserBadgeModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('Edit User Badge')}</DialogTitle>
+            <DialogTitle>{t('admin.editUserBadge')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{t('Points Earned')}</Label>
+              <Label>{t('admin.pointsEarned')}</Label>
               <Input
                 type="number"
                 value={userBadgeForm.points_earned}
@@ -731,10 +731,10 @@ const GamificationPage: React.FC = () => {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowUserBadgeModal(false)}>
-                {t('Cancel')}
+                {t('admin.cancel')}
               </Button>
               <Button onClick={handleUserBadgeSubmit}>
-                {t('Update')}
+                {t('admin.update')}
               </Button>
             </div>
           </div>

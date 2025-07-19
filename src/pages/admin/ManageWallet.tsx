@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Search, Pencil } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserWallet {
   user_uid: string;
@@ -21,6 +22,7 @@ interface UserWallet {
 }
 
 const ManageWallet: React.FC = () => {
+  const { t } = useLanguage();
   const [users, setUsers] = React.useState<UserWallet[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -44,7 +46,7 @@ const ManageWallet: React.FC = () => {
       .select('user_uid, email, first_name, last_name, balance, total_points, bonuses, team_earnings')
       .order('created_at', { ascending: false });
     if (error) {
-      toast({ title: 'Error', description: 'Failed to fetch users', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('admin.error.fetchUsersFailed'), variant: 'destructive' });
     } else {
       setUsers(data || []);
     }
@@ -74,9 +76,9 @@ const ManageWallet: React.FC = () => {
       .update(editForm)
       .eq('user_uid', selectedUser.user_uid);
     if (error) {
-      toast({ title: 'Error', description: 'Failed to update user wallet', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('admin.error.updateUserWalletFailed'), variant: 'destructive' });
     } else {
-      toast({ title: 'Success', description: 'User wallet updated' });
+      toast({ title: t('common.success'), description: t('admin.success.userWalletUpdated') });
       setShowEditModal(false);
       fetchUsers();
     }
@@ -88,13 +90,13 @@ const ManageWallet: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
-            Manage User Wallets
+            {t('admin.manageUserWallets')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex flex-col md:flex-row gap-4">
             <Input
-              placeholder="Search by name or email..."
+              placeholder={t('admin.searchByNameOrEmail')}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -104,23 +106,23 @@ const ManageWallet: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Balance</TableHead>
-                  <TableHead>Total Points</TableHead>
-                  <TableHead>Bonuses</TableHead>
-                  <TableHead>Team Earnings</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t('admin.name')}</TableHead>
+                  <TableHead>{t('admin.email')}</TableHead>
+                  <TableHead>{t('admin.balance')}</TableHead>
+                  <TableHead>{t('admin.totalPoints')}</TableHead>
+                  <TableHead>{t('admin.bonuses')}</TableHead>
+                  <TableHead>{t('admin.teamEarnings')}</TableHead>
+                  <TableHead>{t('admin.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">Loading...</TableCell>
+                    <TableCell colSpan={7} className="text-center py-4">{t('common.loading')}</TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">No users found</TableCell>
+                    <TableCell colSpan={7} className="text-center py-4">{t('admin.noUsersFound')}</TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers.map(user => (
@@ -148,11 +150,11 @@ const ManageWallet: React.FC = () => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User Wallet</DialogTitle>
+            <DialogTitle>{t('admin.editUserWallet')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Balance</Label>
+              <Label>{t('admin.balance')}</Label>
               <Input
                 type="number"
                 value={editForm.balance}
@@ -160,7 +162,7 @@ const ManageWallet: React.FC = () => {
               />
             </div>
             <div>
-              <Label>Total Points</Label>
+              <Label>{t('admin.totalPoints')}</Label>
               <Input
                 type="number"
                 value={editForm.total_points}
@@ -168,7 +170,7 @@ const ManageWallet: React.FC = () => {
               />
             </div>
             <div>
-              <Label>Bonuses</Label>
+              <Label>{t('admin.bonuses')}</Label>
               <Input
                 type="number"
                 value={editForm.bonuses}
@@ -176,14 +178,14 @@ const ManageWallet: React.FC = () => {
               />
             </div>
             <div>
-              <Label>Team Earnings</Label>
+              <Label>{t('admin.teamEarnings')}</Label>
               <Input
                 type="number"
                 value={editForm.team_earnings}
                 onChange={e => setEditForm(f => ({ ...f, team_earnings: parseFloat(e.target.value) }))}
               />
             </div>
-            <Button onClick={handleSave} className="w-full">Save Changes</Button>
+            <Button onClick={handleSave} className="w-full">{t('admin.saveChanges')}</Button>
           </div>
         </DialogContent>
       </Dialog>

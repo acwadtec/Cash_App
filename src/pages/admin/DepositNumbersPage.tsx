@@ -48,7 +48,7 @@ export default function DepositNumbersPage() {
         console.error('Error fetching deposit numbers:', error);
         toast({ 
           title: t('common.error'), 
-          description: 'Failed to fetch deposit numbers', 
+          description: t('deposit.error.fetchFailed'), 
           variant: 'destructive' 
         });
       } else {
@@ -56,11 +56,11 @@ export default function DepositNumbersPage() {
       }
     } catch (error) {
       console.error('Error fetching deposit numbers:', error);
-      toast({ 
-        title: t('common.error'), 
-        description: 'Failed to fetch deposit numbers', 
-        variant: 'destructive' 
-      });
+              toast({ 
+          title: t('common.error'), 
+          description: t('deposit.error.fetchFailed'), 
+          variant: 'destructive' 
+        });
     } finally {
       setLoadingNumbers(false);
     }
@@ -70,7 +70,7 @@ export default function DepositNumbersPage() {
     if (!newNumber.trim()) {
       toast({ 
         title: t('common.error'), 
-        description: 'Please enter a valid number', 
+        description: t('deposit.error.validNumber'), 
         variant: 'destructive' 
       });
       return;
@@ -94,7 +94,7 @@ export default function DepositNumbersPage() {
         console.error('Error adding deposit number:', error);
         toast({ 
           title: t('common.error'), 
-          description: 'Failed to add deposit number', 
+          description: t('deposit.error.addFailed'), 
           variant: 'destructive' 
         });
       } else {
@@ -102,14 +102,14 @@ export default function DepositNumbersPage() {
         await fetchDepositNumbers();
         toast({ 
           title: t('common.success'), 
-          description: 'Deposit number added successfully' 
+          description: t('deposit.success.added') 
         });
       }
     } catch (error) {
       console.error('Error adding deposit number:', error);
       toast({ 
         title: t('common.error'), 
-        description: 'Failed to add deposit number', 
+        description: t('deposit.error.addFailed'), 
         variant: 'destructive' 
       });
     }
@@ -126,21 +126,21 @@ export default function DepositNumbersPage() {
         console.error('Error removing deposit number:', error);
         toast({ 
           title: t('common.error'), 
-          description: 'Failed to remove deposit number', 
+          description: t('deposit.error.removeFailed'), 
           variant: 'destructive' 
         });
       } else {
         await fetchDepositNumbers();
         toast({ 
           title: t('common.success'), 
-          description: 'Deposit number removed successfully' 
+          description: t('deposit.success.removed') 
         });
       }
     } catch (error) {
       console.error('Error removing deposit number:', error);
       toast({ 
         title: t('common.error'), 
-        description: 'Failed to remove deposit number', 
+        description: t('deposit.error.removeFailed'), 
         variant: 'destructive' 
       });
     }
@@ -150,7 +150,7 @@ export default function DepositNumbersPage() {
     if (!value.trim()) {
       toast({ 
         title: t('common.error'), 
-        description: 'Please enter a valid number', 
+        description: t('deposit.error.validNumber'), 
         variant: 'destructive' 
       });
       return;
@@ -166,21 +166,21 @@ export default function DepositNumbersPage() {
         console.error('Error updating deposit number:', error);
         toast({ 
           title: t('common.error'), 
-          description: 'Failed to update deposit number', 
+          description: t('deposit.error.updateFailed'), 
           variant: 'destructive' 
         });
       } else {
         await fetchDepositNumbers();
         toast({ 
           title: t('common.success'), 
-          description: 'Deposit number updated successfully' 
+          description: t('deposit.success.updated') 
         });
       }
     } catch (error) {
       console.error('Error updating deposit number:', error);
       toast({ 
         title: t('common.error'), 
-        description: 'Failed to update deposit number', 
+        description: t('deposit.error.updateFailed'), 
         variant: 'destructive' 
       });
     }

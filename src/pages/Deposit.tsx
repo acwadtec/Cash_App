@@ -42,7 +42,7 @@ export default function Deposit() {
         // Check if user is authenticated
         const { data: userData, error: authError } = await supabase.auth.getUser();
         if (authError || !userData?.user) {
-          toast({ title: t('common.error'), description: 'Please login to access this page', variant: 'destructive' });
+          toast({ title: t('common.error'), description: t('error.loginRequired'), variant: 'destructive' });
           navigate('/login');
           return;
         }
@@ -74,12 +74,12 @@ export default function Deposit() {
         const { data: numbersData, error: numbersError } = await supabase.from('deposit_numbers').select('number');
         if (numbersError) {
           console.error('Error fetching deposit numbers:', numbersError);
-          toast({ title: t('common.error'), description: 'Failed to load deposit numbers', variant: 'destructive' });
+          toast({ title: t('common.error'), description: t('error.failedToLoadDepositNumbers'), variant: 'destructive' });
         } else if (numbersData && numbersData.length > 0) {
           const numbers = numbersData.map((n) => n.number);
         setSelectedNumber(numbers[Math.floor(Math.random() * numbers.length)]);
         } else {
-          toast({ title: t('common.error'), description: 'No deposit numbers available', variant: 'destructive' });
+          toast({ title: t('common.error'), description: t('deposit.noNumbersAvailable'), variant: 'destructive' });
       }
 
   // Fetch deposit history
@@ -91,13 +91,13 @@ export default function Deposit() {
         
         if (historyError) {
           console.error('Error fetching deposit history:', historyError);
-          toast({ title: t('common.error'), description: 'Failed to load deposit history', variant: 'destructive' });
+          toast({ title: t('common.error'), description: t('error.failedToLoadHistory'), variant: 'destructive' });
         } else {
           setHistory(historyData || []);
       }
       } catch (error) {
         console.error('Error in checkAuthAndFetchData:', error);
-        toast({ title: t('common.error'), description: 'An unexpected error occurred', variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('error.unexpectedError'), variant: 'destructive' });
       } finally {
         setLoading(false);
       }
@@ -122,7 +122,7 @@ export default function Deposit() {
     
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: t('common.error'), description: 'File size must be less than 5MB', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('error.fileSizeLimit'), variant: 'destructive' });
       e.target.value = '';
       return;
     }
@@ -154,12 +154,12 @@ export default function Deposit() {
     // Validate amount
     const amountValue = parseFloat(amount);
     if (isNaN(amountValue) || amountValue <= 0) {
-      toast({ title: t('common.error'), description: 'Please enter a valid amount', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('error.validAmount'), variant: 'destructive' });
       return;
     }
     
     if (!user) {
-      toast({ title: t('common.error'), description: 'Please login to submit deposit', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('error.loginToSubmit'), variant: 'destructive' });
       navigate('/login');
       return;
     }
@@ -175,7 +175,7 @@ export default function Deposit() {
       
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        toast({ title: t('common.error'), description: 'Failed to upload screenshot. Please try again.', variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('error.failedToUpload'), variant: 'destructive' });
         setSubmitting(false);
         return;
       }
@@ -198,7 +198,7 @@ export default function Deposit() {
       
       if (insertError) {
         console.error('Insert error:', insertError);
-        toast({ title: t('common.error'), description: 'Failed to submit deposit request. Please try again.', variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('error.failedToSubmit'), variant: 'destructive' });
         setSubmitting(false);
         return;
       }
@@ -232,7 +232,7 @@ export default function Deposit() {
       
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-      toast({ title: t('common.error'), description: 'An unexpected error occurred', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('error.unexpectedError'), variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -248,7 +248,7 @@ export default function Deposit() {
         description: t('deposit.copiedNumber'),
       });
     } catch (error) {
-      toast({ title: t('common.error'), description: t('deposit.copyError') || 'Failed to copy deposit number', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('deposit.copyError'), variant: 'destructive' });
     }
   };
 
@@ -300,7 +300,7 @@ export default function Deposit() {
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              {t('common.completeProfile') || 'Please complete your account information to make deposits. Redirecting to profile setup...'}
+              {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
@@ -319,11 +319,11 @@ export default function Deposit() {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="request" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                {t('deposit.newRequest') || 'New Deposit Request'}
+                {t('deposit.newRequest')}
               </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2">
                 <History className="w-4 h-4" />
-                {t('deposit.history') || 'Deposit History'}
+                {t('deposit.history')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="request">
@@ -349,12 +349,12 @@ export default function Deposit() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label>{t('deposit.mobileNumber') || 'Mobile Number'}</Label>
+                            <Label>{t('deposit.mobileNumber')}</Label>
                             <div
                               className="h-12 flex items-center px-3 rounded-md bg-muted border border-input text-base text-foreground"
                               style={{ minHeight: '3rem' }}
                             >
-                              {userInfo.phone || <span className="text-muted-foreground">{t('deposit.mobilePlaceholder') || '-'}</span>}
+                              {userInfo.phone || <span className="text-muted-foreground">{t('deposit.mobilePlaceholder')}</span>}
                             </div>
                           </div>
                         </div>
@@ -369,7 +369,7 @@ export default function Deposit() {
                             placeholder={t('deposit.loadingNumber')}
                           />
                           {selectedNumber && (
-                            <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber') || 'Copy number'} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-110 hover:shadow-lg active:scale-95">
+                            <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber')} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-110 hover:shadow-lg active:scale-95">
                               <Copy className="h-4 w-4" />
                             </Button>
                           )}
@@ -428,7 +428,7 @@ export default function Deposit() {
                   </CardHeader>
                   <CardContent>
                     {history.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">{t('deposit.noHistory') || 'No deposit history'}</p>
+                      <p className="text-center text-muted-foreground py-8">{t('deposit.noHistory')}</p>
                     ) : (
                       <>
                         <ul className="divide-y divide-border">
@@ -447,7 +447,7 @@ export default function Deposit() {
                                     </a>
                                   ) : (
                                     <div className="w-20 h-20 flex items-center justify-center bg-muted rounded-lg border border-border text-muted-foreground text-xs">
-                                      {t('deposit.noScreenshot') || 'No image'}
+                                      {t('deposit.noScreenshot')}
                                     </div>
                                   )}
                                 </div>

@@ -74,7 +74,7 @@ export default function DepositRequestsPage() {
       if (updateError) throw updateError;
 
       // Then, add the deposit amount to the user's balance
-      const userUid = req.user_uid || req.user_id;
+      const userUid = req.user_id;
       const { data: userInfo, error: userError } = await supabase
         .from('user_info')
         .select('balance')
@@ -85,7 +85,7 @@ export default function DepositRequestsPage() {
         console.error('Error fetching user info:', userError);
         toast({ 
           title: t('common.error'), 
-          description: 'Failed to fetch user balance', 
+          description: t('deposit.error.fetchBalanceFailed'), 
           variant: 'destructive' 
         });
         return;
@@ -103,7 +103,7 @@ export default function DepositRequestsPage() {
         console.error('Error updating user balance:', balanceError);
         toast({ 
           title: t('common.error'), 
-          description: 'Deposit approved but failed to update balance', 
+          description: t('deposit.error.updateBalanceFailed'), 
           variant: 'destructive' 
         });
         return;
@@ -111,7 +111,7 @@ export default function DepositRequestsPage() {
 
       toast({ 
         title: t('common.success'), 
-        description: `Deposit approved and ${req.amount} EGP added to user balance` 
+        description: t('deposit.success.approvedWithBalance').replace('{amount}', req.amount.toString()) 
       });
       fetchDepositRequests();
     } catch (error) {
@@ -157,14 +157,14 @@ export default function DepositRequestsPage() {
   // Export handlers
   const handleExportCSV = () => {
     const data = filtered.map(req => ({
-      'Amount': req.amount,
-      'User Number': req.user_number || req.user_id,
-      'Target Number': req.target_number || '-',
-      'Screenshot': req.screenshot_url ? req.screenshot_url : '-',
-      'Status': req.status,
-      'Date': new Date(req.created_at).toLocaleDateString(),
+      [t('deposit.amount')]: req.amount,
+      [t('deposit.userNumber')]: req.user_number || req.user_id,
+      [t('deposit.targetNumber')]: req.target_number || '-',
+      [t('deposit.screenshot')]: req.screenshot_url ? req.screenshot_url : '-',
+      [t('deposit.status')]: req.status,
+      [t('common.date')]: new Date(req.created_at).toLocaleDateString(),
     }));
-    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    if (data.length === 0) return toast({ title: t('common.error'), description: t('deposit.error.noDataExport'), variant: 'destructive' });
     const csvContent = [
       Object.keys(data[0]).join(','),
       ...data.map(item => Object.values(item).join(','))
@@ -178,14 +178,14 @@ export default function DepositRequestsPage() {
   };
   const handleExportExcel = () => {
     const data = filtered.map(req => ({
-      'Amount': req.amount,
-      'User Number': req.user_number || req.user_id,
-      'Target Number': req.target_number || '-',
-      'Screenshot': req.screenshot_url ? req.screenshot_url : '-',
-      'Status': req.status,
-      'Date': new Date(req.created_at).toLocaleDateString(),
+      [t('deposit.amount')]: req.amount,
+      [t('deposit.userNumber')]: req.user_number || req.user_id,
+      [t('deposit.targetNumber')]: req.target_number || '-',
+      [t('deposit.screenshot')]: req.screenshot_url ? req.screenshot_url : '-',
+      [t('deposit.status')]: req.status,
+      [t('common.date')]: new Date(req.created_at).toLocaleDateString(),
     }));
-    if (data.length === 0) return toast({ title: t('Error'), description: 'No data to export', variant: 'destructive' });
+    if (data.length === 0) return toast({ title: t('common.error'), description: t('deposit.error.noDataExport'), variant: 'destructive' });
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Deposit Requests');
@@ -194,8 +194,8 @@ export default function DepositRequestsPage() {
   const handleExportPDF = () => {
     try {
       const doc = new jsPDF();
-      doc.text('Deposit Requests', 14, 16);
-      const tableColumn = ['Amount', 'User Number', 'Target Number', 'Screenshot', 'Status', 'Date'];
+      doc.text(t('deposit.requests'), 14, 16);
+      const tableColumn = [t('deposit.amount'), t('deposit.userNumber'), t('deposit.targetNumber'), t('deposit.screenshot'), t('deposit.status'), t('common.date')];
       const tableRows = filtered.map(req => [
         req.amount,
         req.user_number || req.user_id,
@@ -208,7 +208,7 @@ export default function DepositRequestsPage() {
       autoTable(doc, { head: [tableColumn], body: tableRows, startY: 20 });
       doc.save(`deposit_requests_${new Date().toISOString()}.pdf`);
     } catch (err) {
-      toast({ title: t('Error'), description: 'Failed to export PDF: ' + (err.message || err), variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('deposit.error.exportPDFFailed') + ': ' + (err.message || err), variant: 'destructive' });
     }
   };
 
@@ -220,9 +220,9 @@ export default function DepositRequestsPage() {
             <ImageIcon className="w-5 h-5 text-primary" />
             {t('deposit.requests') || 'Deposit Requests'}
             <div className="flex gap-2 ml-auto">
-              <Button size="sm" variant="outline" onClick={handleExportCSV}>Export CSV</Button>
-              <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
-              <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
+              <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('export.csv')}</Button>
+              <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('export.excel')}</Button>
+              <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('export.pdf')}</Button>
             </div>
           </CardTitle>
         </CardHeader>
