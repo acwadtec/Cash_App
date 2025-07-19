@@ -25,6 +25,7 @@ import ReferralNetwork from './pages/ReferralNetwork';
 import ReadMore from "./pages/ReadMore";
 import MyOffers from "./pages/MyOffers";
 import InvestmentCertificate from './pages/InvestmentCertificate';
+import Wallet from './pages/Wallet';
 
 // Admin Pages
 import UsersPage from './pages/admin/UsersPage';
@@ -72,6 +73,7 @@ function App() {
                         <Route path="referral-network" element={<ReferralNetwork />} />
                         <Route path="read-more" element={<ReadMore />} />
                         <Route path="my-offers" element={<MyOffers />} />
+                        <Route path="wallet" element={<Wallet />} />
                       </Route>
 
                       {/* Admin Routes */}

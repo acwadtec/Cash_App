@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Moon, Sun, Menu, X, Settings, Home, Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy } from 'lucide-react';
+import { Moon, Sun, Menu, X, Settings, Home, Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy, Wallet } from 'lucide-react';
 import { NotificationInbox } from './NotificationInbox';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import DarkLogo from '/Dark_mode.png';
@@ -33,7 +33,7 @@ export function Navigation() {
         // Fetch user info for profile photo
         const { data: userInfoData } = await supabase
           .from('user_info')
-          .select('first_name, last_name, email, profile_photo_url')
+          .select('first_name, last_name, email, profile_photo_url, wallet')
           .eq('user_uid', user.id)
           .single();
         setUserInfo(userInfoData);
@@ -47,6 +47,7 @@ export function Navigation() {
     { href: '/investment-certificates', label: t('nav.investmentCertificates') || 'Investment Certificates' },
     { href: '/my-offers', label: 'My Offers' },
     { href: '/profile', label: t('nav.profile') },
+    { href: '/wallet', label: t('profile.wallet'), icon: <Wallet /> },
     { href: '/transactions', label: t('nav.transactions') },
     { href: '/deposit', label: t('nav.deposit') },
     { href: '/withdrawal', label: t('nav.withdrawal') },
@@ -111,8 +112,9 @@ export function Navigation() {
                     to={item.href}
                     className={`text-sm font-medium transition-colors hover:text-primary ${
                       isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
-                    }`}
+                    } flex items-center`}
                   >
+                    {item.icon && <span className="mr-1">{item.icon}</span>}
                     {item.label}
                   </Link>
                 ))}
@@ -236,9 +238,10 @@ export function Navigation() {
                     to={item.href}
                     className={`block px-3 py-3 text-base font-medium transition-colors hover:bg-muted/50 rounded-lg mx-2 border border-transparent hover:border-border ${
                       isActive(item.href) ? 'text-primary bg-primary/10 border-primary/20' : 'text-foreground'
-                    }`}
+                    } flex items-center`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
+                    {item.icon && <span className="mr-2">{item.icon}</span>}
                     {item.label}
                   </Link>
                 ))}
