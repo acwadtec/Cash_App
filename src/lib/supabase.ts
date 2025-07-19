@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-// Enhanced Supabase client with performance optimizations
+// Enhanced Supabase client with better connection handling
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -530,4 +530,70 @@ export const accrueMonthlyOfferProfits = async () => {
     processed.push({ join_id: join.id, user_id: join.user_id, profit: offer.monthly_profit, referralEarnings });
   }
   return processed;
+}; 
+
+// Connection health check and auto-reconnection
+let connectionRetries = 0;
+const maxRetries = 3;
+
+export const checkConnectionHealth = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('user_info')
+      .select('user_uid')
+      .limit(1);
+    
+    if (error) {
+      console.warn('Connection health check failed:', error.message);
+      return false;
+    }
+    
+    connectionRetries = 0; // Reset retry counter on success
+    return true;
+  } catch (error) {
+    console.error('Connection health check error:', error);
+    return false;
+  }
+};
+
+// Enhanced query function with connection retry logic
+export const robustQuery = async <T = any>(
+  queryFn: () => Promise<{ data: T | null; error: any }>
+): Promise<{ data: T | null; error: any }> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await queryFn();
+      
+      if (!result.error) {
+        return result;
+      }
+      
+      // If it's a connection error, try to reconnect
+      if (result.error?.message?.includes('connection') || 
+          result.error?.message?.includes('timeout') ||
+          result.error?.code === 'PGRST301') {
+        
+        console.warn(`Connection attempt ${attempt} failed, retrying...`);
+        
+        if (attempt < maxRetries) {
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`Query attempt ${attempt} failed:`, error);
+      
+      if (attempt === maxRetries) {
+        return { data: null, error };
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+  
+  return { data: null, error: new Error('Max retries exceeded') };
 }; 

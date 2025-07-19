@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Layout } from "@/components/Layout";
 import { AdminLayout } from "@/components/AdminLayout";
+import ConnectionHandler from "@/components/ConnectionHandler";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -37,71 +38,9 @@ import SupportPage from './pages/admin/SupportPage';
 import GamificationPage from './pages/admin/GamificationPage';
 import ManageWallet from './pages/admin/ManageWallet';
 
-import { useEffect, useState } from 'react';
-import { supabase, testConnection } from '@/lib/supabase';
-import { useToast } from '@/components/ui/use-toast';
-
 const queryClient = new QueryClient();
 
 function App() {
-  const { toast } = useToast();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const connected = await testConnection();
-        setIsConnected(connected);
-        if (!connected) {
-          toast({
-            variant: "destructive",
-            title: "Connection Error",
-            description: "Failed to connect to the database. Please check your connection.",
-          });
-        }
-      } catch (error) {
-        console.error('Connection check error:', error);
-        toast({
-          variant: "destructive",
-          title: "Connection Error",
-          description: "Failed to connect to the database. Please check your connection.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkConnection();
-
-    // Set up real-time connection status
-    const subscription = supabase.channel('system_status')
-      .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
-      });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [toast]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
-      </div>
-    );
-  }
-
-  if (!isConnected) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <h1 className="text-2xl font-bold text-red-600">Connection Error</h1>
-        <p className="text-gray-600">Unable to connect to the database. Please check your connection and try again.</p>
-      </div>
-    );
-  }
-
   return (
     <>
       <QueryClientProvider client={queryClient}>
@@ -110,46 +49,48 @@ function App() {
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Layout />}>
-                    <Route index element={<Home />} />
-                    <Route path="register" element={<Register />} />
-                    <Route path="login" element={<Login />} />
-                    <Route path="offers" element={<Offers />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="update-account" element={<UpdateAccount />} />
-                    <Route path="transactions" element={<Transactions />} />
-                    <Route path="withdrawal" element={<Withdrawal />} />
-                    <Route path="deposit" element={<Deposit />} />
-                    <Route path="help" element={<HelpCenter />} />
-                    <Route path="manage-offers" element={<ManageOffers />} />
-                    <Route path="referral-network" element={<ReferralNetwork />} />
-                    <Route path="read-more" element={<ReadMore />} />
-                    <Route path="my-offers" element={<MyOffers />} />
-                  </Route>
+              <ConnectionHandler>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<Home />} />
+                      <Route path="register" element={<Register />} />
+                      <Route path="login" element={<Login />} />
+                      <Route path="offers" element={<Offers />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="update-account" element={<UpdateAccount />} />
+                      <Route path="transactions" element={<Transactions />} />
+                      <Route path="withdrawal" element={<Withdrawal />} />
+                      <Route path="deposit" element={<Deposit />} />
+                      <Route path="help" element={<HelpCenter />} />
+                      <Route path="manage-offers" element={<ManageOffers />} />
+                      <Route path="referral-network" element={<ReferralNetwork />} />
+                      <Route path="read-more" element={<ReadMore />} />
+                      <Route path="my-offers" element={<MyOffers />} />
+                    </Route>
 
-                  {/* Admin Routes */}
-                  <Route path="admin" element={<AdminLayout />}>
-                    <Route index element={<Navigate to="/admin/users" replace />} />
-                    <Route path="users" element={<UsersPage />} />
-                    <Route path="manage-wallet" element={<ManageWallet />} />
-                    <Route path="offers" element={<ManageOffersPage />} />
-                    <Route path="referrals" element={<ReferralsPage />} />
-                    <Route path="withdrawals" element={<WithdrawalRequestsPage />} />
-                    <Route path="transactions" element={<TransactionsPage />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
-                    <Route path="notifications" element={<NotificationsPage />} />
-                    <Route path="deposit-numbers" element={<DepositNumbersPage />} />
-                    <Route path="deposit-requests" element={<DepositRequestsPage />} />
-                    <Route path="support" element={<SupportPage />} />
-                    <Route path="gamification" element={<GamificationPage />} />
-                  </Route>
+                    {/* Admin Routes */}
+                    <Route path="admin" element={<AdminLayout />}>
+                      <Route index element={<Navigate to="/admin/users" replace />} />
+                      <Route path="users" element={<UsersPage />} />
+                      <Route path="manage-wallet" element={<ManageWallet />} />
+                      <Route path="offers" element={<ManageOffersPage />} />
+                      <Route path="referrals" element={<ReferralsPage />} />
+                      <Route path="withdrawals" element={<WithdrawalRequestsPage />} />
+                      <Route path="transactions" element={<TransactionsPage />} />
+                      <Route path="analytics" element={<AnalyticsPage />} />
+                      <Route path="notifications" element={<NotificationsPage />} />
+                      <Route path="deposit-numbers" element={<DepositNumbersPage />} />
+                      <Route path="deposit-requests" element={<DepositRequestsPage />} />
+                      <Route path="support" element={<SupportPage />} />
+                      <Route path="gamification" element={<GamificationPage />} />
+                    </Route>
 
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </ConnectionHandler>
             </TooltipProvider>
           </LanguageProvider>
         </ThemeProvider>

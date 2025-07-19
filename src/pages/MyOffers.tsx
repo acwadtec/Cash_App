@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, robustQuery } from '@/lib/supabase';
 
 interface Offer {
   id: string;
@@ -109,27 +109,31 @@ const MyOffers: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      // Fetch offers
-      const { data: offersData, error: offersError } = await supabase
-        .from('offer_joins')
-        .select(`
-          id,
-          offer_id,
-          status,
-          joined_at,
-          last_profit_at,
-          approved_at,
-          offer:offers (id, title, description, amount, cost, daily_profit, monthly_profit, image_url, deadline, active)
-        `)
-        .eq('user_id', userId);
+      // Fetch offers using robust query
+      const { data: offersData, error: offersError } = await robustQuery(async () => {
+        return await supabase
+          .from('offer_joins')
+          .select(`
+            id,
+            offer_id,
+            status,
+            joined_at,
+            last_profit_at,
+            approved_at,
+            offer:offers (id, title, description, amount, cost, daily_profit, monthly_profit, image_url, deadline, active)
+          `)
+          .eq('user_id', userId);
+      });
       
-      // Fetch transactions
-      const { data: transactionsData, error: transactionsError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('type', 'daily_profit')
-        .eq('status', 'completed');
+      // Fetch transactions using robust query
+      const { data: transactionsData, error: transactionsError } = await robustQuery(async () => {
+        return await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('type', 'daily_profit')
+          .eq('status', 'completed');
+      });
       
       if (offersError) {
         console.error('Error fetching offers:', offersError);
