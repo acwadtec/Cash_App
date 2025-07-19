@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useVerificationGuard } from '@/components/VerificationGuard';
 import { toast } from '@/hooks/use-toast';
 import { supabase, checkIfUserIsAdmin, checkAndAwardAllBadges } from '@/lib/supabase';
 import { AlertTriangle, Copy, Shield, History } from 'lucide-react';
@@ -15,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 export default function Deposit() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { requireVerification } = useVerificationGuard();
   const [amount, setAmount] = useState('');
   const [userNumber, setUserNumber] = useState('');
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -131,6 +133,18 @@ export default function Deposit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check verification first
+    const canProceed = requireVerification(() => {
+      // This will only run if user is verified
+      submitDepositRequest();
+    });
+    
+    if (!canProceed) {
+      return; // User is not verified, alert already shown
+    }
+  };
+
+  const submitDepositRequest = async () => {
     // Validate form inputs
     if (!amount || !screenshot || !selectedNumber) {
       toast({ title: t('common.error'), description: t('deposit.error.required'), variant: 'destructive' });
@@ -196,7 +210,7 @@ export default function Deposit() {
       const fileInput = document.getElementById('screenshot') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       
-      toast({ title: t('common.success'), description: t('deposit.success') });
+      toast({ title: t('common.success'), description: t('deposit.success.message') });
       
       // Refresh history
       const { data: historyData, error: historyError } = await supabase
@@ -207,63 +221,18 @@ export default function Deposit() {
       
       if (!historyError) {
         setHistory(historyData || []);
-    }
-      
-      // Handle gamification (simplified)
-      try {
-        const { data: allDeposits } = await supabase
-          .from('deposit_requests')
-          .select('id')
-          .eq('user_uid', user.id);
-        
-        if (allDeposits && allDeposits.length === 3) {
-          // Award Deposit Novice badge
-          const { data: badge } = await supabase
-            .from('badges')
-            .select('id')
-            .eq('name', 'Deposit Novice')
-            .single();
-          
-          if (badge) {
-            await supabase.from('user_badges').upsert([
-              { user_uid: user.id, badge_id: badge.id }
-            ]);
-          }
-        }
-        
-        if (allDeposits && allDeposits.length === 10) {
-          // Award Deposit Master badge
-          const { data: badge } = await supabase
-            .from('badges')
-            .select('id')
-            .eq('name', 'Deposit Master')
-            .single();
-          
-          if (badge) {
-            await supabase.from('user_badges').upsert([
-              { user_uid: user.id, badge_id: badge.id }
-            ]);
-          }
-        }
-        
-        // Update user level
-        const { count } = await supabase
-          .from('user_badges')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_uid', user.id);
-        
-        const newLevel = Math.max(1, Math.floor((count || 0) / 2));
-        await supabase.from('user_info').update({ level: newLevel }).eq('user_uid', user.id);
-      } catch (gamificationError) {
-        console.error('Gamification error:', gamificationError);
-        // Don't fail the deposit if gamification fails
       }
       
-      await checkAndAwardAllBadges(user.id);
+      // Award badges if applicable
+      try {
+        await checkAndAwardAllBadges(user.id);
+      } catch (error) {
+        console.error('Error awarding badges:', error);
+      }
       
     } catch (error) {
-      console.error('Submit error:', error);
-      toast({ title: t('common.error'), description: t('deposit.error.unexpected'), variant: 'destructive' });
+      console.error('Error in handleSubmit:', error);
+      toast({ title: t('common.error'), description: 'An unexpected error occurred', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
