@@ -15,6 +15,7 @@ export function AdminLayout() {
     { href: '/admin/users', label: t('admin.users'), icon: Users },
     { href: '/admin/manage-wallet', label: 'Manage Wallets', icon: DollarSign },
     { href: '/admin/offers', label: t('admin.offers'), icon: Package },
+    { href: '/admin/investment-certificates', label: t('admin.investmentCertificates') || 'Manage Investment Certificates', icon: BarChart3 },
     { href: '/admin/referrals', label: t('admin.referrals'), icon: Gift },
     { href: '/admin/withdrawals', label: t('admin.withdrawals.title'), icon: DollarSign },
     { href: '/admin/transactions', label: t('admin.transactions'), icon: BarChart3 },

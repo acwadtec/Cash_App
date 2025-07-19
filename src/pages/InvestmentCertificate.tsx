@@ -1,0 +1,272 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DollarSign } from 'lucide-react';
+
+interface InvestmentCertificate {
+  id: string;
+  title_en: string;
+  title_ar: string;
+  description_en: string;
+  description_ar: string;
+  invested_amount: number;
+  profit_rate: number;
+  next_profit_date: string;
+  join_limit?: number | null;
+  user_join_limit?: number | null;
+  image_url?: string;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface UserJoin {
+  id: string;
+  user_id: string;
+  certificate_id: string;
+  invested_amount: number;
+  join_date: string;
+  next_profit_date: string;
+  status: string;
+}
+
+export default function InvestmentCertificate() {
+  const { t, isRTL, language } = useLanguage();
+  const { theme } = useTheme();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [certificates, setCertificates] = useState<InvestmentCertificate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userJoins, setUserJoins] = useState<{ [certificateId: string]: UserJoin }>({});
+  const [showAlert, setShowAlert] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [pendingCertificate, setPendingCertificate] = useState<InvestmentCertificate | null>(null);
+  const [joinAmount, setJoinAmount] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+  const [pendingWithdraw, setPendingWithdraw] = useState<UserJoin | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user) setUserId(user.id);
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('investment_certificates')
+        .select('*')
+        .eq('active', true);
+      setCertificates(data || []);
+      setLoading(false);
+    };
+    fetchCertificates();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchJoins = async () => {
+      const { data } = await supabase
+        .from('investment_certificate_joins')
+        .select('*')
+        .eq('user_id', userId);
+      const joinMap: { [certificateId: string]: UserJoin } = {};
+      (data || []).forEach((j: UserJoin) => {
+        joinMap[j.certificate_id] = j;
+      });
+      setUserJoins(joinMap);
+    };
+    fetchJoins();
+  }, [userId]);
+
+  const handleJoin = (certificate: InvestmentCertificate) => {
+    setPendingCertificate(certificate);
+    setJoinAmount(certificate.invested_amount.toString());
+    setShowJoinModal(true);
+  };
+
+  const handleJoinSubmit = async () => {
+    if (!userId || !pendingCertificate) return;
+    setJoining(true);
+    const now = new Date();
+    const joinDate = now.toISOString();
+    const nextProfitDate = new Date(now.setMonth(now.getMonth() + 6)).toISOString();
+    const { error } = await supabase.from('investment_certificate_joins').insert({
+      user_id: userId,
+      certificate_id: pendingCertificate.id,
+      invested_amount: Number(joinAmount),
+      join_date: joinDate,
+      next_profit_date: nextProfitDate,
+      status: 'pending',
+    });
+    setJoining(false);
+    setShowJoinModal(false);
+    if (!error) {
+      toast({ title: 'Success', description: 'Join request submitted. Pending approval.' });
+      setUserJoins((prev) => ({ ...prev, [pendingCertificate.id]: {
+        id: '', user_id: userId, certificate_id: pendingCertificate.id, invested_amount: Number(joinAmount), join_date: joinDate, next_profit_date: nextProfitDate, status: 'pending'
+      }}));
+    } else {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleWithdraw = (join: UserJoin) => {
+    setPendingWithdraw(join);
+    setShowWithdrawConfirm(true);
+  };
+
+  const confirmWithdraw = async () => {
+    if (!pendingWithdraw) return;
+    await supabase.from('investment_certificate_joins').update({ status: 'withdrawn' }).eq('id', pendingWithdraw.id);
+    setShowWithdrawConfirm(false);
+    setUserJoins((prev) => {
+      const copy = { ...prev };
+      delete copy[pendingWithdraw.certificate_id];
+      return copy;
+    });
+    toast({ title: 'Withdrawn', description: 'You have withdrawn from this certificate.' });
+  };
+
+  function formatDate(date: string) {
+    return new Date(date).toLocaleDateString();
+  }
+  function getCountdown(date: string) {
+    const now = new Date();
+    const target = new Date(date);
+    const diff = target.getTime() - now.getTime();
+    if (diff <= 0) return t('investment.payoutDue');
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const months = Math.floor(days / 30);
+    const remDays = days % 30;
+    return `${months > 0 ? months + ' months ' : ''}${remDays} days`;
+  }
+
+  return (
+    <div className={`min-h-screen py-20 ${isRTL ? 'rtl' : 'ltr'} bg-background text-foreground`}>
+      <div className="container mx-auto px-4">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl md:text-4xl font-bold mb-8 text-foreground">{t('investment.title') || 'Investment Certificates'}</h1>
+          {loading ? (
+            <div className="text-center">{t('common.loading')}</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {certificates.map((cert) => {
+                const join = userJoins[cert.id];
+                return (
+                  <Card key={cert.id} className="shadow-card hover:shadow-glow transition-all duration-300">
+                    <CardHeader>
+                      <div className="flex justify-between items-center mb-2">
+                        <CardTitle className="text-xl font-bold">
+                          {language === 'ar' ? (cert.title_ar || cert.title_en) : (cert.title_en || cert.title_ar)}
+                        </CardTitle>
+                        <span className="text-2xl font-bold text-primary">{cert.invested_amount} EGP</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {cert.image_url && (
+                        <img
+                          src={cert.image_url}
+                          alt={language === 'ar' ? (cert.title_ar || cert.title_en) : (cert.title_en || cert.title_ar)}
+                          className="w-full h-40 object-contain rounded mb-4 bg-white p-2 border"
+                          onError={e => e.currentTarget.src = '/placeholder.svg'}
+                        />
+                      )}
+                      <p className="text-muted-foreground mb-4 leading-relaxed">
+                        {language === 'ar' ? (cert.description_ar || cert.description_en) : (cert.description_en || cert.description_ar)}
+                      </p>
+                      <div className="space-y-2 mb-6 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('investment.investmentAmount') || 'Investment Amount'}:</span>
+                          <span>{cert.invested_amount} EGP</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('investment.profitRate') || 'Profit Rate'}:</span>
+                          <span>{cert.profit_rate}%</span>
+                        </div>
+                        {join && (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">{t('investment.joinDate') || 'Join Date'}:</span>
+                              <span>{formatDate(join.join_date)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">{t('investment.nextProfitDate') || 'Next Profit Date'}:</span>
+                              <span>{formatDate(join.next_profit_date)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">{t('investment.nextProfitDueIn') || 'Next Profit Due In'}:</span>
+                              <span>{getCountdown(join.next_profit_date)}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      {!join ? (
+                        <Button className="w-full" onClick={() => handleJoin(cert)}>{t('investment.join') || 'Join'}</Button>
+                      ) : join.status === 'pending' ? (
+                        <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white cursor-not-allowed" disabled>{t('investment.pendingApproval') || 'Pending Approval'}</Button>
+                      ) : join.status === 'approved' ? (
+                        <Button className="w-full bg-red-500 hover:bg-red-600 text-white" onClick={() => handleWithdraw(join)}>{t('investment.withdraw') || 'Withdraw'}</Button>
+                      ) : (
+                        <Badge variant="outline">{t('investment.withdrawn') || 'Withdrawn'}</Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Join Modal */}
+      <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('investment.joinCertificate') || 'Join Investment Certificate'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-1 font-medium">{t('investment.investmentAmount') || 'Investment Amount'} (EGP)</label>
+              <input
+                type="number"
+                value={joinAmount}
+                onChange={e => setJoinAmount(e.target.value)}
+                className="w-full border rounded p-2"
+                min={pendingCertificate?.invested_amount || 1}
+                step="0.01"
+              />
+            </div>
+            <Button className="w-full" onClick={handleJoinSubmit} disabled={joining}>{joining ? t('common.loading') : t('investment.confirmJoin') || 'Confirm Join'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Withdraw Confirm Modal */}
+      <Dialog open={showWithdrawConfirm} onOpenChange={setShowWithdrawConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('investment.confirmWithdraw') || 'Confirm Withdraw'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>{t('investment.withdrawWarning') || 'Are you sure you want to withdraw from this certificate?'}</p>
+            <Button className="w-full" onClick={confirmWithdraw}>{t('investment.confirm') || 'Confirm'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+} 

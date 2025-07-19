@@ -72,6 +72,7 @@ const translations = {
     'nav.website': 'الموقع',
     'nav.dashboard': 'لوحة التحكم',
     'nav.register': 'تسجيل',
+    'nav.investmentCertificates': 'إدارة شهادات الاستثمار',
     
     // Login Page
     'login.title': 'تسجيل الدخول',
@@ -1143,6 +1144,7 @@ const translations = {
     'transactions.desc.balanceDeposit': 'إيداع رصيد',
     'balance.deposit.description': 'إيداع رصيد للانضمام للعرض',
     'offers.balanceDeposit': 'إيداع رصيد للانضمام للعرض',
+    'admin.investmentCertificates': 'إدارة شهادات الاستثمار',
   },
   en: {
     // Navigation
@@ -1160,6 +1162,7 @@ const translations = {
     'nav.website': 'Website',
     'nav.dashboard': 'Dashboard',
     'nav.register': 'Register',
+    'nav.investmentCertificates': 'Investment Certificates',
     
     // Login Page
     'login.title': 'Login',
@@ -2190,5 +2193,6 @@ const translations = {
     'transactions.desc.balanceDeposit': 'Balance deposit',
     'balance.deposit.description': 'Balance deposit for joining offer',
     'offers.balanceDeposit': 'Balance deposit for joining offer',
+    'admin.investmentCertificates': 'Manage Investment Certificates',
   }
 };
