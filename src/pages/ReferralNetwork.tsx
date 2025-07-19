@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { Copy, Share2, Trophy, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Badge } from '@/components/ui/badge';
 
 interface TeamTransaction {
   id: string;
@@ -28,6 +33,17 @@ export default function ReferralNetwork() {
   const [earningsByUser, setEarningsByUser] = useState<any[]>([]);
   const [teamTransactions, setTeamTransactions] = useState<TeamTransaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  // Add state for active offers
+  const [activeOffersByUser, setActiveOffersByUser] = useState<any>({});
+  const [referralCode, setReferralCode] = useState('');
+  const [referralBenefits, setReferralBenefits] = useState([
+    'Earn points for every friend who joins using your code.',
+    'Get bonus rewards when your referrals make their first deposit.',
+    'Unlock special badges and achievements.',
+    'Boost your team earnings as your network grows.'
+  ]);
+  const [copyTooltip, setCopyTooltip] = useState('Copy');
+  const chartRef = useRef(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -210,6 +226,44 @@ export default function ReferralNetwork() {
     }
   }, [userInfo?.referral_code]);
 
+  // Fetch active offers for all team members
+  useEffect(() => {
+    async function fetchActiveOffers() {
+      const allTeam = [...level1Referrals, ...level2Referrals, ...level3Referrals];
+      if (allTeam.length === 0) return;
+      const userIds = allTeam.map(u => u.user_uid);
+      // Get all approved offer joins for these users
+      const { data: joins } = await supabase
+        .from('offer_joins')
+        .select('user_id, offer_id, status')
+        .in('user_id', userIds)
+        .eq('status', 'approved');
+      if (!joins) return;
+      // Get offer details for all joined offers
+      const offerIds = Array.from(new Set(joins.map(j => j.offer_id)));
+      const { data: offers } = await supabase
+        .from('offers')
+        .select('id, title, daily_profit, active')
+        .in('id', offerIds);
+      const offerMap = {};
+      (offers || []).forEach(o => { offerMap[o.id] = o; });
+      // Map user to their active offers
+      const byUser = {};
+      userIds.forEach(uid => {
+        byUser[uid] = joins
+          .filter(j => j.user_id === uid && offerMap[j.offer_id]?.active)
+          .map(j => offerMap[j.offer_id]);
+      });
+      setActiveOffersByUser(byUser);
+    }
+    fetchActiveOffers();
+  }, [level1Referrals, level2Referrals, level3Referrals]);
+
+  // Fetch referral code
+  useEffect(() => {
+    if (userInfo?.referral_code) setReferralCode(userInfo.referral_code);
+  }, [userInfo?.referral_code]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -218,6 +272,51 @@ export default function ReferralNetwork() {
     const match = description.match(/level (\d)/);
     return match ? match[1] : '1';
   };
+
+  // Copy referral code
+  const handleCopyReferralCode = async () => {
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      setCopyTooltip('Copied!');
+      toast({ title: 'Copied!', description: 'Referral code copied to clipboard' });
+      setTimeout(() => setCopyTooltip('Copy'), 1500);
+    } catch {
+      setCopyTooltip('Error');
+    }
+  };
+
+  // Share referral code
+  const handleShareReferralCode = async () => {
+    const shareText = `Join me on Cash App! Use my referral code: ${referralCode}`;
+    const shareUrl = `${window.location.origin}/register?ref=${referralCode}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Join Cash App', text: shareText, url: shareUrl });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      toast({ title: 'Shared!', description: 'Referral link copied to clipboard' });
+    }
+  };
+
+  // Prepare data for bar chart (earnings by user)
+  const barChartData = earningsByUser.map(({ user, amount }) => ({
+    name: user ? `${user.first_name} ${user.last_name}` : 'Unknown',
+    value: amount
+  }));
+  const maxBar = Math.max(...barChartData.map(d => d.value), 1);
+
+  // Prepare timeline data (last 7 days)
+  const now = new Date();
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    return d.toISOString().slice(0, 10);
+  }).reverse();
+  const timelineData = last7Days.map(date => ({
+    date,
+    txns: teamTransactions.filter(txn => txn.created_at.slice(0, 10) === date)
+  }));
 
   return (
     <div className={`min-h-screen py-20 ${isRTL ? 'rtl' : 'ltr'} bg-background text-foreground`}>
@@ -359,6 +458,103 @@ export default function ReferralNetwork() {
                       <p className="text-muted-foreground">{t('referral.noTeamTransactions')}</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              <Separator className="my-8" />
+              {/* 1. Active Offers Display */}
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Active Offers in Your Team</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[...level1Referrals, ...level2Referrals, ...level3Referrals].map(member => {
+                      const offers = activeOffersByUser[member.user_uid] || [];
+                      const isActive = offers.length > 0;
+                      return (
+                        <div key={member.user_uid} className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/30">
+                          <span className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          <span className="font-medium">{member.first_name} {member.last_name} <span className="text-xs text-muted-foreground">({member.email})</span></span>
+                          {isActive ? (
+                            <div className="flex flex-wrap gap-2 ml-auto">
+                              {offers.map(offer => (
+                                <Badge key={offer.id} variant="outline" className="flex items-center gap-1">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  {offer.title} <span className="ml-1 text-xs text-green-700">+{offer.daily_profit} EGP/day</span>
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="w-4 h-4" /> No active offers</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 2. Referral Program Section */}
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Your Referral Program</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+                    <div className="flex-1">
+                      <label className="text-sm font-medium mb-2 block">Your Referral Code</label>
+                      <div className="flex gap-2 items-center">
+                        <Input value={referralCode} readOnly className="font-mono text-lg max-w-xs" />
+                        <Button onClick={handleCopyReferralCode} variant="outline" size="icon" title={copyTooltip}><Copy className="w-4 h-4" /></Button>
+                        <Button onClick={handleShareReferralCode} variant="outline" size="icon"><Share2 className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-2">Referral Benefits</h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {referralBenefits.map((b, i) => <li key={i}>• {b}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 3. Team Earnings Breakdown (Bar Chart + Timeline) */}
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Team Earnings Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-6">
+                    <h4 className="font-semibold mb-2">Earnings by Team Member</h4>
+                    <div className="w-full overflow-x-auto">
+                      <svg ref={chartRef} width={Math.max(300, barChartData.length * 80)} height="180">
+                        {barChartData.map((d, i) => (
+                          <g key={i}>
+                            <rect x={i * 80 + 30} y={160 - (d.value / maxBar) * 120} width="40" height={(d.value / maxBar) * 120} fill="#22c55e" rx="8" />
+                            <text x={i * 80 + 50} y={175} textAnchor="middle" fontSize="12" fill="#888">{d.name.split(' ')[0]}</text>
+                            <text x={i * 80 + 50} y={160 - (d.value / maxBar) * 120 - 8} textAnchor="middle" fontSize="12" fill="#22c55e">{d.value.toFixed(0)}</text>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Earnings Timeline (Last 7 Days)</h4>
+                    <div className="overflow-x-auto">
+                      <div className="flex gap-4">
+                        {timelineData.map(day => (
+                          <div key={day.date} className="min-w-[120px] bg-muted/40 rounded-lg p-2 flex flex-col items-center">
+                            <div className="font-semibold text-xs mb-1">{day.date}</div>
+                            {day.txns.length > 0 ? day.txns.map(txn => (
+                              <div key={txn.id} className="text-xs text-success font-bold">+{txn.amount.toFixed(2)} EGP</div>
+                            )) : <div className="text-xs text-muted-foreground">No earnings</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </>
