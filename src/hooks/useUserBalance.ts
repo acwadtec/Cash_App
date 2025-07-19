@@ -7,6 +7,7 @@ export function useUserBalances() {
     team_earnings: number;
     bonuses: number;
     balance: number;
+    total_points: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export function useUserBalances() {
         const user = userData.user;
         const { data, error } = await supabase
           .from('user_info')
-          .select('personal_earnings, team_earnings, bonuses, balance')
+          .select('personal_earnings, team_earnings, bonuses, balance, total_points')
           .eq('user_uid', user.id)
           .single();
         console.log('Fetched user_info data:', data); // Debug log
@@ -39,6 +40,7 @@ export function useUserBalances() {
             team_earnings: typeof data?.team_earnings === 'number' ? data.team_earnings : Number(data?.team_earnings) || 0,
             bonuses: typeof data?.bonuses === 'number' ? data.bonuses : Number(data?.bonuses) || 0,
             balance: typeof data?.balance === 'number' ? data.balance : Number(data?.balance) || 0,
+            total_points: typeof data?.total_points === 'number' ? data.total_points : Number(data?.total_points) || 0,
           });
         }
       } catch (err: any) {

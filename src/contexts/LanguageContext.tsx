@@ -653,7 +653,7 @@ const translations = {
     'offers.preview': 'معاينة',
     'offers.removePreview': 'إزالة المعاينة',
     'offers.deleteAll': 'حذف الكل',
-    'offers.list': 'قائمة العروض',
+    'offers.list': 'قائمة المعاملات',
     'admin.backToAdmin': 'العودة للوحة الإدارة',
     
     // Deposit
@@ -1139,6 +1139,10 @@ const translations = {
     'admin.withdrawals.paidAndDeducted': 'تم الدفع وخصم المبلغ من رصيد المستخدم',
     'admin.withdrawals.balanceFetchError': 'فشل في جلب رصيد المستخدم',
     'admin.withdrawals.unknownType': 'نوع سحب غير معروف',
+    'transactions.balanceDeposit': 'إيداع رصيد',
+    'transactions.desc.balanceDeposit': 'إيداع رصيد',
+    'balance.deposit.description': 'إيداع رصيد للانضمام للعرض',
+    'offers.balanceDeposit': 'إيداع رصيد للانضمام للعرض',
   },
   en: {
     // Navigation
@@ -2182,5 +2186,9 @@ const translations = {
     'admin.withdrawals.paidAndDeducted': 'Payment completed and amount deducted from user balance',
     'admin.withdrawals.balanceFetchError': 'Failed to fetch user balance',
     'admin.withdrawals.unknownType': 'Unknown withdrawal type',
+    'transactions.balanceDeposit': 'Balance deposit',
+    'transactions.desc.balanceDeposit': 'Balance deposit',
+    'balance.deposit.description': 'Balance deposit for joining offer',
+    'offers.balanceDeposit': 'Balance deposit for joining offer',
   }
 };

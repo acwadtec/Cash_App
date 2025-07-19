@@ -180,13 +180,13 @@ export default function Offers() {
               toast({ title: t('common.error'), description: t('error.failedToUpdateBalance'), variant: 'destructive' });
       return;
     }
-    // Log transaction for capital deposit (offer buy-in)
+    // Log transaction for balance deposit (offer buy-in)
     await supabase.from('transactions').insert({
       user_id: userId,
-      type: 'capital_deposit',
+      type: 'balance_deposit',
       amount: cost,
       status: 'completed',
-      description: t('offers.capitalDeposit'),
+      description: t('offers.balanceDeposit'),
       created_at: new Date().toISOString(),
     });
     // Insert join record
@@ -315,7 +315,7 @@ export default function Offers() {
                       joinStatuses[offer.id] === 'rejected' ? 'bg-red-500 hover:bg-red-600 text-white' :
                       joinStatuses[offer.id] === 'approved' ? 'bg-green-500 hover:bg-green-600 text-white' :
                       joinStatuses[offer.id] === 'pending' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' :
-                      (offer.join_limit !== null && offer.join_count >= offer.join_limit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''
+                      (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''
                     }`}
                     onClick={() => handleJoinOffer(offer.id)}
                     disabled={

@@ -12,10 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useVerificationGuard } from '@/components/VerificationGuard';
 import { toast } from '@/hooks/use-toast';
-import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, Package, History, XCircle, CheckCircle, Hourglass, DollarSign, Star, Gift, Users } from 'lucide-react';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUserBalances } from '@/hooks/useUserBalance';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface WithdrawalSettings {
   timeSlots: string[];
@@ -33,6 +34,28 @@ interface WithdrawalRequest {
   rejectionReason?: string;
   adminNote?: string;
   proofImageUrl?: string;
+}
+
+// Animated count-up utility
+function useCountUp(target: number, duration = 1000) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const startTime = Date.now();
+    function animate() {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      if (elapsed < duration) {
+        setValue(Math.floor(start + (target - start) * (elapsed / duration)));
+        requestAnimationFrame(animate);
+      } else {
+        setValue(target);
+      }
+    }
+    animate();
+    // eslint-disable-next-line
+  }, [target, duration]);
+  return value;
 }
 
 export default function Withdrawal() {
@@ -55,16 +78,36 @@ export default function Withdrawal() {
   const [userPackage, setUserPackage] = useState('basic'); // This should come from user profile
   const [showAlert, setShowAlert] = useState(false);
   const { balances, loading: loadingBalances } = useUserBalances();
-  // Calculate capital as the sum of personal_earnings, team_earnings, and bonuses
-  const capital = balances
+  // Calculate balance as the sum of personal_earnings, team_earnings, and bonuses
+  const balance = balances
     ? balances.personal_earnings + balances.team_earnings + balances.bonuses
     : 0;
 
   const withdrawalTypes = [
-    { value: 'personal', label: t('profile.personalEarnings'), balance: balances?.personal_earnings ?? 0 },
-    { value: 'team', label: t('profile.teamEarnings'), balance: balances?.team_earnings ?? 0 },
-    { value: 'bonuses', label: t('profile.bonuses'), balance: balances?.bonuses ?? 0 },
-    { value: 'capital', label: t('profile.capital'), balance: balances?.balance ?? 0 },
+    {
+      value: 'balance',
+      label: t('profile.balance'),
+      icon: DollarSign,
+      color: 'text-green-400',
+      amount: balances?.balance ?? 0,
+      unit: 'EGP',
+    },
+    {
+      value: 'bonuses',
+      label: t('profile.bonuses'),
+      icon: Gift,
+      color: 'text-yellow-400',
+      amount: balances?.bonuses ?? 0,
+      unit: 'EGP',
+    },
+    {
+      value: 'team_earnings',
+      label: t('profile.teamEarnings'),
+      icon: Users,
+      color: 'text-purple-400',
+      amount: balances?.team_earnings ?? 0,
+      unit: 'EGP',
+    },
   ];
 
   const withdrawalMethods = [
@@ -331,7 +374,7 @@ export default function Withdrawal() {
     const selectedType = withdrawalTypes.find(t => t.value === formData.type);
     const amount = parseFloat(formData.amount);
     
-    if (selectedType && amount > selectedType.balance) {
+    if (selectedType && amount > selectedType.amount) {
       toast({
         title: t('withdrawal.error.amount'),
         description: t('withdrawal.error.amountMessage'),
@@ -449,6 +492,11 @@ export default function Withdrawal() {
     }
   };
 
+  const balanceCount = useCountUp(balances?.balance ?? 0);
+  const pointsCount = useCountUp(balances?.total_points ?? 0);
+  const bonusesCount = useCountUp(balances?.bonuses ?? 0);
+  const teamEarningsCount = useCountUp(balances?.team_earnings ?? 0);
+
   return (
     <div className="min-h-screen py-20">
       {/* Alert for incomplete account information */}
@@ -538,7 +586,7 @@ export default function Withdrawal() {
                             <SelectContent>
                               {withdrawalTypes.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>
-                                  {type.label} (${type.balance.toLocaleString()})
+                                  {type.label} (${type.amount.toLocaleString()})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -560,7 +608,7 @@ export default function Withdrawal() {
                           />
                           {formData.type && (
                             <p className="text-sm text-muted-foreground">
-                              {t('withdrawal.maxAmount')} ${withdrawalTypes.find(t => t.value === formData.type)?.balance.toLocaleString()}
+                              {t('withdrawal.maxAmount')} ${withdrawalTypes.find(t => t.value === formData.type)?.amount.toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -611,19 +659,55 @@ export default function Withdrawal() {
                       <CardTitle>{t('withdrawal.balances')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 rounded-lg bg-accent/20">
-                          <span className="font-medium">{t('withdrawal.totalIncome')}</span>
-                          <span className="font-bold text-primary">{balances ? `${balances.balance} ${t('deposit.amountUnit')}` : `${t('deposit.amountUnit')}`}</span>
-                        </div>
-                        {withdrawalTypes.map((type) => (
-                          <div key={type.value} className="flex justify-between items-center p-3 rounded-lg bg-accent/20">
-                            <span className="font-medium">{type.label}</span>
-                            <span className="font-bold text-primary">
-                              ${type.balance.toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
+                      <div className="flex flex-col gap-6 my-6">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-green-900/40 to-green-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-green-500/40 hover:ring-2 hover:ring-green-400/40 group cursor-pointer relative overflow-hidden">
+                              <DollarSign className="w-10 h-10 text-green-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                              <div>
+                                <div className="text-3xl font-extrabold text-green-400 drop-shadow animate-pulse">{balanceCount} EGP</div>
+                                <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.balance')}</div>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Wallet balance available for withdrawal and offers.</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-blue-900/40 to-blue-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-blue-500/40 hover:ring-2 hover:ring-blue-400/40 group cursor-pointer relative overflow-hidden">
+                              <Star className="w-10 h-10 text-blue-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                              <div>
+                                <div className="text-3xl font-extrabold text-blue-400 drop-shadow animate-pulse">{pointsCount}</div>
+                                <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.totalPoints')}</div>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Total points earned from referrals and activities.</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-yellow-900/40 to-yellow-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-yellow-500/40 hover:ring-2 hover:ring-yellow-400/40 group cursor-pointer relative overflow-hidden">
+                              <Gift className="w-10 h-10 text-yellow-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                              <div>
+                                <div className="text-3xl font-extrabold text-yellow-400 drop-shadow animate-pulse">{bonusesCount} EGP</div>
+                                <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.bonuses')}</div>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Bonuses awarded for achievements and promotions.</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-purple-900/40 to-purple-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-purple-500/40 hover:ring-2 hover:ring-purple-400/40 group cursor-pointer relative overflow-hidden">
+                              <Users className="w-10 h-10 text-purple-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                              <div>
+                                <div className="text-3xl font-extrabold text-purple-400 drop-shadow animate-pulse">{teamEarningsCount} EGP</div>
+                                <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.teamEarnings')}</div>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Team earnings from your referral network.</TooltipContent>
+                        </Tooltip>
                       </div>
                     </CardContent>
                   </Card>

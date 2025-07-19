@@ -168,10 +168,10 @@ export default function WithdrawalRequestsPage() {
       return;
     }
     const typeToField = {
-      capital: 'balance',
       personal: 'personal_earnings',
       team: 'team_earnings',
       bonuses: 'bonuses',
+      balance: 'balance',
     };
     const field = typeToField[selectedWithdrawal.type];
     if (field) {

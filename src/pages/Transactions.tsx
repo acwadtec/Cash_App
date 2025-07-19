@@ -54,7 +54,7 @@ export default function Transactions() {
           amount: item.amount,
           status: item.status === 'approved' ? 'completed' : item.status, // show 'completed' if approved
           date: new Date(item.created_at).toLocaleDateString(),
-          description: t('transactions.desc.capitalDeposit'),
+          description: t('transactions.desc.balanceDeposit'),
           method: t('transactions.method.bankTransfer'),
           rejectionReason: item.status === 'rejected' ? t('transactions.invalidBankDetails') : null,
           adminNote: item.status === 'approved' ? t('transactions.paymentProcessed') : null,
