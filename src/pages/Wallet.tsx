@@ -61,6 +61,18 @@ export default function Wallet() {
     fetchWallet();
   }, []);
 
+  function formatType(type: string, t: (key: string) => string) {
+    // Try translation, else fallback to formatted label
+    const translation = t(`transactions.${type}`);
+    if (translation && !translation.startsWith('transactions.')) return translation;
+    return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function formatStatus(status: string, t: (key: string) => string) {
+    const translation = t(`transactions.${status}`);
+    if (translation && !translation.startsWith('transactions.')) return translation;
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
   return (
     <div className={`min-h-screen py-20 ${isRTL ? 'rtl' : 'ltr'} bg-background text-foreground`}>
       <div className="container mx-auto px-4 max-w-2xl">
@@ -130,6 +142,7 @@ export default function Wallet() {
                       <TableRow>
                         <TableHead>{t('transactions.id') || 'ID'}</TableHead>
                         <TableHead>{t('transactions.type') || 'Type'}</TableHead>
+                        {/* Uncomment if you want description: <TableHead>{t('transactions.description') || 'Description'}</TableHead> */}
                         <TableHead>{t('transactions.amount') || 'Amount'}</TableHead>
                         <TableHead>{t('transactions.status') || 'Status'}</TableHead>
                         <TableHead>{t('transactions.date') || 'Date'}</TableHead>
@@ -139,9 +152,10 @@ export default function Wallet() {
                       {transactions.map(tx => (
                         <TableRow key={tx.id}>
                           <TableCell>{tx.id.slice(-6)}</TableCell>
-                          <TableCell>{t(`transactions.${tx.type}`) || tx.type}</TableCell>
+                          <TableCell>{formatType(tx.type, t)}</TableCell>
+                          {/* Uncomment if you want description: <TableCell>{tx.description || ''}</TableCell> */}
                           <TableCell>{tx.amount} EGP</TableCell>
-                          <TableCell>{t(`transactions.${tx.status}`) || tx.status}</TableCell>
+                          <TableCell>{formatStatus(tx.status, t)}</TableCell>
                           <TableCell>{new Date(tx.created_at).toLocaleDateString()}</TableCell>
                         </TableRow>
                       ))}
