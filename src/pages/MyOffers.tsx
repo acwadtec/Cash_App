@@ -80,7 +80,7 @@ function getTotalProfitFromTransactions(transactions: Transaction[], offerId: st
     total: total
   });
   
-  return `$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `${total.toLocaleString(undefined, { maximumFractionDigits: 2 })} EGP`;
 }
 
 const MyOffers: React.FC = () => {

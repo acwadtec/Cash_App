@@ -13,6 +13,7 @@ import { X, Upload, Users as UsersIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog as ConfirmDialog, DialogContent as ConfirmDialogContent, DialogHeader as ConfirmDialogHeader, DialogTitle as ConfirmDialogTitle } from '@/components/ui/dialog';
 
 interface Offer {
   id: string;
@@ -61,6 +62,8 @@ export default function ManageOffersPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [joinedUsers, setJoinedUsers] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState<null | (() => void)>(null);
 
   // Fetch offers from Supabase
   const fetchOffers = async () => {
@@ -298,6 +301,12 @@ export default function ManageOffersPage() {
     return a.active ? -1 : 1;
   });
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPendingSubmit(() => () => handleSubmit(e));
+    setShowConfirm(true);
+  };
+
   return (
     <div className={`min-h-screen py-20 bg-background text-foreground ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="container mx-auto px-4">
@@ -356,7 +365,7 @@ export default function ManageOffersPage() {
         {showDialog && (
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
             <div className="fixed inset-0 flex items-center justify-center bg-black/50 dark:bg-black/70 z-50 p-4">
-              <form onSubmit={handleSubmit} className="bg-background rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-foreground border border-border">
+              <form onSubmit={handleFormSubmit} className="bg-background rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-foreground border border-border">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">{editOffer ? t('admin.editOffer') : t('admin.createOffer')}</h2>
                   <Button
@@ -566,6 +575,19 @@ export default function ManageOffersPage() {
             </div>
           </Dialog>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <ConfirmDialogContent>
+            <ConfirmDialogHeader>
+              <ConfirmDialogTitle>Are you sure you want to {editOffer ? 'update' : 'add'} this offer?</ConfirmDialogTitle>
+            </ConfirmDialogHeader>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setShowConfirm(false)}>Cancel</Button>
+              <Button onClick={() => { setShowConfirm(false); if (pendingSubmit) pendingSubmit(); }}>Confirm</Button>
+            </div>
+          </ConfirmDialogContent>
+        </ConfirmDialog>
 
         {/* Modal for joined users */}
         {showUsersModal && (
