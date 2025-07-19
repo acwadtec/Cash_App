@@ -20,7 +20,7 @@ import Withdrawal from "./pages/Withdrawal";
 import Deposit from "./pages/Deposit";
 import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
-import ManageOffers from './pages/ManageOffers';
+
 import ReferralNetwork from './pages/ReferralNetwork';
 import ReadMore from "./pages/ReadMore";
 import MyOffers from "./pages/MyOffers";
@@ -65,7 +65,7 @@ function App() {
                         <Route path="withdrawal" element={<Withdrawal />} />
                         <Route path="deposit" element={<Deposit />} />
                         <Route path="help" element={<HelpCenter />} />
-                        <Route path="manage-offers" element={<ManageOffers />} />
+                        <Route path="manage-offers" element={<ManageOffersPage />} />
                         <Route path="referral-network" element={<ReferralNetwork />} />
                         <Route path="read-more" element={<ReadMore />} />
                         <Route path="my-offers" element={<MyOffers />} />
