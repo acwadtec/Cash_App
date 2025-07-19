@@ -586,7 +586,7 @@ export default function Withdrawal() {
                             <SelectContent>
                               {withdrawalTypes.map((type) => (
                                 <SelectItem key={type.value} value={type.value}>
-                                  {type.label} (${type.amount.toLocaleString()})
+                                  {type.label} ({type.amount.toLocaleString()} EGP)
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -608,7 +608,7 @@ export default function Withdrawal() {
                           />
                           {formData.type && (
                             <p className="text-sm text-muted-foreground">
-                              {t('withdrawal.maxAmount')} ${withdrawalTypes.find(t => t.value === formData.type)?.amount.toLocaleString()}
+                              {t('withdrawal.maxAmount')} {withdrawalTypes.find(t => t.value === formData.type)?.amount.toLocaleString()} EGP
                             </p>
                           )}
                         </div>
@@ -776,7 +776,7 @@ export default function Withdrawal() {
                               {withdrawalTypes.find(t => t.value === withdrawal.type)?.label || withdrawal.type}
                             </TableCell>
                             <TableCell className="font-bold">
-                              ${withdrawal.amount.toLocaleString()}
+                              ${withdrawal.amount.toLocaleString()} EGP
                             </TableCell>
                             <TableCell>
                               {withdrawalMethods.find(m => m.value === withdrawal.method)?.label || withdrawal.method}

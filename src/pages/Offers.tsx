@@ -12,6 +12,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useVerificationGuard } from '@/components/VerificationGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DollarSign, Gift, Users, Star } from 'lucide-react';
+import { Dialog as ConfirmDialog, DialogContent as ConfirmDialogContent, DialogHeader as ConfirmDialogHeader, DialogTitle as ConfirmDialogTitle } from '@/components/ui/dialog';
 
 interface Offer {
   id: string;
@@ -53,6 +54,9 @@ export default function Offers() {
   const [pendingOfferId, setPendingOfferId] = useState<string | null>(null);
   const [selectedBalanceType, setSelectedBalanceType] = useState<'balance' | 'bonuses' | 'team_earnings' | null>(null);
   const [userBalances, setUserBalances] = useState<{ balance: number; bonuses: number; team_earnings: number; total_points: number } | null>(null);
+  const [showUserConfirm, setShowUserConfirm] = useState(false);
+  const [pendingUserJoin, setPendingUserJoin] = useState<null | (() => void)>(null);
+  const [pendingBalanceType, setPendingBalanceType] = useState<string | null>(null);
 
   // Check if user has user_info data
   useEffect(() => {
@@ -229,8 +233,16 @@ export default function Offers() {
   };
 
   // Add function to handle balance selection and join
-  const handleSelectBalanceType = async (type: 'balance' | 'bonuses' | 'team_earnings' | 'total_points') => {
-    setSelectedBalanceType(type);
+  const handleSelectBalanceType = (type: 'balance' | 'bonuses' | 'team_earnings' | 'total_points') => {
+    setPendingBalanceType(type);
+    setShowUserConfirm(true);
+    setPendingUserJoin(() => () => doJoinWithBalanceType(type));
+  };
+
+  // Move the actual join logic to a new function
+  type BalanceType = 'balance' | 'bonuses' | 'team_earnings' | 'total_points';
+  const doJoinWithBalanceType = async (type: BalanceType) => {
+    setShowUserConfirm(false);
     if (!pendingOfferId || !userBalances) return;
     // Fetch offer details
     const { data: offer, error: offerError } = await supabase
@@ -376,19 +388,19 @@ export default function Offers() {
                     {offer.cost !== undefined && offer.cost !== 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('offers.cost')}:</span>
-                        <span>${offer.cost}</span>
+                        <span>{offer.cost} EGP</span>
                       </div>
                     )}
                     {offer.daily_profit !== undefined && offer.daily_profit !== 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('offers.dailyProfit')}:</span>
-                        <span>${offer.daily_profit}</span>
+                        <span>{offer.daily_profit} EGP</span>
                       </div>
                     )}
                     {offer.monthly_profit !== undefined && offer.monthly_profit !== 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('offers.monthlyProfit')}:</span>
-                        <span>${offer.monthly_profit}</span>
+                        <span>{offer.monthly_profit} EGP</span>
                       </div>
                     )}
                     {offer.deadline && (
@@ -400,7 +412,7 @@ export default function Offers() {
                     {offer.minAmount && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('offers.minAmount')}:</span>
-                        <span>${offer.minAmount}</span>
+                        <span>{offer.minAmount} EGP</span>
                       </div>
                     )}
                   </div>
@@ -499,6 +511,19 @@ export default function Offers() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog open={showUserConfirm} onOpenChange={setShowUserConfirm}>
+        <ConfirmDialogContent>
+          <ConfirmDialogHeader>
+            <ConfirmDialogTitle>
+              Are you sure you want to join this offer using {pendingBalanceType === 'balance' ? t('profile.balance') : pendingBalanceType === 'bonuses' ? t('profile.bonuses') : pendingBalanceType === 'team_earnings' ? t('profile.teamEarnings') : t('profile.totalPoints')}?
+            </ConfirmDialogTitle>
+          </ConfirmDialogHeader>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setShowUserConfirm(false)}>Cancel</Button>
+            <Button onClick={() => { setShowUserConfirm(false); if (pendingUserJoin) pendingUserJoin(); }}>Confirm</Button>
+          </div>
+        </ConfirmDialogContent>
+      </ConfirmDialog>
     </div>
   );
 }

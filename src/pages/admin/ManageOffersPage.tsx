@@ -13,8 +13,6 @@ import { X, Upload, Users as UsersIcon, Plus, Trash2, RefreshCw, TrendingUp, Cal
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 interface Offer {
   id: string;
@@ -63,21 +61,6 @@ export default function ManageOffersPage() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [joinedUsers, setJoinedUsers] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
-
-  // Calculate stats
-  const stats = React.useMemo(() => {
-    const totalOffers = offers.length;
-    const activeOffers = offers.filter(offer => offer.active).length;
-    const totalAmount = offers.reduce((sum, offer) => sum + (offer.amount || 0), 0);
-    const totalCost = offers.reduce((sum, offer) => sum + (offer.cost || 0), 0);
-
-    return {
-      totalOffers,
-      activeOffers,
-      totalAmount,
-      totalCost
-    };
-  }, [offers]);
 
   // Fetch offers from Supabase
   const fetchOffers = async () => {
@@ -312,6 +295,12 @@ export default function ManageOffersPage() {
     return a.active ? -1 : 1;
   });
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPendingSubmit(() => () => handleSubmit(e));
+    setShowConfirm(true);
+  };
+
   return (
     <div className={`min-h-screen py-20 bg-background text-foreground ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="container mx-auto px-4 space-y-6">
@@ -456,7 +445,7 @@ export default function ManageOffersPage() {
         {showDialog && (
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
             <div className="fixed inset-0 flex items-center justify-center bg-black/50 dark:bg-black/70 z-50 p-4">
-              <form onSubmit={handleSubmit} className="bg-background rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto text-foreground border border-border">
+              <form onSubmit={handleSubmit} className="bg-background rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto text-foreground border border-border">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -759,6 +748,19 @@ export default function ManageOffersPage() {
             </div>
           </Dialog>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <ConfirmDialogContent>
+            <ConfirmDialogHeader>
+              <ConfirmDialogTitle>Are you sure you want to {editOffer ? 'update' : 'add'} this offer?</ConfirmDialogTitle>
+            </ConfirmDialogHeader>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setShowConfirm(false)}>Cancel</Button>
+              <Button onClick={() => { setShowConfirm(false); if (pendingSubmit) pendingSubmit(); }}>Confirm</Button>
+            </div>
+          </ConfirmDialogContent>
+        </ConfirmDialog>
 
         {/* Modal for joined users */}
         {showUsersModal && (

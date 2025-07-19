@@ -73,11 +73,11 @@ const OffersTable: React.FC<OffersTableProps> = ({ offers, onEdit, onDelete, sho
                 {language === 'ar' ? (offer.description_ar || offer.description_en) : (offer.description_en || offer.description_ar)}
               </td>
               <td className="text-left px-4 py-2">
-                <Badge variant="secondary">${offer.amount.toLocaleString()}</Badge>
+                <Badge variant="secondary">{offer.amount.toLocaleString()} EGP</Badge>
               </td>
               <td className="text-left px-4 py-2">
                 {offer.cost ? (
-                  <span className="text-gray-600 dark:text-gray-300">${offer.cost.toLocaleString()}</span>
+                  <span className="text-gray-600 dark:text-gray-300">{offer.cost.toLocaleString()} EGP</span>
                 ) : (
                   <span className="text-gray-400 dark:text-gray-500">-</span>
                 )}
@@ -85,7 +85,7 @@ const OffersTable: React.FC<OffersTableProps> = ({ offers, onEdit, onDelete, sho
               <td className="text-left px-4 py-2">
                 {offer.daily_profit ? (
                   <Badge variant="outline" className="text-green-600 border-green-600 dark:text-green-400 dark:border-green-400">
-                    ${offer.daily_profit.toLocaleString()}
+                    {offer.daily_profit.toLocaleString()} EGP
                   </Badge>
                 ) : (
                   <span className="text-gray-400 dark:text-gray-500">-</span>
@@ -94,7 +94,7 @@ const OffersTable: React.FC<OffersTableProps> = ({ offers, onEdit, onDelete, sho
               <td className="text-left px-4 py-2">
                 {offer.monthly_profit ? (
                   <Badge variant="outline" className="text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400">
-                    ${offer.monthly_profit.toLocaleString()}
+                    {offer.monthly_profit.toLocaleString()} EGP
                   </Badge>
                 ) : (
                   <span className="text-gray-400 dark:text-gray-500">-</span>
