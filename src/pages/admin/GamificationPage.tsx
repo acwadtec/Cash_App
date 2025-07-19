@@ -10,7 +10,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Search, Filter, Edit, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Search, Filter, Edit, Save, X, Plus, Trash2, Trophy, Award, Users, Target, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Badge {
@@ -377,369 +377,453 @@ const GamificationPage: React.FC = () => {
     fetchLevels();
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">{t('admin.gamification')}</h1>
-        <Button onClick={handleRefresh}>
-          {t('common.refresh')}
-        </Button>
-      </div>
+  const getBadgeTypeColor = (type: string) => {
+    switch (type) {
+      case 'referral': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'deposit': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'withdrawal': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'profile': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  };
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {t('admin.filters')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>{t('admin.search')}</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t('admin.search.badges')}
-                  onChange={(e) => debouncedSearch(e.target.value)}
-                  className="pl-10"
-                />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('admin.gamification') || 'Gamification'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage badges, levels, and user achievements
+            </p>
+          </div>
+          <Button 
+            onClick={handleRefresh}
+            variant="outline"
+            className="bg-background/50 hover:bg-background/80"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            {t('common.refresh') || 'Refresh'}
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Filter className="h-5 w-5 text-primary" />
+              </div>
+              {t('admin.filters') || 'Filters'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('admin.search') || 'Search'}</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={t('admin.search.badges') || 'Search badges...'}
+                    onChange={(e) => debouncedSearch(e.target.value)}
+                    className="pl-10 bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('admin.type') || 'Type'}</Label>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="bg-background/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('admin.filters.allTypes') || 'All Types'}</SelectItem>
+                    <SelectItem value="referral">{t('admin.badgeType.referral') || 'Referral'}</SelectItem>
+                    <SelectItem value="deposit">{t('admin.badgeType.deposit') || 'Deposit'}</SelectItem>
+                    <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal') || 'Withdrawal'}</SelectItem>
+                    <SelectItem value="profile">{t('admin.badgeType.profile') || 'Profile'}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-2">
-              <Label>{t('admin.type')}</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('admin.filters.allTypes')}</SelectItem>
-                  <SelectItem value="referral">{t('admin.badgeType.referral')}</SelectItem>
-                  <SelectItem value="deposit">{t('admin.badgeType.deposit')}</SelectItem>
-                  <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal')}</SelectItem>
-                  <SelectItem value="profile">{t('admin.badgeType.profile')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Badges Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t('admin.badges')}</CardTitle>
-          <Button onClick={() => setShowBadgeModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('admin.addBadge')}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {loadingBadges ? (
-            <div className="text-center py-8">{t('common.loading')}</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {paginatedBadges.map((badge) => (
-                  <Card key={badge.id} className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <Badge variant={badge.active ? "default" : "secondary"}>
-                        {badge.type}
-                      </Badge>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedBadge(badge);
-                            setBadgeForm({
-                              name: badge.name,
-                              description: badge.description,
-                              type: badge.type,
-                              requirement: badge.requirement,
-                              active: badge.active,
-                            });
-                            setShowBadgeModal(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteBadge(badge.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+        {/* Badges Section */}
+        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Trophy className="h-5 w-5 text-primary" />
+              </div>
+              {t('admin.badges') || 'Badges'}
+            </CardTitle>
+            <Button 
+              onClick={() => setShowBadgeModal(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t('admin.addBadge') || 'Add Badge'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loadingBadges ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {paginatedBadges.map((badge) => (
+                    <Card key={badge.id} className="p-4 hover:shadow-lg transition-all duration-200 border-border/50 bg-background/30">
+                      <div className="flex justify-between items-start mb-3">
+                        <Badge className={getBadgeTypeColor(badge.type)}>
+                          {badge.type}
+                        </Badge>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBadge(badge);
+                              setBadgeForm({
+                                name: badge.name,
+                                description: badge.description,
+                                type: badge.type,
+                                requirement: badge.requirement,
+                                active: badge.active,
+                              });
+                              setShowBadgeModal(true);
+                            }}
+                            className="bg-background/50 hover:bg-background/80"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteBadge(badge.id)}
+                            className="shadow-sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
+                      <h3 className="font-semibold mb-2 text-foreground">{badge.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{badge.description}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Target className="w-3 h-3" />
+                        Requirement: {badge.requirement}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {filteredBadges.length > itemsPerPage && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-muted/50'}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: Math.ceil(filteredBadges.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer hover:bg-muted/50"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          className={currentPage === Math.ceil(filteredBadges.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-muted/50'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Levels Section */}
+        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Award className="h-5 w-5 text-primary" />
+              </div>
+              {t('admin.levels') || 'Levels'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingLevels ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {levels.map((level) => (
+                  <Card key={level.id} className="p-4 hover:shadow-lg transition-all duration-200 border-border/50 bg-background/30">
+                    <div className="flex justify-between items-start mb-3">
+                      <Badge variant={level.active ? "default" : "secondary"}>
+                        Level {level.level}
+                      </Badge>
                     </div>
-                    <h3 className="font-semibold mb-1">{badge.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">{badge.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Requirement: {badge.requirement}
-                    </p>
+                    <h3 className="font-semibold mb-2 text-foreground">{level.name}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Target className="w-3 h-3" />
+                      Requirement: {level.requirement}
+                    </div>
                   </Card>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
 
-              {/* Pagination */}
-              {filteredBadges.length > itemsPerPage && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: Math.ceil(filteredBadges.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === Math.ceil(filteredBadges.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Levels Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.levels')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingLevels ? (
-            <div className="text-center py-8">{t('common.loading')}</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {levels.map((level) => (
-                <Card key={level.id} className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant={level.active ? "default" : "secondary"}>
-                      Level {level.level}
-                    </Badge>
-                  </div>
-                  <h3 className="font-semibold mb-1">{level.name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Requirement: {level.requirement}
-                  </p>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* User Badges Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.userBadges')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingUserBadges ? (
-            <div className="text-center py-8">{t('common.loading')}</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">{t('admin.user')}</th>
-                      <th className="text-left p-2">{t('admin.badge')}</th>
-                      <th className="text-left p-2">{t('admin.type')}</th>
-                      <th className="text-left p-2">{t('admin.pointsEarned')}</th>
-                      <th className="text-left p-2">{t('admin.earnedAt')}</th>
-                      <th className="text-left p-2">{t('admin.actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedUserBadges.map((userBadge) => (
-                      <tr key={userBadge.id} className="border-b hover:bg-muted/50">
-                        <td className="p-2">
-                          {userBadge.user ? (
-                            <div>
-                              <div className="font-medium">
-                                {userBadge.user.first_name} {userBadge.user.last_name}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {userBadge.user.email}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">Unknown User</span>
-                          )}
-                        </td>
-                        <td className="p-2">{userBadge.badge.name}</td>
-                        <td className="p-2">
-                          <Badge variant="outline">{userBadge.badge.type}</Badge>
-                        </td>
-                        <td className="p-2">{userBadge.points_earned || 0}</td>
-                        <td className="p-2">
-                          {new Date(userBadge.earned_at).toLocaleDateString()}
-                        </td>
-                        <td className="p-2">
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedUserBadge(userBadge);
-                                setUserBadgeForm({ points_earned: userBadge.points_earned || 0 });
-                                setShowUserBadgeModal(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteUserBadge(userBadge.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* User Badges Section */}
+        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
               </div>
+              {t('admin.userBadges') || 'User Badges'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingUserBadges ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border/50 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/30">
+                        <tr className="border-b border-border/50">
+                          <th className="text-left p-4 font-semibold">{t('admin.user') || 'User'}</th>
+                          <th className="text-left p-4 font-semibold">{t('admin.badge') || 'Badge'}</th>
+                          <th className="text-left p-4 font-semibold">{t('admin.type') || 'Type'}</th>
+                          <th className="text-left p-4 font-semibold">{t('admin.pointsEarned') || 'Points Earned'}</th>
+                          <th className="text-left p-4 font-semibold">{t('admin.earnedAt') || 'Earned At'}</th>
+                          <th className="text-left p-4 font-semibold">{t('admin.actions') || 'Actions'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedUserBadges.map((userBadge) => (
+                          <tr key={userBadge.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                            <td className="p-4">
+                              {userBadge.user ? (
+                                <div>
+                                  <div className="font-medium text-foreground">
+                                    {userBadge.user.first_name} {userBadge.user.last_name}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground font-mono">
+                                    {userBadge.user.email}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">Unknown User</span>
+                              )}
+                            </td>
+                            <td className="p-4 font-medium">{userBadge.badge.name}</td>
+                            <td className="p-4">
+                              <Badge className={getBadgeTypeColor(userBadge.badge.type)} variant="outline">
+                                {userBadge.badge.type}
+                              </Badge>
+                            </td>
+                            <td className="p-4 font-mono">
+                              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                {userBadge.points_earned || 0}
+                              </span>
+                            </td>
+                            <td className="p-4 text-sm text-muted-foreground">
+                              {new Date(userBadge.earned_at).toLocaleDateString()}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedUserBadge(userBadge);
+                                    setUserBadgeForm({ points_earned: userBadge.points_earned || 0 });
+                                    setShowUserBadgeModal(true);
+                                  }}
+                                  className="bg-background/50 hover:bg-background/80"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteUserBadge(userBadge.id)}
+                                  className="shadow-sm"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-              {/* Pagination */}
-              {filteredUserBadges.length > itemsPerPage && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: Math.ceil(filteredUserBadges.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
+                {/* Pagination */}
+                {filteredUserBadges.length > itemsPerPage && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-muted/50'}
+                        />
                       </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === Math.ceil(filteredUserBadges.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      {Array.from({ length: Math.ceil(filteredUserBadges.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer hover:bg-muted/50"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          className={currentPage === Math.ceil(filteredUserBadges.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-muted/50'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Badge Modal */}
-      <Dialog open={showBadgeModal} onOpenChange={setShowBadgeModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {selectedBadge ? t('admin.editBadge') : t('admin.addBadge')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{t('admin.badgeName')}</Label>
-              <Input
-                value={badgeForm.name}
-                onChange={(e) => setBadgeForm(prev => ({ ...prev, name: e.target.value }))}
-              />
+        {/* Badge Modal */}
+        <Dialog open={showBadgeModal} onOpenChange={setShowBadgeModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                {selectedBadge ? t('admin.editBadge') : t('admin.addBadge')}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">{t('admin.badgeName') || 'Badge Name'}</Label>
+                <Input
+                  value={badgeForm.name}
+                  onChange={(e) => setBadgeForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="mt-1 bg-background/50 border-border/50"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">{t('admin.badgeDescription') || 'Description'}</Label>
+                <Input
+                  value={badgeForm.description}
+                  onChange={(e) => setBadgeForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="mt-1 bg-background/50 border-border/50"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">{t('admin.badgeType') || 'Type'}</Label>
+                <Select value={badgeForm.type} onValueChange={(value) => setBadgeForm(prev => ({ ...prev, type: value }))}>
+                  <SelectTrigger className="mt-1 bg-background/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="referral">{t('admin.badgeType.referral') || 'Referral'}</SelectItem>
+                    <SelectItem value="deposit">{t('admin.badgeType.deposit') || 'Deposit'}</SelectItem>
+                    <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal') || 'Withdrawal'}</SelectItem>
+                    <SelectItem value="profile">{t('admin.badgeType.profile') || 'Profile'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">{t('admin.badgeRequirement') || 'Requirement'}</Label>
+                <Input
+                  type="number"
+                  value={badgeForm.requirement}
+                  onChange={(e) => setBadgeForm(prev => ({ ...prev, requirement: parseInt(e.target.value) || 0 }))}
+                  className="mt-1 bg-background/50 border-border/50"
+                  min="0"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowBadgeModal(false)}>
+                  {t('admin.cancel') || 'Cancel'}
+                </Button>
+                <Button 
+                  onClick={handleBadgeSubmit}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  {selectedBadge ? t('admin.update') : t('admin.create')}
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label>{t('admin.badgeDescription')}</Label>
-              <Input
-                value={badgeForm.description}
-                onChange={(e) => setBadgeForm(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>{t('admin.badgeType')}</Label>
-              <Select value={badgeForm.type} onValueChange={(value) => setBadgeForm(prev => ({ ...prev, type: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="referral">{t('admin.badgeType.referral')}</SelectItem>
-                  <SelectItem value="deposit">{t('admin.badgeType.deposit')}</SelectItem>
-                  <SelectItem value="withdrawal">{t('admin.badgeType.withdrawal')}</SelectItem>
-                  <SelectItem value="profile">{t('admin.badgeType.profile')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t('admin.badgeRequirement')}</Label>
-              <Input
-                type="number"
-                value={badgeForm.requirement}
-                onChange={(e) => setBadgeForm(prev => ({ ...prev, requirement: parseInt(e.target.value) }))}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowBadgeModal(false)}>
-                {t('admin.cancel')}
-              </Button>
-              <Button onClick={handleBadgeSubmit}>
-                {selectedBadge ? t('admin.update') : t('admin.create')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
 
-      {/* User Badge Modal */}
-      <Dialog open={showUserBadgeModal} onOpenChange={setShowUserBadgeModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('admin.editUserBadge')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{t('admin.pointsEarned')}</Label>
-              <Input
-                type="number"
-                value={userBadgeForm.points_earned}
-                onChange={(e) => setUserBadgeForm(prev => ({ ...prev, points_earned: parseInt(e.target.value) }))}
-              />
+        {/* User Badge Modal */}
+        <Dialog open={showUserBadgeModal} onOpenChange={setShowUserBadgeModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-primary" />
+                {t('admin.editUserBadge') || 'Edit User Badge'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">{t('admin.pointsEarned') || 'Points Earned'}</Label>
+                <Input
+                  type="number"
+                  value={userBadgeForm.points_earned}
+                  onChange={(e) => setUserBadgeForm(prev => ({ ...prev, points_earned: parseInt(e.target.value) || 0 }))}
+                  className="mt-1 bg-background/50 border-border/50"
+                  min="0"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowUserBadgeModal(false)}>
+                  {t('admin.cancel') || 'Cancel'}
+                </Button>
+                <Button 
+                  onClick={handleUserBadgeSubmit}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  {t('admin.update') || 'Update'}
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowUserBadgeModal(false)}>
-                {t('admin.cancel')}
-              </Button>
-              <Button onClick={handleUserBadgeSubmit}>
-                {t('admin.update')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };

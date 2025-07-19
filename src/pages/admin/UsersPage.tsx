@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Search, Filter, Edit, Save, X } from 'lucide-react';
+import { CalendarIcon, Search, Filter, Edit, Save, X, Users, UserCheck, UserX, RefreshCw, Download, FileText, FileSpreadsheet, FileDown, Eye, Shield, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
@@ -295,42 +295,133 @@ export default function UsersPage() {
     }
   };
 
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalUsers = users.length;
+    const verifiedUsers = users.filter(user => user.verified).length;
+    const unverifiedUsers = totalUsers - verifiedUsers;
+    const totalBalance = users.reduce((sum, user) => sum + (user.balance || 0), 0);
+    const totalReferrals = users.reduce((sum, user) => sum + (user.referral_count || 0), 0);
+
+    return {
+      totalUsers,
+      verifiedUsers,
+      unverifiedUsers,
+      totalBalance,
+      totalReferrals
+    };
+  }, [users]);
+
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">{t('admin.users')}</h1>
-        <Button onClick={handleRefresh} disabled={loadingUsers}>
-          {loadingUsers ? t('common.loading') : t('common.refresh')}
-        </Button>
+      {/* Header */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('admin.users')}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage and monitor user accounts, verification status, and activity
+            </p>
+          </div>
+          <Button onClick={handleRefresh} disabled={loadingUsers} className="gap-2">
+            <RefreshCw className={cn("h-4 w-4", loadingUsers && "animate-spin")} />
+            {loadingUsers ? t('common.loading') : t('common.refresh')}
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Users</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.totalUsers}</p>
+                </div>
+                <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 border-green-200 dark:border-green-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Verified</p>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.verifiedUsers}</p>
+                </div>
+                <UserCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200 dark:border-orange-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Unverified</p>
+                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.unverifiedUsers}</p>
+                </div>
+                <UserX className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Total Balance</p>
+                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">${stats.totalBalance.toFixed(2)}</p>
+                </div>
+                <Shield className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/50 dark:to-indigo-900/50 border-indigo-200 dark:border-indigo-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Total Referrals</p>
+                  <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{stats.totalReferrals}</p>
+                </div>
+                <Users className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-2 border-dashed border-muted-foreground/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Filter className="h-5 w-5 text-primary" />
             {t('admin.filters')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>{t('admin.search')}</Label>
+              <Label className="text-sm font-medium">{t('admin.search')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t('admin.searchUsers')}
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-2 focus:border-primary"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>{t('admin.status')}</Label>
+              <Label className="text-sm font-medium">{t('admin.status')}</Label>
               <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="border-2 focus:border-primary">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -342,13 +433,13 @@ export default function UsersPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('admin.registrationDate')}</Label>
+              <Label className="text-sm font-medium">{t('admin.registrationDate')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal border-2 focus:border-primary",
                       !userDateFilter && "text-muted-foreground"
                     )}
                   >
@@ -371,52 +462,79 @@ export default function UsersPage() {
       </Card>
 
       {/* Users Table */}
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <CardTitle>
+      <Card className="shadow-lg">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-muted/50 to-muted/30">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
             {t('admin.users')} ({userCount})
           </CardTitle>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('export.csv')}</Button>
-            <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('export.excel')}</Button>
-            <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('export.pdf')}</Button>
+            <Button size="sm" variant="outline" onClick={handleExportCSV} className="gap-2">
+              <FileText className="h-4 w-4" />
+              {t('export.csv')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleExportExcel} className="gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              {t('export.excel')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleExportPDF} className="gap-2">
+              <FileDown className="h-4 w-4" />
+              {t('export.pdf')}
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loadingUsers ? (
-            <div className="text-center py-8">{t('common.loading')}</div>
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <RefreshCw className="h-5 w-5 animate-spin" />
+                {t('common.loading')}
+              </div>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">{t('admin.noUsersFound')}</p>
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">{t('admin.name')}</th>
-                      <th className="text-left p-2">{t('admin.email')}</th>
-                      <th className="text-left p-2">{t('admin.phone')}</th>
-                      <th className="text-left p-2">{t('admin.status')}</th>
-                      <th className="text-left p-2">{t('admin.level')}</th>
-                      <th className="text-left p-2">{t('admin.balance')}</th>
-                      <th className="text-left p-2">{t('admin.referrals')}</th>
-                      <th className="text-left p-2">{t('admin.actions')}</th>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-4 font-semibold">{t('admin.name')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.email')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.phone')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.status')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.level')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.balance')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.referrals')}</th>
+                      <th className="text-left p-4 font-semibold">{t('admin.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedUsers.map((user) => (
-                      <tr key={user.user_uid} className="border-b hover:bg-muted/50">
-                        <td className="p-2">
+                      <tr key={user.user_uid} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="p-4">
                           <div className="font-medium">
                             {user.first_name} {user.last_name}
                           </div>
                         </td>
-                        <td className="p-2">{user.email}</td>
-                        <td className="p-2">{user.phone || '-'}</td>
-                        <td className="p-2">
-                          <Badge variant={user.verified ? "default" : "secondary"}>
+                        <td className="p-4 font-mono text-sm">{user.email}</td>
+                        <td className="p-4">{user.phone || '-'}</td>
+                        <td className="p-4">
+                          <Badge 
+                            variant={user.verified ? "default" : "secondary"}
+                            className={cn(
+                              user.verified 
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100" 
+                                : "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100"
+                            )}
+                          >
                             {user.verified ? t('admin.verified') : t('admin.unverified')}
                           </Badge>
                         </td>
-                        <td className="p-2">
+                        <td className="p-4">
                           {editingId === user.user_uid ? (
                             <div className="flex items-center gap-2">
                               <Select
@@ -442,100 +560,113 @@ export default function UsersPage() {
                                 size="sm"
                                 onClick={() => handleLevelSave(user.user_uid, user.level)}
                                 disabled={levelSavingId === user.user_uid}
+                                className="h-8 w-8 p-0"
                               >
-                                {levelSavingId === user.user_uid ? t('common.saving') : <Save className="h-4 w-4" />}
+                                {levelSavingId === user.user_uid ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Save className="h-4 w-4" />
+                                )}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={handleLevelCancel}
+                                className="h-8 w-8 p-0"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <span>{t('admin.levelPrefix')} {user.level || 1}</span>
+                              <span className="font-mono">{t('admin.levelPrefix')} {user.level || 1}</span>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleLevelEdit(user.user_uid, user.level || 1)}
+                                className="h-8 w-8 p-0 hover:bg-muted"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </div>
                           )}
                         </td>
-                        <td className="p-2">${user.balance || 0}</td>
-                        <td className="p-2">{user.referral_count || 0}</td>
-                        <td className="p-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUserSelect(user)}
-                          >
-                            {t('admin.view')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="ml-2 bg-blue-600 text-white hover:bg-blue-700"
-                            onClick={async () => {
-                              const now = new Date().toISOString();
-                              const { error } = await supabase
-                                .from('user_info')
-                                .update({ withdrawal_limit_start: now })
-                                .eq('user_uid', user.user_uid);
-                              if (error) {
-                                toast({ title: t('common.error'), description: 'Failed to reset daily limit', variant: 'destructive' });
-                              } else {
-                                setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, withdrawal_limit_start: now } : u));
-                                toast({ title: t('common.success'), description: 'Daily withdrawal limit reset for user.' });
-                              }
-                            }}
-                          >
-                            Reset Daily Limit
-                          </Button>
-                          {!user.verified && (
-                            <>
-                              <Button
-                                size="sm"
-                                className="ml-2 bg-green-600 text-white hover:bg-green-700"
-                                onClick={async () => {
-                                  const { error } = await supabase
-                                    .from('user_info')
-                                    .update({ verified: true })
-                                    .eq('user_uid', user.user_uid);
-                                  if (error) {
-                                    toast({ title: t('common.error'), description: t('admin.failedToVerifyUser'), variant: 'destructive' });
-                                  } else {
-                                    setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, verified: true } : u));
-                                    toast({ title: t('common.success'), description: t('admin.userVerified') });
-                                  }
-                                }}
-                              >
-                                {t('admin.verify')}
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="ml-2"
-                                variant="destructive"
-                                onClick={async () => {
-                                  const { error } = await supabase
-                                    .from('user_info')
-                                    .update({ verified: false })
-                                    .eq('user_uid', user.user_uid);
-                                  if (error) {
-                                    toast({ title: t('common.error'), description: t('admin.failedToRejectUser'), variant: 'destructive' });
-                                  } else {
-                                    setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, verified: false } : u));
-                                    toast({ title: t('common.success'), description: t('admin.userRejected') });
-                                  }
-                                }}
-                              >
-                                {t('admin.reject')}
-                              </Button>
-                            </>
-                          )}
+                        <td className="p-4 font-mono font-medium">${user.balance || 0}</td>
+                        <td className="p-4 font-mono">{user.referral_count || 0}</td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUserSelect(user)}
+                              className="gap-1"
+                            >
+                              <Eye className="h-3 w-3" />
+                              {t('admin.view')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="gap-1 bg-blue-600 text-white hover:bg-blue-700"
+                              onClick={async () => {
+                                const now = new Date().toISOString();
+                                const { error } = await supabase
+                                  .from('user_info')
+                                  .update({ withdrawal_limit_start: now })
+                                  .eq('user_uid', user.user_uid);
+                                if (error) {
+                                  toast({ title: t('common.error'), description: 'Failed to reset daily limit', variant: 'destructive' });
+                                } else {
+                                  setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, withdrawal_limit_start: now } : u));
+                                  toast({ title: t('common.success'), description: 'Daily withdrawal limit reset for user.' });
+                                }
+                              }}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Reset Limit
+                            </Button>
+                            {!user.verified && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="gap-1 bg-green-600 text-white hover:bg-green-700"
+                                  onClick={async () => {
+                                    const { error } = await supabase
+                                      .from('user_info')
+                                      .update({ verified: true })
+                                      .eq('user_uid', user.user_uid);
+                                    if (error) {
+                                      toast({ title: t('common.error'), description: t('admin.failedToVerifyUser'), variant: 'destructive' });
+                                    } else {
+                                      setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, verified: true } : u));
+                                      toast({ title: t('common.success'), description: t('admin.userVerified') });
+                                    }
+                                  }}
+                                >
+                                  <UserCheck className="h-3 w-3" />
+                                  {t('admin.verify')}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={async () => {
+                                    const { error } = await supabase
+                                      .from('user_info')
+                                      .update({ verified: false })
+                                      .eq('user_uid', user.user_uid);
+                                    if (error) {
+                                      toast({ title: t('common.error'), description: t('admin.failedToRejectUser'), variant: 'destructive' });
+                                    } else {
+                                      setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, verified: false } : u));
+                                      toast({ title: t('common.success'), description: t('admin.userRejected') });
+                                    }
+                                  }}
+                                >
+                                  <UserX className="h-3 w-3" />
+                                  {t('admin.reject')}
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -545,33 +676,41 @@ export default function UsersPage() {
 
               {/* Pagination */}
               {filteredUsers.length > itemsPerPage && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: Math.ceil(filteredUsers.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
+                <div className="flex justify-center py-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          className={cn(
+                            "cursor-pointer hover:bg-muted",
+                            currentPage === 1 && "pointer-events-none opacity-50"
+                          )}
+                        />
                       </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === Math.ceil(filteredUsers.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                      {Array.from({ length: Math.ceil(filteredUsers.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer hover:bg-muted"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          className={cn(
+                            "cursor-pointer hover:bg-muted",
+                            currentPage === Math.ceil(filteredUsers.length / itemsPerPage) && "pointer-events-none opacity-50"
+                          )}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
               )}
             </div>
           )}
@@ -582,13 +721,16 @@ export default function UsersPage() {
       <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('admin.userDetails')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              {t('admin.userDetails')}
+            </DialogTitle>
           </DialogHeader>
           {selectedUser && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>{t('admin.name')}</Label>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('admin.name')}</Label>
                   <Input
                     value={`${selectedUser.first_name} ${selectedUser.last_name}`}
                     onChange={(e) => {
@@ -599,46 +741,52 @@ export default function UsersPage() {
                         last_name: lastName
                       });
                     }}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
-                <div>
-                  <Label>{t('admin.email')}</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('admin.email')}</Label>
                   <Input
                     value={selectedUser.email}
                     onChange={(e) => handleUserUpdate({ email: e.target.value })}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
-                <div>
-                  <Label>{t('admin.phone')}</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('admin.phone')}</Label>
                   <Input
                     value={selectedUser.phone || ''}
                     onChange={(e) => handleUserUpdate({ phone: e.target.value })}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
-                <div>
-                  <Label>{t('admin.wallet')}</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('admin.wallet')}</Label>
                   <Input
                     value={selectedUser.wallet || ''}
                     onChange={(e) => handleUserUpdate({ wallet: e.target.value })}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
-                <div>
-                  <Label>{t('admin.balance')}</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('admin.balance')}</Label>
                   <Input
                     type="number"
                     value={selectedUser.balance || 0}
                     onChange={(e) => handleUserUpdate({ balance: parseFloat(e.target.value) })}
+                    className="border-2 focus:border-primary font-mono"
                   />
                 </div>
-                <div>
-                  <Label>{t('admin.referralCode')}</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('admin.referralCode')}</Label>
                   <Input
                     value={selectedUser.referral_code || ''}
                     onChange={(e) => handleUserUpdate({ referral_code: e.target.value })}
+                    className="border-2 focus:border-primary font-mono"
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setShowUserModal(false)}>
                   {t('common.close')}
                 </Button>

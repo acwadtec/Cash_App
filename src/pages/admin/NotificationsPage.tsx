@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Plus, Pencil, Trash, Image } from 'lucide-react';
+import { Bell, Plus, Pencil, Trash, Image, Send, Eye, Calendar, Users, Target, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
 // UI Components
@@ -161,180 +161,397 @@ export default function NotificationsPage() {
     fetchNotifications();
   };
 
+  const getNotificationTypeColor = (type: string) => {
+    switch (type) {
+      case 'info': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'success': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'warning': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'error': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      case 'offer': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'ad': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  };
+
+  const getStatusBadge = (notif: Notification) => {
+    if (notif.sent_at) {
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Sent</Badge>;
+    } else if (notif.scheduled_at) {
+      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Scheduled</Badge>;
+    } else {
+      return <Badge variant="secondary">Draft</Badge>;
+    }
+  };
+
   return (
-    <div className="space-y-4 p-8">
-      <Card className="shadow-card w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Bell className="h-5 w-5 mr-2" />
-            {t('admin.notifications')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 h-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 h-full w-full">
-            {/* Notification Form */}
-            <div className="space-y-5 bg-card rounded-xl p-6 border border-border shadow-glow h-full flex flex-col flex-1">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('admin.notifications') || 'Notifications'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Create and manage user notifications and announcements
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="px-3 py-1">
+              {notifications.length} Notifications
+            </Badge>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Notification Form */}
+          <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Bell className="w-5 h-5 text-primary" />
+                </div>
+                {editingId ? t('common.edit') : t('admin.notifications.create')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="notificationTitle">{t('admin.notifications.title')}</Label>
+                <Label htmlFor="notificationTitle" className="text-sm font-medium">
+                  {t('admin.notifications.title') || 'Title'}
+                </Label>
                 <Input
                   id="notificationTitle"
                   value={notificationData.title}
                   onChange={e => setNotificationData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder={t('admin.notifications.title')}
-                  className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                  placeholder="Enter notification title..."
+                  className="bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/30"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="notificationMessage">{t('admin.notifications.message')}</Label>
-                <textarea
+                <Label htmlFor="notificationMessage" className="text-sm font-medium">
+                  {t('admin.notifications.message') || 'Message'}
+                </Label>
+                <Textarea
                   id="notificationMessage"
                   value={notificationData.message}
                   onChange={e => setNotificationData(prev => ({ ...prev, message: e.target.value }))}
-                  placeholder={t('admin.notifications.message')}
-                  className="flex h-32 w-full rounded-lg border border-border bg-muted px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm resize-none transition-all text-foreground"
+                  placeholder="Enter notification message..."
+                  className="min-h-[120px] bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/30 resize-none"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>{t('admin.notifications.type')}</Label>
-                <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.type} onChange={e => setNotificationData(prev => ({ ...prev, type: e.target.value }))}>
-                  <option value="info">{t('admin.notifications.type.info')}</option>
-                  <option value="offer">{t('admin.notifications.type.offer')}</option>
-                  <option value="ad">{t('admin.notifications.type.ad')}</option>
-                  <option value="warning">{t('admin.notifications.type.warning')}</option>
-                  <option value="success">{t('admin.notifications.type.success')}</option>
-                  <option value="error">{t('admin.notifications.type.error')}</option>
-                </select>
-            </div>
-              <div className="space-y-2">
-                <Label>{t('admin.notifications.target')}</Label>
-                <select className="w-full border rounded-lg px-2 py-2 bg-muted text-foreground border-border focus:ring-2 focus:ring-primary/60 transition-all" value={notificationData.target} onChange={e => setNotificationData(prev => ({ ...prev, target: e.target.value, targetValue: '' }))}>
-                  <option value="all">{t('admin.notifications.target.all')}</option>
-                  <option value="user">{t('admin.notifications.target.user')}</option>
-                </select>
-                {notificationData.target === 'user' && (
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {t('admin.notifications.type') || 'Type'}
+                  </Label>
+                  <Select value={notificationData.type} onValueChange={(value) => setNotificationData(prev => ({ ...prev, type: value }))}>
+                    <SelectTrigger className="bg-background/50 border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">{t('admin.notifications.type.info') || 'Info'}</SelectItem>
+                      <SelectItem value="offer">{t('admin.notifications.type.offer') || 'Offer'}</SelectItem>
+                      <SelectItem value="ad">{t('admin.notifications.type.ad') || 'Advertisement'}</SelectItem>
+                      <SelectItem value="warning">{t('admin.notifications.type.warning') || 'Warning'}</SelectItem>
+                      <SelectItem value="success">{t('admin.notifications.type.success') || 'Success'}</SelectItem>
+                      <SelectItem value="error">{t('admin.notifications.type.error') || 'Error'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {t('admin.notifications.target') || 'Target'}
+                  </Label>
+                  <Select value={notificationData.target} onValueChange={(value) => setNotificationData(prev => ({ ...prev, target: value, targetValue: '' }))}>
+                    <SelectTrigger className="bg-background/50 border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('admin.notifications.target.all') || 'All Users'}</SelectItem>
+                      <SelectItem value="user">{t('admin.notifications.target.user') || 'Specific User'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {notificationData.target === 'user' && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {t('admin.notifications.searchUser') || 'Search User'}
+                  </Label>
                   <div className="relative">
                     <Input
                       value={userSearch}
                       onChange={e => setUserSearch(e.target.value)}
-                      placeholder={t('admin.notifications.searchUser')}
-                      className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                      placeholder="Search by name, phone, or email..."
+                      className="bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/30"
                     />
-                    {userSearchLoading && <div className="absolute right-2 top-2 text-xs text-muted-foreground">{t('admin.notifications.loading')}</div>}
+                    {userSearchLoading && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      </div>
+                    )}
                     {userResults.length > 0 && (
-                      <div className="absolute z-10 bg-card border border-border rounded shadow w-full mt-1 max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 bg-background border border-border rounded-lg shadow-lg w-full mt-1 max-h-48 overflow-y-auto">
                         {userResults.map(user => (
                           <div
                             key={user.user_uid}
-                            className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                            className="px-3 py-2 hover:bg-muted cursor-pointer text-sm border-b border-border/50 last:border-b-0"
                             onClick={() => {
                               setNotificationData(prev => ({ ...prev, targetValue: user.user_uid }));
                               setUserSearch(`${user.first_name || ''} ${user.last_name || ''} (${user.phone || user.email})`);
                               setUserResults([]);
                             }}
                           >
-                            <span className="font-medium">{user.first_name} {user.last_name}</span> <span className="text-muted-foreground">{user.phone || user.email}</span>
+                            <div className="font-medium">{user.first_name} {user.last_name}</div>
+                            <div className="text-xs text-muted-foreground">{user.phone || user.email}</div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                )}
-            </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="banner" checked={notificationData.banner} onChange={e => setNotificationData(prev => ({ ...prev, banner: e.target.checked }))} className="accent-primary w-4 h-4 rounded focus:ring-2 focus:ring-primary/60 transition-all" />
-                <Label htmlFor="banner">{t('admin.notifications.banner')}</Label>
+                </div>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="banner"
+                  checked={notificationData.banner}
+                  onCheckedChange={(checked) => setNotificationData(prev => ({ ...prev, banner: checked }))}
+                />
+                <Label htmlFor="banner" className="text-sm font-medium">
+                  {t('admin.notifications.banner') || 'Show as Banner'}
+                </Label>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="scheduledAt">{t('admin.notifications.schedule')}</Label>
+                <Label htmlFor="scheduledAt" className="text-sm font-medium">
+                  {t('admin.notifications.schedule') || 'Schedule (Optional)'}
+                </Label>
                 <Input
                   id="scheduledAt"
                   type="datetime-local"
                   value={notificationData.scheduledAt}
                   onChange={e => setNotificationData(prev => ({ ...prev, scheduledAt: e.target.value }))}
-                  className="focus:ring-2 focus:ring-primary/60 transition-all bg-muted text-foreground border-border"
+                  className="bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/30"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label>{t('admin.notifications.image')}</Label>
-                <label className="block w-full cursor-pointer bg-muted border border-dashed border-primary/40 rounded-lg p-3 text-center hover:bg-primary/10 transition-all">
-                  <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                  <span className="text-sm text-primary-foreground">{t('common.chooseFile')}</span>
-                </label>
+                <Label className="text-sm font-medium">
+                  {t('admin.notifications.image') || 'Image (Optional)'}
+                </Label>
+                <div className="border-2 border-dashed border-border/50 rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <div className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                    <Image className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {t('common.chooseFile') || 'Click to upload image'}
+                    </p>
+                  </div>
+                </div>
                 {notificationData.imageUrl && (
-                  <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] max-h-[40px] object-contain mt-3 rounded-lg border border-border shadow truncate overflow-x-auto" />
+                  <div className="mt-2">
+                    <img
+                      src={notificationData.imageUrl}
+                      alt="preview"
+                      className="max-w-[120px] max-h-[60px] object-contain rounded-lg border border-border/50"
+                    />
+                  </div>
                 )}
               </div>
-              <Button onClick={handleSendNotification} className="w-full shadow-glow text-lg py-3">
+
+              <Button
+                onClick={handleSendNotification}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Send className="w-4 h-4 mr-2" />
                 {editingId ? t('common.save') : t('admin.notifications.send')}
               </Button>
-            </div>
-            {/* Divider for large screens */}
-            <div className="hidden md:block h-full w-px bg-border mx-2" aria-hidden="true"></div>
-            {/* Notification Preview */}
-            <Card className="bg-accent/60 border border-border shadow-glow rounded-xl h-full flex flex-col flex-1">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">{t('common.view')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <h5 className="font-bold text-primary-foreground text-xl">{notificationData.title || t('admin.notifications.title')}</h5>
-                  <p className="text-base text-muted-foreground mt-1 min-h-[48px]">{notificationData.message || t('admin.notifications.message')}</p>
-                  <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                    <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.type')}: {t(`admin.notifications.type.${notificationData.type}`)}</span>
-                    <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.banner')}: {notificationData.banner ? t('common.success') : t('common.cancel')}</span>
-                    {notificationData.scheduledAt && <span className="bg-muted px-2 py-1 rounded">{t('admin.notifications.scheduledAt')}: {notificationData.scheduledAt}</span>}
-                  </div>
-                  {notificationData.imageUrl && (
-                    <img src={notificationData.imageUrl} alt="preview" className="max-w-[120px] max-h-[40px] object-contain mt-3 rounded-lg border border-border shadow truncate overflow-x-auto" />
+            </CardContent>
+          </Card>
+
+          {/* Notification Preview */}
+          <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Eye className="w-5 h-5 text-primary" />
+                </div>
+                {t('common.preview') || 'Preview'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-background/30 rounded-lg border border-border/50">
+                <h3 className="font-bold text-lg mb-2">
+                  {notificationData.title || t('admin.notifications.title')}
+                </h3>
+                <p className="text-muted-foreground mb-3">
+                  {notificationData.message || t('admin.notifications.message')}
+                </p>
+                
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <Badge className={getNotificationTypeColor(notificationData.type)}>
+                    {t(`admin.notifications.type.${notificationData.type}`) || notificationData.type}
+                  </Badge>
+                  <Badge variant={notificationData.banner ? "default" : "secondary"}>
+                    {notificationData.banner ? 'Banner' : 'Normal'}
+                  </Badge>
+                  {notificationData.target === 'user' && (
+                    <Badge variant="outline">
+                      <Users className="w-3 h-3 mr-1" />
+                      Specific User
+                    </Badge>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="mt-8 w-full">
-            <h4 className="font-semibold mb-4">{t('admin.notifications')}</h4>
+
+                {notificationData.scheduledAt && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    Scheduled: {new Date(notificationData.scheduledAt).toLocaleString()}
+                  </div>
+                )}
+
+                {notificationData.imageUrl && (
+                  <div className="mt-3">
+                    <img
+                      src={notificationData.imageUrl}
+                      alt="preview"
+                      className="max-w-[120px] max-h-[60px] object-contain rounded-lg border border-border/50"
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Notifications List */}
+        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Bell className="w-5 h-5 text-primary" />
+              </div>
+              {t('admin.notifications.history') || 'Notification History'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             {loadingNotifications ? (
-              <div>{t('common.loading')}</div>
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+              </div>
             ) : notifications.length === 0 ? (
-              <div>{t('admin.notifications.noNotifications')}</div>
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="p-4 rounded-full bg-muted/50 mb-4">
+                  <Bell className="w-12 h-12 opacity-50" />
+                </div>
+                <span className="text-lg font-medium mb-2">{t('admin.notifications.noNotifications') || 'No notifications found'}</span>
+                <span className="text-sm text-center max-w-md">
+                  Create your first notification to start communicating with users
+                </span>
+              </div>
             ) : (
-              <Table className="bg-card border border-border rounded-xl shadow-glow">
-                <TableHeader className="bg-muted">
-                  <TableRow className="border-b border-border">
-                    <TableHead className="text-foreground">{t('admin.notifications.title')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.type')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.target')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.banner')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.scheduledAt')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.status')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.image')}</TableHead>
-                    <TableHead className="text-foreground">{t('admin.notifications.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="bg-card">
-                  {notifications.map((notif) => (
-                    <TableRow key={notif.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                      <TableCell className="text-foreground">{notif.title}</TableCell>
-                      <TableCell className="text-foreground">{t(`admin.notifications.type.${notif.type}`)}</TableCell>
-                      <TableCell className="text-foreground">{notif.user_uid ? notif.user_uid : t('admin.notifications.target.all')}</TableCell>
-                      <TableCell className="text-foreground">{notif.banner ? t('common.success') : t('common.cancel')}</TableCell>
-                      <TableCell className="text-foreground">{notif.scheduled_at ? format(new Date(notif.scheduled_at), 'yyyy-MM-dd HH:mm') : '-'}</TableCell>
-                      <TableCell className="text-foreground">{notif.sent_at ? t('admin.notifications.status.sent') : notif.scheduled_at ? t('admin.notifications.status.scheduled') : '-'}</TableCell>
-                      <TableCell>
-                        {notif.image_url && <img src={notif.image_url} alt="notif" className="max-w-[60px] max-h-[40px] object-contain rounded-lg border border-border shadow truncate overflow-x-auto" />}
-                      </TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline" className="mr-2" onClick={() => handleEdit(notif)}>{t('common.edit')}</Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(notif)}>{t('common.delete')}</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow>
+                        <TableHead className="font-semibold">Title</TableHead>
+                        <TableHead className="font-semibold">Type</TableHead>
+                        <TableHead className="font-semibold">Target</TableHead>
+                        <TableHead className="font-semibold">Banner</TableHead>
+                        <TableHead className="font-semibold">Scheduled</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Image</TableHead>
+                        <TableHead className="font-semibold">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {notifications.map((notif) => (
+                        <TableRow key={notif.id} className="hover:bg-muted/20 transition-colors">
+                          <TableCell className="font-medium max-w-[200px] truncate">
+                            {notif.title}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getNotificationTypeColor(notif.type)}>
+                              {t(`admin.notifications.type.${notif.type}`) || notif.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {notif.user_uid ? (
+                              <Badge variant="outline">
+                                <Users className="w-3 h-3 mr-1" />
+                                Specific User
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">
+                                <Target className="w-3 h-3 mr-1" />
+                                All Users
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={notif.banner ? "default" : "secondary"}>
+                              {notif.banner ? 'Yes' : 'No'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {notif.scheduled_at ? format(new Date(notif.scheduled_at), 'MMM dd, HH:mm') : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(notif)}
+                          </TableCell>
+                          <TableCell>
+                            {notif.image_url && (
+                              <img
+                                src={notif.image_url}
+                                alt="notification"
+                                className="w-12 h-8 object-cover rounded border border-border/50"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(notif)}
+                                className="bg-background/50 hover:bg-background/80"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(notif)}
+                                className="shadow-sm"
+                              >
+                                <Trash className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 

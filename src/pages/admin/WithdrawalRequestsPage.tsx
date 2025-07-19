@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { DollarSign, Check, X, Clock, AlertTriangle, Pencil, Trash, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { DollarSign, Check, X, Clock, AlertTriangle, Pencil, Trash, Plus, RefreshCw, FileText, FileSpreadsheet, FileDown, Users, Calendar, Settings, TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { cn } from '@/lib/utils';
 
 export default function WithdrawalRequestsPage() {
   const { t } = useLanguage();
@@ -52,6 +53,25 @@ export default function WithdrawalRequestsPage() {
   const [packageFormMax, setPackageFormMax] = useState('');
   const [packageFormDaily, setPackageFormDaily] = useState('');
   const [packageEditIndex, setPackageEditIndex] = useState(null);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalWithdrawals = withdrawals.length;
+    const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
+    const paidWithdrawals = withdrawals.filter(w => w.status === 'paid').length;
+    const totalAmount = withdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
+    const pendingAmount = withdrawals
+      .filter(w => w.status === 'pending')
+      .reduce((sum, w) => sum + (w.amount || 0), 0);
+
+    return {
+      totalWithdrawals,
+      pendingWithdrawals,
+      paidWithdrawals,
+      totalAmount,
+      pendingAmount
+    };
+  }, [withdrawals]);
 
   useEffect(() => { fetchWithdrawals(); }, [statusFilter]);
   useEffect(() => { fetchSettings(); }, []);
@@ -370,319 +390,588 @@ export default function WithdrawalRequestsPage() {
   ];
 
   return (
-    <div className="space-y-4 p-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">{t('admin.withdrawals.title')}</h2>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t('admin.withdrawals.filterByStatus')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('admin.withdrawals.all')}</SelectItem>
-            <SelectItem value="pending">{t('admin.withdrawals.pending')}</SelectItem>
-            <SelectItem value="approved">{t('admin.withdrawals.approved')}</SelectItem>
-            <SelectItem value="rejected">{t('admin.withdrawals.rejected')}</SelectItem>
-            <SelectItem value="paid">{t('admin.withdrawals.paid')}</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="space-y-6 p-4 md:p-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('admin.withdrawals.title')}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage withdrawal requests, approve payments, and configure withdrawal settings
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px] border-2 focus:border-primary">
+                <SelectValue placeholder={t('admin.withdrawals.filterByStatus')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('admin.withdrawals.all')}</SelectItem>
+                <SelectItem value="pending">{t('admin.withdrawals.pending')}</SelectItem>
+                <SelectItem value="approved">{t('admin.withdrawals.approved')}</SelectItem>
+                <SelectItem value="rejected">{t('admin.withdrawals.rejected')}</SelectItem>
+                <SelectItem value="paid">{t('admin.withdrawals.paid')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => fetchWithdrawals()} disabled={loadingWithdrawals} variant="outline" className="gap-2">
+              <RefreshCw className={cn("h-4 w-4", loadingWithdrawals && "animate-spin")} />
+              {loadingWithdrawals ? t('common.loading') : t('common.refresh')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Requests</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.totalWithdrawals}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200 dark:border-orange-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Pending</p>
+                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.pendingWithdrawals}</p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 border-green-200 dark:border-green-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Paid</p>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.paidWithdrawals}</p>
+                </div>
+                <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Total Amount</p>
+                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">${stats.totalAmount.toFixed(2)}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50 border-red-200 dark:border-red-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-600 dark:text-red-400">Pending Amount</p>
+                  <p className="text-2xl font-bold text-red-900 dark:text-red-100">${stats.pendingAmount.toFixed(2)}</p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      <Card className="mb-4">
+
+      {/* Settings Card */}
+      <Card className="border-2 border-dashed border-muted-foreground/20">
         <CardHeader>
-          <CardTitle>{t('admin.withdrawals.settings')}</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Settings className="h-5 w-5 text-primary" />
+            {t('admin.withdrawals.settings')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="time-slots" className="w-full">
             <TabsList className="mb-4">
-              <TabsTrigger value="time-slots">{t('admin.withdrawals.timeSlots')}</TabsTrigger>
-              <TabsTrigger value="package-limits">{t('admin.withdrawals.packageLimits')}</TabsTrigger>
+              <TabsTrigger value="time-slots" className="gap-2">
+                <Clock className="h-4 w-4" />
+                {t('admin.withdrawals.timeSlots')}
+              </TabsTrigger>
+              <TabsTrigger value="package-limits" className="gap-2">
+                <Shield className="h-4 w-4" />
+                {t('admin.withdrawals.packageLimits')}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="time-slots">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-4">
                 <span className="font-semibold">{t('admin.withdrawals.timeSlotsList')}</span>
-                <Button size="sm" variant="outline" onClick={openAddTimeSlot}><Plus className="w-4 h-4 mr-1" />{t('common.add')}</Button>
+                <Button size="sm" variant="outline" onClick={openAddTimeSlot} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  {t('common.add')}
+                </Button>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.day')}</TableHead>
-                    <TableHead>{t('common.startHour')}</TableHead>
-                    <TableHead>{t('common.endHour')}</TableHead>
-                    <TableHead>{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {timeSlots.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">{t('admin.withdrawals.noTimeSlots')}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="font-semibold">{t('common.day')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.startHour')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.endHour')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.actions')}</TableHead>
                     </TableRow>
-                  ) : timeSlots.map((slot, idx) => {
-                    const [day, start, end] = slot.split(':');
-                    // Convert 24-hour format to 12-hour format for display
-                    const startHour = parseInt(start);
-                    const endHour = parseInt(end);
-                    const startAMPM = startHour >= 12 ? 'PM' : 'AM';
-                    const endAMPM = endHour >= 12 ? 'PM' : 'AM';
-                    const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
-                    const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
-                    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                    return (
-                      <TableRow key={idx}>
-                        <TableCell>{dayNames[parseInt(day)] || day}</TableCell>
-                        <TableCell>{start12Hour} {startAMPM}</TableCell>
-                        <TableCell>{end12Hour} {endAMPM}</TableCell>
-                        <TableCell>
-                          <Button size="icon" variant="ghost" onClick={() => openEditTimeSlot(idx)}><Pencil /></Button>
-                          <Button size="icon" variant="destructive" onClick={() => removeTimeSlot(idx)}><Trash /></Button>
+                  </TableHeader>
+                  <TableBody>
+                    {timeSlots.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <Clock className="h-8 w-8" />
+                            {t('admin.withdrawals.noTimeSlots')}
+                          </div>
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              <Button onClick={handleSaveTimeSlots} className="mt-2">{t('common.save')}</Button>
+                    ) : timeSlots.map((slot, idx) => {
+                      const [day, start, end] = slot.split(':');
+                      // Convert 24-hour format to 12-hour format for display
+                      const startHour = parseInt(start);
+                      const endHour = parseInt(end);
+                      const startAMPM = startHour >= 12 ? 'PM' : 'AM';
+                      const endAMPM = endHour >= 12 ? 'PM' : 'AM';
+                      const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
+                      const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
+                      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                      return (
+                        <TableRow key={idx} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="font-medium">{dayNames[parseInt(day)] || day}</TableCell>
+                          <TableCell className="font-mono">{start12Hour} {startAMPM}</TableCell>
+                          <TableCell className="font-mono">{end12Hour} {endAMPM}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => openEditTimeSlot(idx)} className="h-8 w-8 p-0">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => removeTimeSlot(idx)} className="h-8 w-8 p-0">
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <Button onClick={handleSaveTimeSlots} className="mt-4 gap-2">
+                <Check className="h-4 w-4" />
+                {t('common.save')}
+              </Button>
             </TabsContent>
             <TabsContent value="package-limits">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-4">
                 <span className="font-semibold">{t('admin.withdrawals.packageLimitsList')}</span>
-                <Button size="sm" variant="outline" onClick={openAddPackage}><Plus className="w-4 h-4 mr-1" />{t('common.add')}</Button>
+                <Button size="sm" variant="outline" onClick={openAddPackage} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  {t('common.add')}
+                </Button>
               </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="font-semibold">{t('common.packageName')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.min')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.max')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.daily')}</TableHead>
+                      <TableHead className="font-semibold">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.keys(packageLimits).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <Shield className="h-8 w-8" />
+                            {t('admin.withdrawals.noPackageLimits')}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : Object.entries(packageLimits).map(([pkg, vals]: any) => (
+                      <TableRow key={pkg} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="font-medium">{pkg}</TableCell>
+                        <TableCell className="font-mono">${vals.min}</TableCell>
+                        <TableCell className="font-mono">${vals.max}</TableCell>
+                        <TableCell className="font-mono">${vals.daily}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => openEditPackage(pkg, vals)} className="h-8 w-8 p-0">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => removePackage(pkg)} className="h-8 w-8 p-0">
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <Button onClick={handleSavePackageLimits} className="mt-4 gap-2">
+                <Check className="h-4 w-4" />
+                {t('common.save')}
+              </Button>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Withdrawal Requests Table */}
+      <Card className="shadow-lg">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-muted/50 to-muted/30">
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            {t('admin.withdrawals.requestsList')} ({withdrawals.length})
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExportCSV} className="gap-2">
+              <FileText className="h-4 w-4" />
+              {t('common.exportCSV')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleExportExcel} className="gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              {t('common.exportExcel')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleExportPDF} className="gap-2">
+              <FileDown className="h-4 w-4" />
+              {t('common.exportPDF')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loadingWithdrawals ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <RefreshCw className="h-5 w-5 animate-spin" />
+                {t('common.loading')}
+              </div>
+            </div>
+          ) : withdrawals.length === 0 ? (
+            <div className="text-center py-12">
+              <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">{t('admin.withdrawals.noRequestsFound')}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.packageName')}</TableHead>
-                    <TableHead>{t('common.min')}</TableHead>
-                    <TableHead>{t('common.max')}</TableHead>
-                    <TableHead>{t('common.daily')}</TableHead>
-                    <TableHead>{t('common.actions')}</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">{t('admin.withdrawals.user')}</TableHead>
+                    <TableHead className="font-semibold">{t('admin.withdrawals.amount')}</TableHead>
+                    <TableHead className="font-semibold">{t('admin.withdrawals.method')}</TableHead>
+                    <TableHead className="font-semibold">{t('admin.withdrawals.status')}</TableHead>
+                    <TableHead className="font-semibold">{t('admin.withdrawals.date')}</TableHead>
+                    <TableHead className="font-semibold">{t('admin.withdrawals.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.keys(packageLimits).length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">{t('admin.withdrawals.noPackageLimits')}</TableCell>
-                    </TableRow>
-                  ) : Object.entries(packageLimits).map(([pkg, vals]: any) => (
-                    <TableRow key={pkg}>
-                      <TableCell>{pkg}</TableCell>
-                      <TableCell>{vals.min}</TableCell>
-                      <TableCell>{vals.max}</TableCell>
-                      <TableCell>{vals.daily}</TableCell>
+                  {withdrawals.map((withdrawal) => (
+                    <TableRow key={withdrawal.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium">{withdrawal.user_name}</TableCell>
                       <TableCell>
-                        <Button size="icon" variant="ghost" onClick={() => openEditPackage(pkg, vals)}><Pencil /></Button>
-                        <Button size="icon" variant="destructive" onClick={() => removePackage(pkg)}><Trash /></Button>
+                        <Badge variant="secondary" className="font-mono">
+                          ${withdrawal.amount.toLocaleString()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{withdrawal.method}</TableCell>
+                      <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
+                      <TableCell className="font-mono">
+                        {new Date(withdrawal.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {withdrawal.status === 'pending' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="gap-1 bg-green-600 hover:bg-green-700 text-white" 
+                                onClick={() => { setSelectedWithdrawal(withdrawal); setShowPayModal(true); }}
+                              >
+                                <Check className="h-3 w-3" />
+                                {t('admin.withdrawals.pay')}
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive" 
+                                onClick={() => { setSelectedWithdrawal(withdrawal); setShowRejectModal(true); }}
+                                className="gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                {t('admin.withdrawals.reject')}
+                              </Button>
+                            </>
+                          )}
+                          {withdrawal.status === 'rejected' && withdrawal.rejection_reason && (
+                            <Button size="sm" variant="outline" onClick={() => alert(withdrawal.rejection_reason)} className="gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              {t('admin.withdrawals.viewReason')}
+                            </Button>
+                          )}
+                          {withdrawal.status === 'paid' && withdrawal.proof_image_url && (
+                            <a href={withdrawal.proof_image_url} target="_blank" rel="noopener noreferrer">
+                              <Button size="sm" variant="outline" className="gap-1">
+                                <FileText className="h-3 w-3" />
+                                {t('admin.withdrawals.viewProof')}
+                              </Button>
+                            </a>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-              <Button onClick={handleSavePackageLimits} className="mt-2">{t('common.save')}</Button>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
+
       {/* Time Slot Dialog */}
       <Dialog open={showTimeSlotDialog} onOpenChange={setShowTimeSlotDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingTimeSlotIdx === null ? t('admin.withdrawals.addTimeSlot') : t('admin.withdrawals.editTimeSlot')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              {editingTimeSlotIdx === null ? t('admin.withdrawals.addTimeSlot') : t('admin.withdrawals.editTimeSlot')}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+          <div className="space-y-4">
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm dark:bg-yellow-950/50 dark:border-yellow-800 dark:text-yellow-200">
               <strong>Note:</strong> Time slots must be within the same day and cannot cross midnight.<br />
               For an all-day slot, use <strong>12 AM to 11:59 PM</strong>.
             </div>
-            <Label>{t('common.day')}</Label>
-            <Select value={timeSlotForm.day} onValueChange={value => setTimeSlotForm(f => ({ ...f, day: value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a day" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Sunday</SelectItem>
-                <SelectItem value="1">Monday</SelectItem>
-                <SelectItem value="2">Tuesday</SelectItem>
-                <SelectItem value="3">Wednesday</SelectItem>
-                <SelectItem value="4">Thursday</SelectItem>
-                <SelectItem value="5">Friday</SelectItem>
-                <SelectItem value="6">Saturday</SelectItem>
-              </SelectContent>
-            </Select>
-            <Label>{t('common.startHour')}</Label>
-            <div className="flex gap-2">
-              <Input 
-                type="number" 
-                min="1" 
-                max="12" 
-                value={timeSlotForm.start} 
-                onChange={e => setTimeSlotForm(f => ({ ...f, start: e.target.value }))} 
-                placeholder="Hour (1-12)" 
-                className="flex-1"
-              />
-              <Select value={timeSlotFormAMPM.startAMPM} onValueChange={value => setTimeSlotFormAMPM(f => ({ ...f, startAMPM: value }))}>
-                <SelectTrigger className="w-20">
-                  <SelectValue />
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.day')}</Label>
+              <Select value={timeSlotForm.day} onValueChange={value => setTimeSlotForm(f => ({ ...f, day: value }))}>
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue placeholder="Select a day" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="AM">AM</SelectItem>
-                  <SelectItem value="PM">PM</SelectItem>
+                  <SelectItem value="0">Sunday</SelectItem>
+                  <SelectItem value="1">Monday</SelectItem>
+                  <SelectItem value="2">Tuesday</SelectItem>
+                  <SelectItem value="3">Wednesday</SelectItem>
+                  <SelectItem value="4">Thursday</SelectItem>
+                  <SelectItem value="5">Friday</SelectItem>
+                  <SelectItem value="6">Saturday</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Label>{t('common.endHour')}</Label>
-            <div className="flex gap-2">
-              <Input 
-                type="number" 
-                min="1" 
-                max="12" 
-                value={timeSlotForm.end} 
-                onChange={e => setTimeSlotForm(f => ({ ...f, end: e.target.value }))} 
-                placeholder="Hour (1-12)" 
-                className="flex-1"
-              />
-              <Select value={timeSlotFormAMPM.endAMPM} onValueChange={value => setTimeSlotFormAMPM(f => ({ ...f, endAMPM: value }))}>
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="AM">AM</SelectItem>
-                  <SelectItem value="PM">PM</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.startHour')}</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="number" 
+                  min="1" 
+                  max="12" 
+                  value={timeSlotForm.start} 
+                  onChange={e => setTimeSlotForm(f => ({ ...f, start: e.target.value }))} 
+                  placeholder="Hour (1-12)" 
+                  className="flex-1 border-2 focus:border-primary font-mono"
+                />
+                <Select value={timeSlotFormAMPM.startAMPM} onValueChange={value => setTimeSlotFormAMPM(f => ({ ...f, startAMPM: value }))}>
+                  <SelectTrigger className="w-20 border-2 focus:border-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="PM">PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Button onClick={saveTimeSlot} className="mt-2 w-full">{t('common.save')}</Button>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.endHour')}</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="number" 
+                  min="1" 
+                  max="12" 
+                  value={timeSlotForm.end} 
+                  onChange={e => setTimeSlotForm(f => ({ ...f, end: e.target.value }))} 
+                  placeholder="Hour (1-12)" 
+                  className="flex-1 border-2 focus:border-primary font-mono"
+                />
+                <Select value={timeSlotFormAMPM.endAMPM} onValueChange={value => setTimeSlotFormAMPM(f => ({ ...f, endAMPM: value }))}>
+                  <SelectTrigger className="w-20 border-2 focus:border-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="PM">PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button onClick={saveTimeSlot} className="w-full gap-2">
+              <Check className="h-4 w-4" />
+              {t('common.save')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+
       {/* Package Limit Dialog */}
       <Dialog open={showPackageDialog} onOpenChange={setShowPackageDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingPackageName === null ? t('admin.withdrawals.addPackageLimit') : t('admin.withdrawals.editPackageLimit')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              {editingPackageName === null ? t('admin.withdrawals.addPackageLimit') : t('admin.withdrawals.editPackageLimit')}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label>{t('common.packageName')}</Label>
-            <Input value={packageForm.name} onChange={e => setPackageForm(f => ({ ...f, name: e.target.value }))} placeholder={t('common.packageName')} />
-            <Label>{t('common.min')}</Label>
-            <Input type="number" value={packageForm.min} onChange={e => setPackageForm(f => ({ ...f, min: e.target.value }))} placeholder={t('common.min')} />
-            <Label>{t('common.max')}</Label>
-            <Input type="number" value={packageForm.max} onChange={e => setPackageForm(f => ({ ...f, max: e.target.value }))} placeholder={t('common.max')} />
-            <Label>{t('common.daily')}</Label>
-            <Input type="number" value={packageForm.daily} onChange={e => setPackageForm(f => ({ ...f, daily: e.target.value }))} placeholder={t('common.daily')} />
-            <Button onClick={savePackage} className="mt-2 w-full">{t('common.save')}</Button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.packageName')}</Label>
+              <Input 
+                value={packageForm.name} 
+                onChange={e => setPackageForm(f => ({ ...f, name: e.target.value }))} 
+                placeholder={t('common.packageName')} 
+                className="border-2 focus:border-primary"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.min')}</Label>
+              <Input 
+                type="number" 
+                value={packageForm.min} 
+                onChange={e => setPackageForm(f => ({ ...f, min: e.target.value }))} 
+                placeholder={t('common.min')} 
+                className="border-2 focus:border-primary font-mono"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.max')}</Label>
+              <Input 
+                type="number" 
+                value={packageForm.max} 
+                onChange={e => setPackageForm(f => ({ ...f, max: e.target.value }))} 
+                placeholder={t('common.max')} 
+                className="border-2 focus:border-primary font-mono"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('common.daily')}</Label>
+              <Input 
+                type="number" 
+                value={packageForm.daily} 
+                onChange={e => setPackageForm(f => ({ ...f, daily: e.target.value }))} 
+                placeholder={t('common.daily')} 
+                className="border-2 focus:border-primary font-mono"
+              />
+            </div>
+
+            <Button onClick={savePackage} className="w-full gap-2">
+              <Check className="h-4 w-4" />
+              {t('common.save')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <CardTitle>{t('admin.withdrawals.requestsList')}</CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('common.exportCSV')}</Button>
-            <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('common.exportExcel')}</Button>
-            <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('common.exportPDF')}</Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('admin.withdrawals.user')}</TableHead>
-                <TableHead>{t('admin.withdrawals.amount')}</TableHead>
-                <TableHead>{t('admin.withdrawals.method')}</TableHead>
-                <TableHead>{t('admin.withdrawals.status')}</TableHead>
-                <TableHead>{t('admin.withdrawals.date')}</TableHead>
-                <TableHead>{t('admin.withdrawals.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loadingWithdrawals ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4">
-                    {t('common.loading')}
-                  </TableCell>
-                </TableRow>
-              ) : withdrawals.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4">
-                    {t('admin.withdrawals.noRequestsFound')}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                withdrawals.map((withdrawal) => (
-                  <TableRow key={withdrawal.id}>
-                    <TableCell>{withdrawal.user_name}</TableCell>
-                    <TableCell><Badge variant="secondary">{withdrawal.amount.toLocaleString()}</Badge></TableCell>
-                    <TableCell>{withdrawal.method}</TableCell>
-                    <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
-                    <TableCell>{new Date(withdrawal.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {withdrawal.status === 'pending' && (
-                          <>
-                            <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setSelectedWithdrawal(withdrawal); setShowPayModal(true); }}>{t('admin.withdrawals.pay')}</Button>
-                            <Button size="sm" variant="destructive" onClick={() => { setSelectedWithdrawal(withdrawal); setShowRejectModal(true); }}>{t('admin.withdrawals.reject')}</Button>
-                          </>
-                        )}
-                        {withdrawal.status === 'rejected' && withdrawal.rejection_reason && (
-                          <Button size="sm" variant="outline" onClick={() => alert(withdrawal.rejection_reason)}>{t('admin.withdrawals.viewReason')}</Button>
-                        )}
-                        {withdrawal.status === 'paid' && withdrawal.proof_image_url && (
-                          <a href={withdrawal.proof_image_url} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="outline">{t('admin.withdrawals.viewProof')}</Button>
-                          </a>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+
       {/* Pay Modal */}
       <Dialog open={showPayModal} onOpenChange={setShowPayModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.withdrawals.payWithdrawal')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              {t('admin.withdrawals.payWithdrawal')}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>{t('admin.withdrawals.proofImage')}</Label>
-            <Input type="file" accept="image/*" onChange={e => setProofImage(e.target.files?.[0] || null)} />
-            <Label>{t('admin.withdrawals.adminNote')}</Label>
-            <Select value={adminNote} onValueChange={setAdminNote}>
-              <SelectTrigger className="mb-2">
-                <SelectValue placeholder="Select a response message" />
-              </SelectTrigger>
-              <SelectContent>
-                {payMessages.map((msg, idx) => (
-                  <SelectItem key={idx} value={msg}>{msg}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} placeholder="Custom message..." />
-            <Button onClick={handlePay} className="w-full mt-2">{t('admin.withdrawals.confirmPay')}</Button>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('admin.withdrawals.proofImage')}</Label>
+              <Input 
+                type="file" 
+                accept="image/*" 
+                onChange={e => setProofImage(e.target.files?.[0] || null)} 
+                className="border-2 focus:border-primary"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('admin.withdrawals.adminNote')}</Label>
+              <Select value={adminNote} onValueChange={setAdminNote}>
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue placeholder="Select a response message" />
+                </SelectTrigger>
+                <SelectContent>
+                  {payMessages.map((msg, idx) => (
+                    <SelectItem key={idx} value={msg}>{msg}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Textarea 
+                value={adminNote} 
+                onChange={e => setAdminNote(e.target.value)} 
+                placeholder="Custom message..." 
+                className="border-2 focus:border-primary"
+              />
+            </div>
+
+            <Button onClick={handlePay} className="w-full gap-2 bg-green-600 hover:bg-green-700">
+              <Check className="h-4 w-4" />
+              {t('admin.withdrawals.confirmPay')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+
       {/* Reject Modal */}
       <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.withdrawals.rejectWithdrawal')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <X className="h-5 w-5 text-red-600" />
+              {t('admin.withdrawals.rejectWithdrawal')}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>{t('admin.withdrawals.rejectionReason')}</Label>
-            <Select value={rejectionReason} onValueChange={setRejectionReason}>
-              <SelectTrigger className="mb-2">
-                <SelectValue placeholder="Select a response message" />
-              </SelectTrigger>
-              <SelectContent>
-                {rejectMessages.map((msg, idx) => (
-                  <SelectItem key={idx} value={msg}>{msg}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Textarea value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} placeholder="Custom message..." />
-            <Button onClick={handleReject} className="w-full mt-2" variant="destructive">{t('admin.withdrawals.confirmReject')}</Button>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('admin.withdrawals.rejectionReason')}</Label>
+              <Select value={rejectionReason} onValueChange={setRejectionReason}>
+                <SelectTrigger className="border-2 focus:border-primary">
+                  <SelectValue placeholder="Select a response message" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rejectMessages.map((msg, idx) => (
+                    <SelectItem key={idx} value={msg}>{msg}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Textarea 
+                value={rejectionReason} 
+                onChange={e => setRejectionReason(e.target.value)} 
+                placeholder="Custom message..." 
+                className="border-2 focus:border-primary"
+              />
+            </div>
+
+            <Button onClick={handleReject} className="w-full gap-2" variant="destructive">
+              <X className="h-4 w-4" />
+              {t('admin.withdrawals.confirmReject')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

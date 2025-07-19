@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Download, FileText, FileSpreadsheet, Eye, CheckCircle, XCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -212,134 +212,229 @@ export default function DepositRequestsPage() {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">Pending</Badge>;
+    }
+  };
+
   return (
-    <div className="space-y-4 p-4 sm:p-8">
-      <Card className="shadow-card w-full bg-background border border-border dark:bg-muted/40 dark:border-muted-foreground/10 rounded-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-primary" />
-            {t('deposit.requests') || 'Deposit Requests'}
-            <div className="flex gap-2 ml-auto">
-              <Button size="sm" variant="outline" onClick={handleExportCSV}>{t('export.csv')}</Button>
-              <Button size="sm" variant="outline" onClick={handleExportExcel}>{t('export.excel')}</Button>
-              <Button size="sm" variant="outline" onClick={handleExportPDF}>{t('export.pdf')}</Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-2 items-center mb-4">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('deposit.status.filter') || 'Filter by status'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('deposit.status.all') || 'All'}</SelectItem>
-                <SelectItem value="pending">{t('deposit.status.pending') || 'Pending'}</SelectItem>
-                <SelectItem value="approved">{t('deposit.status.approved') || 'Approved'}</SelectItem>
-                <SelectItem value="rejected">{t('deposit.status.rejected') || 'Rejected'}</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              {t('deposit.requests') || 'Deposit Requests'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Review and manage user deposit requests
+            </p>
           </div>
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2 animate-pulse">
-              <Loader2 className="w-8 h-8 animate-spin" />
-              <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="px-3 py-1">
+              {filtered.length} Requests
+            </Badge>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                </div>
+                {t('deposit.requests') || 'Deposit Requests'}
+              </CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleExportCSV}
+                  className="bg-background/50 hover:bg-background/80"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  CSV
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleExportExcel}
+                  className="bg-background/50 hover:bg-background/80"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Excel
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleExportPDF}
+                  className="bg-background/50 hover:bg-background/80"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  PDF
+                </Button>
+              </div>
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
-              <ImageIcon className="w-10 h-10 opacity-30" />
-              <span className="text-lg font-medium">{t('deposit.noRequests') || 'No deposit requests found'}</span>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Filter:</span>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px] bg-background/50 border-border/50">
+                    <SelectValue placeholder={t('deposit.status.filter') || 'Filter by status'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('deposit.status.all') || 'All'}</SelectItem>
+                    <SelectItem value="pending">{t('deposit.status.pending') || 'Pending'}</SelectItem>
+                    <SelectItem value="approved">{t('deposit.status.approved') || 'Approved'}</SelectItem>
+                    <SelectItem value="rejected">{t('deposit.status.rejected') || 'Rejected'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('deposit.amount') || 'Amount'}</TableHead>
-                    <TableHead>{t('deposit.userNumber') || 'User Number'}</TableHead>
-                    <TableHead>{t('deposit.targetNumber') || 'Target Number'}</TableHead>
-                    <TableHead>{t('deposit.screenshot') || 'Screenshot'}</TableHead>
-                    <TableHead>{t('deposit.status') || 'Status'}</TableHead>
-                    <TableHead>{t('deposit.actions') || 'Actions'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginated.map((req) => (
-                    <TableRow key={req.id}>
-                      <TableCell>{req.amount}</TableCell>
-                      <TableCell>{req.user_number || req.user_id}</TableCell>
-                      <TableCell>{req.target_number || '-'}</TableCell>
-                      <TableCell>
-                        {req.screenshot_url ? (
-                          <a
-                            href={req.screenshot_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            {t('deposit.view') || 'View'}
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
-                          {t(`deposit.status.${req.status}`) || req.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {req.status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button size="sm" className="bg-success" onClick={() => handleApprove(req)}>
-                              {t('admin.accept') || 'Accept'}
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
-                              {t('admin.reject') || 'Reject'}
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          {/* Pagination */}
-          {totalPages > 1 && filtered.length > 0 && (
-            <div className="flex justify-center mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                      className={page === 1 ? 'pointer-events-none opacity-50' : ''}
-                    >
-                      {t('pagination.previous')}
-                    </PaginationPrevious>
-                  </PaginationItem>
-                  {[...Array(totalPages)].map((_, idx) => (
-                    <PaginationItem key={idx}>
-                      <PaginationLink isActive={page === idx + 1} onClick={() => setPage(idx + 1)}>
-                        {idx + 1}
-                      </PaginationLink>
+
+            {/* Table */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <span className="text-lg font-medium">{t('common.loading') || 'Loading...'}</span>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="p-4 rounded-full bg-muted/50 mb-4">
+                  <ImageIcon className="w-12 h-12 opacity-50" />
+                </div>
+                <span className="text-lg font-medium mb-2">{t('deposit.noRequests') || 'No deposit requests found'}</span>
+                <span className="text-sm text-center max-w-md">
+                  No deposit requests match your current filter criteria
+                </span>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow>
+                        <TableHead className="font-semibold">Amount</TableHead>
+                        <TableHead className="font-semibold">User Number</TableHead>
+                        <TableHead className="font-semibold">Target Number</TableHead>
+                        <TableHead className="font-semibold">Screenshot</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginated.map((req) => (
+                        <TableRow key={req.id} className="hover:bg-muted/20 transition-colors">
+                          <TableCell className="font-medium">
+                            ${req.amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {req.user_number || req.user_id}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {req.target_number || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {req.screenshot_url ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                              >
+                                <a
+                                  href={req.screenshot_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View
+                                </a>
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(req.status)}
+                          </TableCell>
+                          <TableCell>
+                            {req.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleApprove(req)}
+                                  className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Accept
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive" 
+                                  onClick={() => handleReject(req.id)}
+                                  className="shadow-sm"
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && filtered.length > 0 && (
+              <div className="flex justify-center pt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                        className={page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-muted/50'}
+                      />
                     </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                      className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
-                    >
-                      {t('pagination.next')}
-                    </PaginationNext>
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    {[...Array(totalPages)].map((_, idx) => (
+                      <PaginationItem key={idx}>
+                        <PaginationLink 
+                          isActive={page === idx + 1} 
+                          onClick={() => setPage(idx + 1)}
+                          className="cursor-pointer hover:bg-muted/50"
+                        >
+                          {idx + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                        className={page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-muted/50'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 
