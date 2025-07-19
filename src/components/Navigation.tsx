@@ -7,8 +7,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Moon, Sun, Menu, X, Settings, Home, Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy } from 'lucide-react';
 import { NotificationInbox } from './NotificationInbox';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
-import DarkLogo from '@/../public/Dark_mode.png';
-import LightLogo from '@/../public/Light_mode.png';
+import DarkLogo from '/Dark_mode.png';
+import LightLogo from '/Light_mode.png';
 
 export function Navigation() {
   const { language, setLanguage, t, isRTL } = useLanguage();
@@ -88,10 +88,10 @@ export function Navigation() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center h-12 flex-shrink-0 mr-2 md:mr-4">
+      <div className="container mx-auto px-2 sm:px-4">
+        <div className="flex items-center h-16">
+          {/* Logo - Positioned based on language */}
+          <Link to="/" className={`flex items-center h-12 flex-shrink-0 ${isRTL ? 'order-last' : 'order-first'}`}>
             <img
               src={theme === 'dark' ? DarkLogo : LightLogo}
               alt="Cash App Logo"
@@ -101,7 +101,7 @@ export function Navigation() {
           </Link>
 
           {/* Navigation Links and Actions - Hidden on Mobile */}
-          <div className="flex-1 hidden md:flex items-center justify-center">
+          <div className="flex-1 hidden md:flex items-center justify-center mx-4">
             {isLoggedIn && !isAdmin && (
               <div className={`flex items-center gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 {navItems.map((item) => (
@@ -120,13 +120,13 @@ export function Navigation() {
           </div>
 
           {/* Actions (Theme, Language, Profile, etc.) */}
-          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+          <div className={`flex items-center gap-2 md:gap-3 flex-shrink-0 ${isRTL ? 'order-first' : 'order-last'}`}>
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden w-10 h-10 p-0 border border-border"
+              className="md:hidden w-10 h-10 p-0 border border-border hover:bg-muted/50 transition-all duration-200"
               style={{ display: 'flex !important' }}
             >
               {isMobileMenuOpen ? (
@@ -163,7 +163,7 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="w-9 h-9 p-0"
+              className="w-9 h-9 p-0 hover:bg-muted/50 transition-all duration-200 rounded-lg"
             >
               {theme === 'dark' ? (
                 <Sun className="h-4 w-4" />
@@ -177,7 +177,7 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-              className="w-9 h-9 p-0 text-xs font-medium"
+              className="w-9 h-9 p-0 text-xs font-medium hover:bg-muted/50 transition-all duration-200 rounded-lg"
             >
               {language === 'en' ? t('language.arabic') : t('language.english')}
             </Button>
@@ -226,14 +226,14 @@ export function Navigation() {
           <>
             {/* Mobile Menu Overlay */}
             <div className="md:hidden fixed inset-0 bg-black/20 z-40" onClick={() => setIsMobileMenuOpen(false)} />
-            <div className="md:hidden py-6 border-t bg-background shadow-lg relative z-50" style={{ display: 'block !important', minHeight: '200px' }}>
+            <div className="md:hidden py-4 border-t bg-background/95 backdrop-blur shadow-lg relative z-50" style={{ display: 'block !important', minHeight: '180px' }}>
             {isLoggedIn && !isAdmin && (
-              <div className="space-y-1">
+              <div className={`space-y-1 ${isRTL ? 'text-right' : 'text-left'}`}>
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
                     to={item.href}
-                    className={`block px-4 py-4 text-lg font-medium transition-colors hover:bg-muted/50 rounded-lg mx-2 border border-transparent hover:border-border ${
+                    className={`block px-3 py-3 text-base font-medium transition-colors hover:bg-muted/50 rounded-lg mx-2 border border-transparent hover:border-border ${
                       isActive(item.href) ? 'text-primary bg-primary/10 border-primary/20' : 'text-foreground'
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -269,10 +269,10 @@ export function Navigation() {
               </Button>
             )}
 
-            <div className="flex flex-col space-y-3 px-4 py-3 border-t mt-4">
+            <div className={`flex flex-col space-y-3 px-4 py-3 border-t mt-4 ${isRTL ? 'text-right' : 'text-left'}`}>
               {/* Theme and Language Controls */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className={`flex items-center ${isRTL ? 'justify-end' : 'justify-between'}`}>
+                <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -298,8 +298,8 @@ export function Navigation() {
 
               {/* User Actions */}
               {isLoggedIn ? (
-                <div className="flex items-center justify-between">
-                  <Link to="/profile" className="flex items-center space-x-3" onClick={() => setIsMobileMenuOpen(false)}>
+                <div className={`flex items-center ${isRTL ? 'justify-end' : 'justify-between'}`}>
+                  <Link to="/profile" className={`flex items-center ${isRTL ? 'space-x-reverse space-x-3' : 'space-x-3'}`} onClick={() => setIsMobileMenuOpen(false)}>
                     <Avatar className="w-10 h-10">
                       {getProfilePhotoUrl() ? (
                         <img 
@@ -322,11 +322,11 @@ export function Navigation() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col space-y-2">
-                  <Button asChild variant="ghost" size="sm" className="w-full justify-start">
+                <div className={`flex flex-col space-y-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <Button asChild variant="ghost" size="sm" className={`w-full ${isRTL ? 'justify-end' : 'justify-start'}`}>
                     <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.login')}</Link>
                   </Button>
-                  <Button asChild size="sm" className="w-full">
+                  <Button asChild size="sm" className={`w-full ${isRTL ? 'justify-end' : 'justify-start'}`}>
                     <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.register')}</Link>
                   </Button>
                 </div>

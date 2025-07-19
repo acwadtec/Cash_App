@@ -84,7 +84,7 @@ export default function Home() {
       )}
 
       {/* Hero Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-background to-primary-light/10">
+      <section className="py-20 px-2 sm:px-4 bg-gradient-to-b from-background to-primary-light/10">
         <div className="container mx-auto text-center">
           <h1
             className="text-4xl md:text-6xl font-extrabold font-arabic mb-6 text-primary drop-shadow-md tracking-tight leading-tight text-center"
@@ -124,7 +124,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 bg-muted/50">
+      <section className="py-16 px-2 sm:px-4 bg-muted/50">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
             {t('home.features.title')}
@@ -144,7 +144,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-gradient-to-t from-background to-primary-light/10">
+      <section className="py-16 px-2 sm:px-4 bg-gradient-to-t from-background to-primary-light/10">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4 text-foreground">{t('home.cta.title')}</h2>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
