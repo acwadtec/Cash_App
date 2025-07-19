@@ -198,19 +198,8 @@ const MyOffers: React.FC = () => {
                 }`}
                 onClick={() => setSelectedTab(tab.value)}
               >
-<<<<<<< HEAD
                 {tab.label}
               </button>
-=======
-                <div className="font-semibold">{offer.title}</div>
-                <div className="text-sm text-gray-600 mb-2">{offer.description}</div>
-                <div className="text-xs text-gray-500">Joined: {offer.joined_at ? new Date(offer.joined_at).toLocaleString() : '-'}</div>
-                <div className="text-xs text-gray-500">Status: {offer.status}</div>
-                <div className="text-xs text-blue-600 mt-1">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
-                <div className="text-xs text-orange-600 mt-1">Days left until offer ends: {getDaysLeft(offer, now)}</div>
-                <div className="text-xs text-green-700 mt-1 font-semibold">Total profit from this offer: {getTotalProfitFromTransactions(transactions, offer.id)}</div>
-              </li>
->>>>>>> d73a7b8628c022c86ff9089e6b5dc2058005a2dd
             ))}
           </div>
           <div>
@@ -233,7 +222,7 @@ const MyOffers: React.FC = () => {
                       <div className="text-blue-600">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
                       <div className="text-orange-600">Days left until offer ends: {getDaysLeft(offer, now)}</div>
                     </div>
-                    <div className="text-sm text-green-700 mt-2 font-semibold">Total profit from this offer: {getTotalProfit(offer, now)}</div>
+                    <div className="text-sm text-green-700 mt-2 font-semibold">Total profit from this offer: {getTotalProfitFromTransactions(transactions, offer.id)}</div>
                   </li>
                 ))}
               </ul>

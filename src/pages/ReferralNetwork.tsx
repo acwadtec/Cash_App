@@ -29,49 +29,6 @@ export default function ReferralNetwork() {
   const [teamTransactions, setTeamTransactions] = useState<TeamTransaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
 
-  const testUserData = async () => {
-    console.log('=== MANUAL USER DATA TEST ===');
-    
-    // Test 1: Get all users in user_info
-    const { data: allUsers, error: allUsersError } = await supabase
-      .from('user_info')
-      .select('user_uid, first_name, last_name, email')
-      .limit(5);
-    
-    console.log('All users in user_info:', allUsers);
-    console.log('All users error:', allUsersError);
-    
-    // Test 2: Get current user's transactions
-    if (userUid) {
-      const { data: userTransactions, error: userTransactionsError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userUid)
-        .eq('type', 'team_earnings')
-        .limit(3);
-      
-      console.log('User transactions:', userTransactions);
-      console.log('User transactions error:', userTransactionsError);
-      
-      // Test 3: Try to fetch specific users
-      if (userTransactions && userTransactions.length > 0) {
-        for (const txn of userTransactions) {
-          if (txn.source_user_id) {
-            const { data: specificUser, error: specificUserError } = await supabase
-              .from('user_info')
-              .select('user_uid, first_name, last_name, email')
-              .eq('user_uid', txn.source_user_id)
-              .single();
-            
-            console.log(`User ${txn.source_user_id}:`, specificUser, specificUserError);
-          }
-        }
-      }
-    }
-    
-    console.log('=== END MANUAL TEST ===');
-  };
-
   useEffect(() => {
     const fetchUser = async () => {
       const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -83,9 +40,6 @@ export default function ReferralNetwork() {
         .eq('user_uid', userData.user.id)
         .single();
       if (data) setUserInfo(data);
-      
-      // Test user data
-      await testUserData();
       
       // Fetch all team earnings transactions
       await fetchTeamTransactions(userData.user.id);
@@ -134,17 +88,6 @@ export default function ReferralNetwork() {
   const fetchTeamTransactions = async (userId: string) => {
     setLoadingTransactions(true);
     try {
-      // First, let's test what users exist in user_info table
-      console.log('=== TESTING USER_INFO TABLE ===');
-      const { data: allUsersTest, error: allUsersTestError } = await supabase
-        .from('user_info')
-        .select('user_uid, first_name, last_name, email')
-        .limit(10);
-      
-      console.log('All users in user_info (first 10):', allUsersTest);
-      console.log('All users test error:', allUsersTestError);
-      console.log('=== END TESTING ===');
-
       // Fetch all team earnings transactions
       const { data: transactions, error } = await supabase
         .from('transactions')
@@ -159,29 +102,19 @@ export default function ReferralNetwork() {
         return;
       }
 
-      console.log('Raw transactions:', transactions);
-
       if (transactions && transactions.length > 0) {
-        // Get unique user IDs from both source_user_id and user_id
-        const allUserIds = new Set<string>();
-        transactions.forEach(t => {
-          if (t.source_user_id) allUserIds.add(t.source_user_id);
-          if (t.user_id) allUserIds.add(t.user_id);
-        });
-        const userIds = Array.from(allUserIds);
-        console.log('All user IDs to fetch:', userIds);
+        // Get unique user IDs from source_user_id
+        const userIds = transactions
+          .map(t => t.source_user_id)
+          .filter(id => id) as string[];
         
         // Fetch source user details from user_info table
         let userMap: {[userId: string]: any} = {};
         if (userIds.length > 0) {
-          // Query user_info table for all users
-          const { data: userInfoData, error: userInfoError } = await supabase
+          const { data: userInfoData } = await supabase
             .from('user_info')
             .select('user_uid, first_name, last_name, email')
             .in('user_uid', userIds);
-          
-          console.log('User info data:', userInfoData);
-          console.log('User info error:', userInfoError);
           
           if (userInfoData) {
             userInfoData.forEach(user => {
@@ -192,49 +125,15 @@ export default function ReferralNetwork() {
               };
             });
           }
-          
-          // Check which user IDs are missing from user_info
-          const missingUserIds = userIds.filter(id => !userMap[id]);
-          console.log('Missing user IDs (not found in user_info):', missingUserIds);
-          
-          if (missingUserIds.length > 0) {
-            console.log('These user IDs are not found in user_info table:');
-            console.log('Missing IDs:', missingUserIds);
-            
-            // Try to fetch these missing users individually to see what's wrong
-            for (const missingId of missingUserIds) {
-              const { data: singleUser, error: singleError } = await supabase
-                .from('user_info')
-                .select('user_uid, first_name, last_name, email')
-                .eq('user_uid', missingId)
-                .single();
-              
-              console.log(`Single user query for ${missingId}:`, singleUser, singleError);
-            }
-          }
         }
-
-        console.log('Final user map:', userMap);
-
-        // Combine transaction data with user info
-        const enrichedTransactions: TeamTransaction[] = transactions.map(txn => {
-          // Try to get user info from source_user_id first, then user_id
-          const sourceUserId = txn.source_user_id || txn.user_id;
-          const sourceUser = userMap[sourceUserId];
-          console.log(`Transaction ${txn.id}: source_user_id=${txn.source_user_id}, user_id=${txn.user_id}, final_id=${sourceUserId}, found user:`, sourceUser);
-          
-          return {
-            id: txn.id,
-            amount: txn.amount,
-            description: txn.description,
-            created_at: txn.created_at,
-            source_user_id: sourceUserId,
-            source_user: sourceUser
-          };
-        });
-
-        console.log('Enriched transactions:', enrichedTransactions);
-        setTeamTransactions(enrichedTransactions);
+        
+        // Map transactions with user info
+        const transactionsWithUsers = transactions.map(txn => ({
+          ...txn,
+          source_user: userMap[txn.source_user_id || '']
+        }));
+        
+        setTeamTransactions(transactionsWithUsers);
       } else {
         setTeamTransactions([]);
       }
@@ -246,80 +145,73 @@ export default function ReferralNetwork() {
     }
   };
 
+  async function getDescendantsAtLevel(referralCodes: string[], currentLevel: number, targetLevel: number, collected: any[] = []) {
+    if (currentLevel > targetLevel) return collected;
+    if (currentLevel === targetLevel) {
+      const { data: users } = await supabase
+        .from('user_info')
+        .select('user_uid, first_name, last_name, email, referral_code')
+        .in('referral_code', referralCodes);
+      return [...collected, ...(users || [])];
+    }
+    
+    const { data: nextLevelUsers } = await supabase
+      .from('user_info')
+      .select('user_uid, first_name, last_name, email, referral_code')
+      .in('referral_code', referralCodes);
+    
+    if (!nextLevelUsers || nextLevelUsers.length === 0) return collected;
+    
+    const nextLevelCodes = nextLevelUsers.map(u => u.referral_code).filter(Boolean);
+    return getDescendantsAtLevel(nextLevelCodes, currentLevel + 1, targetLevel, [...collected, ...nextLevelUsers]);
+  }
+
+  async function getDescendantsAtOrAboveLevel(referralCodes: string[], currentLevel: number, minLevel: number, collected: any[] = []) {
+    if (currentLevel >= minLevel) {
+      const { data: users } = await supabase
+        .from('user_info')
+        .select('user_uid, first_name, last_name, email, referral_code')
+        .in('referral_code', referralCodes);
+      collected.push(...(users || []));
+    }
+    
+    if (currentLevel < 3) {
+      const { data: nextLevelUsers } = await supabase
+        .from('user_info')
+        .select('user_uid, first_name, last_name, email, referral_code')
+        .in('referral_code', referralCodes);
+      
+      if (nextLevelUsers && nextLevelUsers.length > 0) {
+        const nextLevelCodes = nextLevelUsers.map(u => u.referral_code).filter(Boolean);
+        await getDescendantsAtOrAboveLevel(nextLevelCodes, currentLevel + 1, minLevel, collected);
+      }
+    }
+    
+    return collected;
+  }
+
+  const fetchReferralLevels = async (myReferralCode: string) => {
+    try {
+      const level1 = await getDescendantsAtLevel([myReferralCode], 1, 1);
+      const level2 = await getDescendantsAtLevel([myReferralCode], 1, 2);
+      const level3 = await getDescendantsAtLevel([myReferralCode], 1, 3);
+      
+      setLevel1Referrals(level1);
+      setLevel2Referrals(level2);
+      setLevel3Referrals(level3);
+    } catch (error) {
+      console.error('Error fetching referral levels:', error);
+    }
+  };
+
   useEffect(() => {
     if (userInfo?.referral_code) {
       fetchReferralLevels(userInfo.referral_code);
     }
   }, [userInfo?.referral_code]);
 
-  // Recursive function to get all descendants at a given depth or more
-  async function getDescendantsAtLevel(referralCodes: string[], currentLevel: number, targetLevel: number, collected: any[] = []) {
-    if (referralCodes.length === 0) return collected;
-    const { data: users } = await supabase
-      .from('user_info')
-      .select('user_uid, first_name, last_name, email, referral_code, referred_by')
-      .in('referred_by', referralCodes);
-    if (!users || users.length === 0) return collected;
-    if (currentLevel === targetLevel) {
-      collected.push(...users);
-    } else if (currentLevel < targetLevel) {
-      // Go deeper
-      const nextCodes = users.map(u => u.referral_code);
-      await getDescendantsAtLevel(nextCodes, currentLevel + 1, targetLevel, collected);
-    }
-    return collected;
-  }
-
-  // Recursive function to get all descendants at depth >= minLevel
-  async function getDescendantsAtOrAboveLevel(referralCodes: string[], currentLevel: number, minLevel: number, collected: any[] = []) {
-    if (referralCodes.length === 0) return collected;
-    const { data: users } = await supabase
-      .from('user_info')
-      .select('user_uid, first_name, last_name, email, referral_code, referred_by')
-      .in('referred_by', referralCodes);
-    if (!users || users.length === 0) return collected;
-    if (currentLevel >= minLevel) {
-      collected.push(...users);
-    }
-    // Always go deeper
-    const nextCodes = users.map(u => u.referral_code);
-    await getDescendantsAtOrAboveLevel(nextCodes, currentLevel + 1, minLevel, collected);
-    return collected;
-  }
-
-  const fetchReferralLevels = async (myReferralCode: string) => {
-    // Level 1: Direct referrals
-    const { data: level1 } = await supabase
-      .from('user_info')
-      .select('user_uid, first_name, last_name, email, referral_code')
-      .eq('referred_by', myReferralCode);
-    setLevel1Referrals(level1 || []);
-
-    // Level 2: Indirect referrals
-    const level1Codes = (level1 || []).map(u => u.referral_code);
-    let level2: any[] = [];
-    if (level1Codes.length > 0) {
-      const { data: l2 } = await supabase
-        .from('user_info')
-        .select('user_uid, first_name, last_name, email, referral_code')
-        .in('referred_by', level1Codes);
-      level2 = l2 || [];
-      setLevel2Referrals(level2);
-    } else {
-      setLevel2Referrals([]);
-    }
-
-    // Level 3: All users at depth >= 3
-    let level3: any[] = [];
-    if (level1Codes.length > 0) {
-      // Get all descendants at depth >= 3
-      level3 = await getDescendantsAtOrAboveLevel(level1Codes, 2, 3, []);
-    }
-    setLevel3Referrals(level3);
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    return new Date(dateString).toLocaleDateString();
   };
 
   const getLevelFromDescription = (description: string) => {
@@ -333,21 +225,6 @@ export default function ReferralNetwork() {
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-foreground">{t('referral.networkTitle') || 'Referral Network'}</h1>
           {userInfo?.referral_code && (
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-            <Card className="shadow-glow bg-card">
-              <CardHeader>
-                <CardTitle className="text-foreground">{t('referral.networkTitle') || 'Referral Network'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Team Earnings Breakdown */}
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-                  <div className="text-center p-4 bg-success/10 rounded-lg">
-                    <div className="text-lg font-bold text-success">{teamEarnings['1']?.toFixed(2) || '0.00'} EGP</div>
-                    <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 Earnings'}</div>
-=======
->>>>>>> Stashed changes
             <>
               <Card className="shadow-glow bg-card mb-6">
                 <CardHeader>
@@ -355,7 +232,7 @@ export default function ReferralNetwork() {
                 </CardHeader>
                 <CardContent>
                   {/* Team Earnings Breakdown */}
-                  <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                     <div className="text-center p-4 bg-success/10 rounded-lg">
                       <div className="text-lg font-bold text-success">{teamEarnings['1']?.toFixed(2) || '0.00'} EGP</div>
                       <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 Earnings'}</div>
@@ -368,10 +245,6 @@ export default function ReferralNetwork() {
                       <div className="text-lg font-bold text-warning">{teamEarnings['3']?.toFixed(2) || '0.00'} EGP</div>
                       <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3 Earnings'}</div>
                     </div>
-<<<<<<< Updated upstream
-=======
->>>>>>> d73a7b8628c022c86ff9089e6b5dc2058005a2dd
->>>>>>> Stashed changes
                   </div>
                   {/* Team Earnings By User Breakdown */}
                   {earningsByUser.length > 0 && (
@@ -480,76 +353,15 @@ export default function ReferralNetwork() {
                           </div>
                         </div>
                       ))}
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-                    </ul>
-                  </div>
-                )}
-                <div className="grid grid-cols-3 gap-3 md:gap-4">
-                  <div className="text-center p-4 bg-success/10 rounded-lg">
-                    <div className="text-2xl font-bold text-success">{level1Referrals.length}</div>
-                    <div className="text-sm text-muted-foreground">{t('referral.level1') || 'Level 1 (Direct)'}</div>
-                  </div>
-                  <div className="text-center p-4 bg-primary/10 rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{level2Referrals.length}</div>
-                    <div className="text-sm text-muted-foreground">{t('referral.level2') || 'Level 2 (Indirect)'}</div>
-                  </div>
-                  <div className="text-center p-4 bg-warning/10 rounded-lg">
-                    <div className="text-2xl font-bold text-warning">{level3Referrals.length}</div>
-                    <div className="text-sm text-muted-foreground">{t('referral.level3') || 'Level 3'}</div>
-                  </div>
-                </div>
-                {level1Referrals.length > 0 && (
-                  <div className="mt-4">
-                    <div className="font-semibold mb-2 text-foreground">{t('referral.level1List') || 'Level 1 Referrals:'}</div>
-                    <ul className="list-disc ml-6">
-                      {level1Referrals.map(u => (
-                        <li key={u.user_uid} className="text-muted-foreground">{u.first_name} {u.last_name} ({u.email})</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {level2Referrals.length > 0 && (
-                  <div className="mt-4">
-                    <div className="font-semibold mb-2 text-foreground">{t('referral.level2List') || 'Level 2 Referrals:'}</div>
-                    <ul className="list-disc ml-6">
-                      {level2Referrals.map(u => (
-                        <li key={u.user_uid} className="text-muted-foreground">{u.first_name} {u.last_name} ({u.email})</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {level3Referrals.length > 0 && (
-                  <div className="mt-4">
-                    <div className="font-semibold mb-2 text-foreground">{t('referral.level3List') || 'Level 3 Referrals:'}</div>
-                    <ul className="list-disc ml-6">
-                      {level3Referrals.map(u => (
-                        <li key={u.user_uid} className="text-muted-foreground">{u.first_name} {u.last_name} ({u.email})</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-=======
->>>>>>> Stashed changes
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="text-muted-foreground mb-2">No team transactions yet</div>
-                      <div className="text-sm text-muted-foreground">
-                        When your team members earn profits, their contributions will appear here
-                      </div>
+                      <p className="text-muted-foreground">No team transactions found.</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </>
-<<<<<<< Updated upstream
-=======
->>>>>>> d73a7b8628c022c86ff9089e6b5dc2058005a2dd
->>>>>>> Stashed changes
           )}
         </div>
       </div>
