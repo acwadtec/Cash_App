@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { useVerificationGuard } from '@/components/VerificationGuard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DollarSign, Gift, Users, Star } from 'lucide-react';
 
 interface Offer {
   id: string;
@@ -42,6 +44,11 @@ export default function Offers() {
   const [userJoinCounts, setUserJoinCounts] = useState<{ [offerId: string]: number }>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
+  // Add state for modal and selected balance type
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [pendingOfferId, setPendingOfferId] = useState<string | null>(null);
+  const [selectedBalanceType, setSelectedBalanceType] = useState<'balance' | 'bonuses' | 'team_earnings' | null>(null);
+  const [userBalances, setUserBalances] = useState<{ balance: number; bonuses: number; team_earnings: number; total_points: number } | null>(null);
 
   // Check if user has user_info data
   useEffect(() => {
@@ -118,16 +125,29 @@ export default function Offers() {
     fetchUserAndJoins();
   }, []);
 
-  const handleJoinOffer = async (offerId: string) => {
-    // Check verification first
-    const canProceed = requireVerification(() => {
-      // This will only run if user is verified
-      joinOffer(offerId);
-    });
-    
-    if (!canProceed) {
-      return; // User is not verified, alert already shown
-    }
+  // Fetch user balances on mount
+  useEffect(() => {
+    const fetchBalances = async () => {
+      const { data, error } = await supabase
+        .from('user_info')
+        .select('balance, bonuses, team_earnings, total_points')
+        .eq('user_uid', userId)
+        .single();
+      if (!error && data) {
+        setUserBalances({
+          balance: data.balance ?? 0,
+          bonuses: data.bonuses ?? 0,
+          team_earnings: data.team_earnings ?? 0,
+          total_points: data.total_points ?? 0,
+        });
+      }
+    };
+    if (userId) fetchBalances();
+  }, [userId]);
+
+  const handleJoinOffer = (offerId: string) => {
+    setPendingOfferId(offerId);
+    setShowBalanceModal(true);
   };
 
   const joinOffer = async (offerId: string) => {
@@ -202,6 +222,76 @@ export default function Offers() {
     setJoinStatuses(prev => ({ ...prev, [offerId]: 'pending' }));
     // After successful join, update userJoinCounts
     setUserJoinCounts(prev => ({ ...prev, [offerId]: (prev[offerId] || 0) + 1 }));
+  };
+
+  // Add function to handle balance selection and join
+  const handleSelectBalanceType = async (type: 'balance' | 'bonuses' | 'team_earnings' | 'total_points') => {
+    setSelectedBalanceType(type);
+    if (!pendingOfferId || !userBalances) return;
+    // Fetch offer details
+    const { data: offer, error: offerError } = await supabase
+      .from('offers')
+      .select('cost, join_limit, join_count, user_join_limit')
+      .eq('id', pendingOfferId)
+      .single();
+    if (offerError || !offer) {
+      toast({ title: t('common.error'), description: t('error.couldNotFetchOffer'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+    // Check per-user join limit
+    const userJoins = userJoinCounts[pendingOfferId] || 0;
+    if (offer.user_join_limit && userJoins >= offer.user_join_limit) {
+      toast({ title: t('common.error'), description: t('error.maxJoinsReached'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+    if (offer.join_limit !== null && offer.join_count >= offer.join_limit) {
+      toast({ title: t('common.error'), description: t('error.offerFullyBooked'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+    const cost = Number(offer.cost) || 0;
+    if (type === 'total_points' && userBalances.total_points < cost) {
+      toast({ title: t('common.error'), description: t('error.insufficientBalance'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+    // Subtract cost from selected balance
+    const newBalances = { ...userBalances, [type]: userBalances[type] - cost };
+    const { error: updateError } = await supabase
+      .from('user_info')
+      .update({ [type]: newBalances[type] })
+      .eq('user_uid', userId);
+    if (updateError) {
+      toast({ title: t('common.error'), description: t('error.failedToUpdateBalance'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+    // Log transaction for deposit
+    await supabase.from('transactions').insert({
+      user_id: userId,
+      type: `${type}_deposit`,
+      amount: cost,
+      status: 'completed',
+      description: t('offers.balanceDeposit'),
+      created_at: new Date().toISOString(),
+    });
+    // Insert join record
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: pendingOfferId, status: 'pending', approved_at: now, last_profit_at: now }]);
+    if (error) {
+      toast({ title: t('common.error'), description: t('error.failedToJoinOffer'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
+    await supabase.from('offers').update({ join_count: offer.join_count + 1 }).eq('id', pendingOfferId);
+    toast({ title: t('common.success'), description: t('success.joinRequestPending') });
+    setJoinStatuses(prev => ({ ...prev, [pendingOfferId]: 'pending' }));
+    setUserJoinCounts(prev => ({ ...prev, [pendingOfferId]: (prev[pendingOfferId] || 0) + 1 }));
+    setShowBalanceModal(false);
+    setPendingOfferId(null);
+    setSelectedBalanceType(null);
   };
 
   const getTypeColor = (type: string) => {
@@ -360,6 +450,51 @@ export default function Offers() {
           </Card>
         </div>
       </div>
+      <Dialog open={showBalanceModal} onOpenChange={setShowBalanceModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('offers.selectBalanceType')}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-4">
+            <button
+              className="flex items-center gap-3 p-4 rounded-lg border border-green-400 bg-green-50 hover:bg-green-100 transition"
+              onClick={() => handleSelectBalanceType('balance')}
+              disabled={!userBalances || userBalances.balance <= 0}
+            >
+              <DollarSign className="w-6 h-6 text-green-500" />
+              <span className="font-bold text-green-700">{t('profile.balance')}</span>
+              <span className="ml-auto text-green-700">{userBalances?.balance ?? 0} EGP</span>
+            </button>
+            <button
+              className="flex items-center gap-3 p-4 rounded-lg border border-blue-400 bg-blue-50 hover:bg-blue-100 transition"
+              onClick={() => handleSelectBalanceType('total_points')}
+              disabled={!userBalances || userBalances.total_points <= 0}
+            >
+              <Star className="w-6 h-6 text-blue-500" />
+              <span className="font-bold text-blue-700">{t('profile.totalPoints')}</span>
+              <span className="ml-auto text-blue-700">{userBalances?.total_points ?? 0}</span>
+            </button>
+            <button
+              className="flex items-center gap-3 p-4 rounded-lg border border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition"
+              onClick={() => handleSelectBalanceType('bonuses')}
+              disabled={!userBalances || userBalances.bonuses <= 0}
+            >
+              <Gift className="w-6 h-6 text-yellow-500" />
+              <span className="font-bold text-yellow-700">{t('profile.bonuses')}</span>
+              <span className="ml-auto text-yellow-700">{userBalances?.bonuses ?? 0} EGP</span>
+            </button>
+            <button
+              className="flex items-center gap-3 p-4 rounded-lg border border-purple-400 bg-purple-50 hover:bg-purple-100 transition"
+              onClick={() => handleSelectBalanceType('team_earnings')}
+              disabled={!userBalances || userBalances.team_earnings <= 0}
+            >
+              <Users className="w-6 h-6 text-purple-500" />
+              <span className="font-bold text-purple-700">{t('profile.teamEarnings')}</span>
+              <span className="ml-auto text-purple-700">{userBalances?.team_earnings ?? 0} EGP</span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
