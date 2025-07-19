@@ -229,9 +229,9 @@ export default function Offers() {
       )}
 
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">{t('offers.title') || 'Available Offers'}</h1>
-          <p className="text-xl text-muted-foreground">
+        <div className="text-center mb-8 md:mb-12">
+          <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('offers.title') || 'Available Offers'}</h1>
+          <p className="text-base md:text-xl text-muted-foreground px-4">
             {t('offers.subtitle') || 'Discover available offers and get additional rewards'}
           </p>
         </div>
@@ -239,7 +239,7 @@ export default function Offers() {
         {loading ? (
           <div className="text-center">{t('offers.loading')}</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {offers.map((offer) => (
               <Card key={offer.id} className="shadow-card hover:shadow-glow transition-all duration-300">
                 <CardHeader>
@@ -346,7 +346,7 @@ export default function Offers() {
           </div>
         )}
 
-        <div className="mt-12 text-center">
+        <div className="mt-8 md:mt-12 text-center px-4">
           <Card className="max-w-2xl mx-auto gradient-card shadow-glow">
             <CardContent className="pt-8">
               <h3 className="text-2xl font-bold mb-4">{t('offers.notification.title')}</h3>

@@ -426,7 +426,7 @@ export default function Withdrawal() {
     <div className="min-h-screen py-20">
       {/* Alert for incomplete account information */}
       {showAlert && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
@@ -438,9 +438,9 @@ export default function Withdrawal() {
 
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">{t('withdrawal.title')}</h1>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('withdrawal.title')}</h1>
+            <p className="text-base md:text-xl text-muted-foreground px-4">
               {t('withdrawal.subtitle')}
             </p>
           </div>

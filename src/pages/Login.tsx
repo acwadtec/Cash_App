@@ -96,11 +96,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md mx-4">
         <CardHeader>
-          <CardTitle className="text-center">{t('login.title')}</CardTitle>
+          <CardTitle className="text-center text-xl md:text-2xl">{t('login.title')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
                 <Input

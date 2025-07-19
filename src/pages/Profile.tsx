@@ -391,22 +391,22 @@ export default function Profile() {
           </Card>
 
           {userInfo && (
-            <div className="flex flex-wrap gap-4 my-6">
-              <div className="flex-1 min-w-[180px] bg-zinc-900 rounded-lg p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-2xl font-bold text-green-500">{userInfo.balance ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-2 text-sm font-medium">Balance</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6">
+              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
+                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.balance ?? 0} EGP</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Balance</div>
               </div>
-              <div className="flex-1 min-w-[180px] bg-zinc-900 rounded-lg p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-2xl font-bold text-green-500">{userInfo.total_points ?? 0}</div>
-                <div className="text-muted-foreground mt-2 text-sm font-medium">Total Points</div>
+              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
+                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.total_points ?? 0}</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Total Points</div>
               </div>
-              <div className="flex-1 min-w-[180px] bg-zinc-900 rounded-lg p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-2xl font-bold text-green-500">{userInfo.bonuses ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-2 text-sm font-medium">Bonuses</div>
+              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
+                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.bonuses ?? 0} EGP</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Bonuses</div>
               </div>
-              <div className="flex-1 min-w-[180px] bg-zinc-900 rounded-lg p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-2xl font-bold text-green-500">{userInfo.team_earnings ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-2 text-sm font-medium">Team Earnings</div>
+              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
+                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.team_earnings ?? 0} EGP</div>
+                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">Team Earnings</div>
               </div>
           </div>
           )}

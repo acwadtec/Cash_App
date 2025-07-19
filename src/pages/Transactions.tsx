@@ -160,31 +160,31 @@ export default function Transactions() {
 
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">{t('transactions.title')}</h1>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('transactions.title')}</h1>
+            <p className="text-base md:text-xl text-muted-foreground px-4">
               {t('transactions.subtitle')}
             </p>
-            <div className="flex gap-2 justify-center mt-4">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4 px-4">
               <Button size="sm" variant="outline" onClick={handleExportExcel}>Export Excel</Button>
               <Button size="sm" variant="outline" onClick={handleExportPDF}>Export PDF</Button>
             </div>
           </div>
 
           {/* Filters */}
-          <Card className="mb-6 shadow-card">
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
+          <Card className="mb-4 md:mb-6 shadow-card">
+            <CardContent className="pt-4 md:pt-6">
+              <div className="flex flex-col gap-3 md:gap-4">
                 <div className="flex-1">
                   <Input
                     placeholder={t('transactions.search')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-12"
+                    className="h-10 md:h-12"
                   />
                 </div>
                 <Select value={filter} onValueChange={setFilter}>
-                  <SelectTrigger className="md:w-48 h-12">
+                  <SelectTrigger className="w-full md:w-48 h-10 md:h-12">
                     <SelectValue placeholder={t('transactions.all')} />
                   </SelectTrigger>
                   <SelectContent>

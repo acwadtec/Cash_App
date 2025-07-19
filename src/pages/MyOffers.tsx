@@ -183,46 +183,52 @@ const MyOffers: React.FC = () => {
   const filteredOffers = offers.filter((offer) => offer.status === selectedTab);
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">My Offers</h1>
-      <div className="flex space-x-4 mb-6">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.value}
-            className={`px-4 py-2 rounded ${
-              selectedTab === tab.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setSelectedTab(tab.value)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div>
-        {loading ? (
-          <p>Loading...</p>
-        ) : filteredOffers.length === 0 ? (
-          <p>No {selectedTab} offers available.</p>
-        ) : (
-          <ul className="space-y-2">
-            {filteredOffers.map((offer) => (
-              <li
-                key={offer.id}
-                className="border rounded p-4 bg-white shadow"
+    <div className="min-h-screen py-20">
+      <div className="container mx-auto px-4">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-bold mb-4 text-center">My Offers</h1>
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.value}
+                className={`px-3 py-2 rounded text-sm md:text-base ${
+                  selectedTab === tab.value
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
+                }`}
+                onClick={() => setSelectedTab(tab.value)}
               >
-                <div className="font-semibold">{offer.title}</div>
-                <div className="text-sm text-gray-600 mb-2">{offer.description}</div>
-                <div className="text-xs text-gray-500">Joined: {offer.joined_at ? new Date(offer.joined_at).toLocaleString() : '-'}</div>
-                <div className="text-xs text-gray-500">Status: {offer.status}</div>
-                <div className="text-xs text-blue-600 mt-1">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
-                <div className="text-xs text-orange-600 mt-1">Days left until offer ends: {getDaysLeft(offer, now)}</div>
-                <div className="text-xs text-green-700 mt-1 font-semibold">Total profit from this offer: {getTotalProfitFromTransactions(transactions, offer.id)}</div>
-              </li>
+                {tab.label}
+              </button>
             ))}
-          </ul>
-        )}
+          </div>
+          <div>
+            {loading ? (
+              <p className="text-center text-muted-foreground">Loading...</p>
+            ) : filteredOffers.length === 0 ? (
+              <p className="text-center text-muted-foreground">No {selectedTab} offers available.</p>
+            ) : (
+              <ul className="space-y-3">
+                {filteredOffers.map((offer) => (
+                  <li
+                    key={offer.id}
+                    className="border rounded-lg p-4 bg-card shadow-sm"
+                  >
+                    <div className="font-semibold text-lg mb-2">{offer.title}</div>
+                    <div className="text-sm text-muted-foreground mb-3">{offer.description}</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="text-muted-foreground">Joined: {offer.joined_at ? new Date(offer.joined_at).toLocaleString() : '-'}</div>
+                      <div className="text-muted-foreground">Status: {offer.status}</div>
+                      <div className="text-blue-600">Time left to next daily profit: {getTimeLeftToNextProfit(offer, now)}</div>
+                      <div className="text-orange-600">Days left until offer ends: {getDaysLeft(offer, now)}</div>
+                    </div>
+                    <div className="text-sm text-green-700 mt-2 font-semibold">Total profit from this offer: {getTotalProfitFromTransactions(transactions, offer.id)}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

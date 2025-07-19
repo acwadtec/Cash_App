@@ -294,9 +294,9 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">{t('admin.users')}</h1>
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">{t('admin.users')}</h1>
         <Button onClick={handleRefresh} disabled={loadingUsers}>
           {loadingUsers ? t('common.loading') : t('common.refresh')}
         </Button>
@@ -311,7 +311,7 @@ export default function UsersPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>{t('admin.search')}</Label>
               <div className="relative">
