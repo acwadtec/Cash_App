@@ -39,7 +39,7 @@ export const VerificationProvider: React.FC<VerificationProviderProps> = ({ chil
 
       const { data: userInfo, error } = await supabase
         .from('user_info')
-        .select('is_verified')
+        .select('verified')
         .eq('user_uid', user.id)
         .single();
 
@@ -47,7 +47,7 @@ export const VerificationProvider: React.FC<VerificationProviderProps> = ({ chil
         console.error('Error checking verification:', error);
         setIsVerified(false);
       } else {
-        setIsVerified(userInfo?.is_verified || false);
+        setIsVerified(userInfo?.verified || false);
       }
     } catch (error) {
       console.error('Error in checkVerification:', error);

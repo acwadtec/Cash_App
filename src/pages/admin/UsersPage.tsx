@@ -38,6 +38,8 @@ interface UserInfo {
   bonuses: number;
   team_earnings: number;
   level: number;
+  is_verified: boolean;
+  withdrawal_limit_start?: string;
 }
 
 export default function UsersPage() {
@@ -474,6 +476,66 @@ export default function UsersPage() {
                           >
                             {t('admin.view')}
                           </Button>
+                          <Button
+                            size="sm"
+                            className="ml-2 bg-blue-600 text-white hover:bg-blue-700"
+                            onClick={async () => {
+                              const now = new Date().toISOString();
+                              const { error } = await supabase
+                                .from('user_info')
+                                .update({ withdrawal_limit_start: now })
+                                .eq('user_uid', user.user_uid);
+                              if (error) {
+                                toast({ title: t('common.error'), description: 'Failed to reset daily limit', variant: 'destructive' });
+                              } else {
+                                setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, withdrawal_limit_start: now } : u));
+                                toast({ title: t('common.success'), description: 'Daily withdrawal limit reset for user.' });
+                              }
+                            }}
+                          >
+                            Reset Daily Limit
+                          </Button>
+                          {!user.verified && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="ml-2 bg-green-600 text-white hover:bg-green-700"
+                                onClick={async () => {
+                                  const { error } = await supabase
+                                    .from('user_info')
+                                    .update({ verified: true })
+                                    .eq('user_uid', user.user_uid);
+                                  if (error) {
+                                    toast({ title: t('common.error'), description: t('admin.failedToVerifyUser'), variant: 'destructive' });
+                                  } else {
+                                    setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, verified: true } : u));
+                                    toast({ title: t('common.success'), description: t('admin.userVerified') });
+                                  }
+                                }}
+                              >
+                                {t('admin.verify')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="ml-2"
+                                variant="destructive"
+                                onClick={async () => {
+                                  const { error } = await supabase
+                                    .from('user_info')
+                                    .update({ verified: false })
+                                    .eq('user_uid', user.user_uid);
+                                  if (error) {
+                                    toast({ title: t('common.error'), description: t('admin.failedToRejectUser'), variant: 'destructive' });
+                                  } else {
+                                    setUsers(prev => prev.map(u => u.user_uid === user.user_uid ? { ...u, verified: false } : u));
+                                    toast({ title: t('common.success'), description: t('admin.userRejected') });
+                                  }
+                                }}
+                              >
+                                {t('admin.reject')}
+                              </Button>
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}

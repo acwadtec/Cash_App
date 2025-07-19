@@ -38,6 +38,7 @@ export default function WithdrawalRequestsPage() {
   const [showTimeSlotDialog, setShowTimeSlotDialog] = useState(false);
   const [editingTimeSlotIdx, setEditingTimeSlotIdx] = useState<number | null>(null);
   const [timeSlotForm, setTimeSlotForm] = useState({ day: '', start: '', end: '' });
+  const [timeSlotFormAMPM, setTimeSlotFormAMPM] = useState({ startAMPM: 'AM', endAMPM: 'AM' });
   const [showPackageDialog, setShowPackageDialog] = useState(false);
   const [editingPackageName, setEditingPackageName] = useState<string | null>(null);
   const [packageForm, setPackageForm] = useState({ name: '', min: '', max: '', daily: '' });
@@ -112,14 +113,18 @@ export default function WithdrawalRequestsPage() {
   const handleAddOrUpdatePackageLimit = (e) => {
     e.preventDefault();
     if (!packageFormName || !packageFormMin || !packageFormMax || !packageFormDaily) return;
-    setPackageLimits(prev => ({
-      ...prev,
-      [packageFormName]: {
-        min: Number(packageFormMin),
-        max: Number(packageFormMax),
-        daily: Number(packageFormDaily)
-      }
-    }));
+    setPackageLimits(prev => {
+      const now = new Date().toISOString();
+      return {
+        ...prev,
+        [packageFormName]: {
+          min: Number(packageFormMin),
+          max: Number(packageFormMax),
+          daily: Number(packageFormDaily),
+          limit_activated_at: now
+        }
+      };
+    });
     setPackageFormName(''); setPackageFormMin(''); setPackageFormMax(''); setPackageFormDaily(''); setPackageEditIndex(null);
   };
   const handleEditPackageLimit = (pkg, vals, idx) => {
@@ -217,18 +222,39 @@ export default function WithdrawalRequestsPage() {
   const openAddTimeSlot = () => {
     setEditingTimeSlotIdx(null);
     setTimeSlotForm({ day: '', start: '', end: '' });
+    setTimeSlotFormAMPM({ startAMPM: 'AM', endAMPM: 'AM' });
     setShowTimeSlotDialog(true);
   };
   const openEditTimeSlot = (idx: number) => {
     const [day, start, end] = timeSlots[idx].split(':');
+    // Convert 24-hour format to 12-hour format for display
+    const startHour = parseInt(start);
+    const endHour = parseInt(end);
+    const startAMPM = startHour >= 12 ? 'PM' : 'AM';
+    const endAMPM = endHour >= 12 ? 'PM' : 'AM';
+    const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
+    const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
     setEditingTimeSlotIdx(idx);
-    setTimeSlotForm({ day, start, end });
+    setTimeSlotForm({ day, start: start12Hour.toString(), end: end12Hour.toString() });
+    setTimeSlotFormAMPM({ startAMPM, endAMPM });
     setShowTimeSlotDialog(true);
   };
   const saveTimeSlot = () => {
-    if (!timeSlotForm.day || !timeSlotForm.start || !timeSlotForm.end || Number(timeSlotForm.end) <= Number(timeSlotForm.start)) return;
+    if (!timeSlotForm.day || !timeSlotForm.start || !timeSlotForm.end) return;
+    
+    // Convert 12-hour format to 24-hour format for storage
+    let start24Hour = parseInt(timeSlotForm.start);
+    let end24Hour = parseInt(timeSlotForm.end);
+    
+    if (timeSlotFormAMPM.startAMPM === 'PM' && start24Hour !== 12) start24Hour += 12;
+    if (timeSlotFormAMPM.startAMPM === 'AM' && start24Hour === 12) start24Hour = 0;
+    if (timeSlotFormAMPM.endAMPM === 'PM' && end24Hour !== 12) end24Hour += 12;
+    if (timeSlotFormAMPM.endAMPM === 'AM' && end24Hour === 12) end24Hour = 0;
+    
+    if (end24Hour <= start24Hour) return; // Invalid time range
+    
     let newSlots = [...timeSlots];
-    const slotStr = `${timeSlotForm.day}:${timeSlotForm.start}:${timeSlotForm.end}`;
+    const slotStr = `${timeSlotForm.day}:${start24Hour}:${end24Hour}`;
     if (editingTimeSlotIdx === null) {
       newSlots.push(slotStr);
     } else {
@@ -238,6 +264,7 @@ export default function WithdrawalRequestsPage() {
     setShowTimeSlotDialog(false);
     setEditingTimeSlotIdx(null);
     setTimeSlotForm({ day: '', start: '', end: '' });
+    setTimeSlotFormAMPM({ startAMPM: 'AM', endAMPM: 'AM' });
   };
   const removeTimeSlot = (idx: number) => {
     setTimeSlots(timeSlots.filter((_, i) => i !== idx));
@@ -259,7 +286,8 @@ export default function WithdrawalRequestsPage() {
       [packageForm.name]: {
         min: Number(packageForm.min),
         max: Number(packageForm.max),
-        daily: Number(packageForm.daily)
+        daily: Number(packageForm.daily),
+        limit_activated_at: new Date().toISOString()
       }
     }));
     setShowPackageDialog(false);
@@ -327,6 +355,20 @@ export default function WithdrawalRequestsPage() {
     }
   };
 
+  // Predefined messages for admin actions
+  const payMessages = [
+    'Payment sent successfully.',
+    'Funds have been transferred to your account.',
+    'Withdrawal processed. Check your account.',
+    'Contact support if you do not receive payment within 24 hours.'
+  ];
+  const rejectMessages = [
+    'Incorrect account details. Please update and try again.',
+    'Withdrawal request rejected due to suspicious activity.',
+    'Withdrawal rejected. Contact support for more information.',
+    'Insufficient balance for withdrawal.'
+  ];
+
   return (
     <div className="space-y-4 p-8">
       <div className="flex justify-between items-center">
@@ -375,11 +417,19 @@ export default function WithdrawalRequestsPage() {
                     </TableRow>
                   ) : timeSlots.map((slot, idx) => {
                     const [day, start, end] = slot.split(':');
+                    // Convert 24-hour format to 12-hour format for display
+                    const startHour = parseInt(start);
+                    const endHour = parseInt(end);
+                    const startAMPM = startHour >= 12 ? 'PM' : 'AM';
+                    const endAMPM = endHour >= 12 ? 'PM' : 'AM';
+                    const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
+                    const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
+                    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                     return (
                       <TableRow key={idx}>
-                        <TableCell>{day}</TableCell>
-                        <TableCell>{start}</TableCell>
-                        <TableCell>{end}</TableCell>
+                        <TableCell>{dayNames[parseInt(day)] || day}</TableCell>
+                        <TableCell>{start12Hour} {startAMPM}</TableCell>
+                        <TableCell>{end12Hour} {endAMPM}</TableCell>
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => openEditTimeSlot(idx)}><Pencil /></Button>
                           <Button size="icon" variant="destructive" onClick={() => removeTimeSlot(idx)}><Trash /></Button>
@@ -437,12 +487,67 @@ export default function WithdrawalRequestsPage() {
             <DialogTitle>{editingTimeSlotIdx === null ? t('admin.withdrawals.addTimeSlot') : t('admin.withdrawals.editTimeSlot')}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
+            <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+              <strong>Note:</strong> Time slots must be within the same day and cannot cross midnight.<br />
+              For an all-day slot, use <strong>12 AM to 11:59 PM</strong>.
+            </div>
             <Label>{t('common.day')}</Label>
-            <Input value={timeSlotForm.day} onChange={e => setTimeSlotForm(f => ({ ...f, day: e.target.value }))} placeholder={t('common.day')} />
+            <Select value={timeSlotForm.day} onValueChange={value => setTimeSlotForm(f => ({ ...f, day: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a day" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Sunday</SelectItem>
+                <SelectItem value="1">Monday</SelectItem>
+                <SelectItem value="2">Tuesday</SelectItem>
+                <SelectItem value="3">Wednesday</SelectItem>
+                <SelectItem value="4">Thursday</SelectItem>
+                <SelectItem value="5">Friday</SelectItem>
+                <SelectItem value="6">Saturday</SelectItem>
+              </SelectContent>
+            </Select>
             <Label>{t('common.startHour')}</Label>
-            <Input value={timeSlotForm.start} onChange={e => setTimeSlotForm(f => ({ ...f, start: e.target.value }))} placeholder={t('common.startHour')} />
+            <div className="flex gap-2">
+              <Input 
+                type="number" 
+                min="1" 
+                max="12" 
+                value={timeSlotForm.start} 
+                onChange={e => setTimeSlotForm(f => ({ ...f, start: e.target.value }))} 
+                placeholder="Hour (1-12)" 
+                className="flex-1"
+              />
+              <Select value={timeSlotFormAMPM.startAMPM} onValueChange={value => setTimeSlotFormAMPM(f => ({ ...f, startAMPM: value }))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AM">AM</SelectItem>
+                  <SelectItem value="PM">PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Label>{t('common.endHour')}</Label>
-            <Input value={timeSlotForm.end} onChange={e => setTimeSlotForm(f => ({ ...f, end: e.target.value }))} placeholder={t('common.endHour')} />
+            <div className="flex gap-2">
+              <Input 
+                type="number" 
+                min="1" 
+                max="12" 
+                value={timeSlotForm.end} 
+                onChange={e => setTimeSlotForm(f => ({ ...f, end: e.target.value }))} 
+                placeholder="Hour (1-12)" 
+                className="flex-1"
+              />
+              <Select value={timeSlotFormAMPM.endAMPM} onValueChange={value => setTimeSlotFormAMPM(f => ({ ...f, endAMPM: value }))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AM">AM</SelectItem>
+                  <SelectItem value="PM">PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={saveTimeSlot} className="mt-2 w-full">{t('common.save')}</Button>
           </div>
         </DialogContent>
@@ -543,7 +648,17 @@ export default function WithdrawalRequestsPage() {
             <Label>{t('admin.withdrawals.proofImage')}</Label>
             <Input type="file" accept="image/*" onChange={e => setProofImage(e.target.files?.[0] || null)} />
             <Label>{t('admin.withdrawals.adminNote')}</Label>
-            <Textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} />
+            <Select value={adminNote} onValueChange={setAdminNote}>
+              <SelectTrigger className="mb-2">
+                <SelectValue placeholder="Select a response message" />
+              </SelectTrigger>
+              <SelectContent>
+                {payMessages.map((msg, idx) => (
+                  <SelectItem key={idx} value={msg}>{msg}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} placeholder="Custom message..." />
             <Button onClick={handlePay} className="w-full mt-2">{t('admin.withdrawals.confirmPay')}</Button>
           </div>
         </DialogContent>
@@ -556,7 +671,17 @@ export default function WithdrawalRequestsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <Label>{t('admin.withdrawals.rejectionReason')}</Label>
-            <Textarea value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} />
+            <Select value={rejectionReason} onValueChange={setRejectionReason}>
+              <SelectTrigger className="mb-2">
+                <SelectValue placeholder="Select a response message" />
+              </SelectTrigger>
+              <SelectContent>
+                {rejectMessages.map((msg, idx) => (
+                  <SelectItem key={idx} value={msg}>{msg}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Textarea value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} placeholder="Custom message..." />
             <Button onClick={handleReject} className="w-full mt-2" variant="destructive">{t('admin.withdrawals.confirmReject')}</Button>
           </div>
         </DialogContent>

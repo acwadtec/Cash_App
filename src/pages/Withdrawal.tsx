@@ -19,7 +19,7 @@ import { useUserBalances } from '@/hooks/useUserBalance';
 
 interface WithdrawalSettings {
   timeSlots: string[];
-  packageLimits: Record<string, { min: number; max: number; daily: number }>;
+  packageLimits: Record<string, { min: number; max: number; daily: number; limit_activated_at?: string }>;
 }
 
 interface WithdrawalRequest {
@@ -110,21 +110,35 @@ export default function Withdrawal() {
       };
     }
 
-    // Check daily limit
-    const todayWithdrawals = withdrawalHistory.filter(w => 
-      w.status === 'pending' || w.status === 'approved' || w.status === 'paid'
-    ).filter(w => {
-      const withdrawalDate = new Date(w.createdAt);
-      const today = new Date();
-      return withdrawalDate.toDateString() === today.toDateString();
-    });
-
+    // Check daily limit (calendar day reset, but only after limit_activated_at if present)
+    let todayWithdrawals = withdrawalHistory.filter(w => 
+      (w.status === 'pending' || w.status === 'approved' || w.status === 'paid') &&
+      new Date(w.createdAt).toDateString() === new Date().toDateString()
+    );
+    if (packageLimit && packageLimit.limit_activated_at) {
+      const activatedAt = new Date(packageLimit.limit_activated_at).getTime();
+      todayWithdrawals = todayWithdrawals.filter(w => {
+        const withdrawalTime = new Date(w.createdAt).getTime();
+        return withdrawalTime >= activatedAt;
+      });
+    }
     const todayTotal = todayWithdrawals.reduce((sum, w) => sum + w.amount, 0);
-    if (todayTotal + amount > packageLimit.daily) {
-      const remaining = packageLimit.daily - todayTotal;
-      return { 
-        valid: false, 
-        message: t('withdrawal.error.dailyLimit') 
+    const remaining = packageLimit.daily - todayTotal;
+    // Block if the user has already reached the daily limit
+    if (todayTotal >= packageLimit.daily) {
+      return {
+        valid: false,
+        message: t('withdrawal.error.dailyLimit')
+          .replace('${daily}', `${packageLimit.daily}`)
+          .replace('${used}', `${todayTotal}`)
+          .replace('${remaining}', `0`)
+      };
+    }
+    // Block if this withdrawal would cause the total to exceed the daily limit
+    if (amount > remaining) {
+      return {
+        valid: false,
+        message: t('withdrawal.error.dailyLimit')
           .replace('${daily}', `${packageLimit.daily}`)
           .replace('${used}', `${todayTotal}`)
           .replace('${remaining}', `${remaining}`)
@@ -155,9 +169,31 @@ export default function Withdrawal() {
     fetchOffers();
   }, []);
   const isAfterAllDeadlines = () => {
-    if (!offers.length) return false;
+    if (!offers.length) return true; // Allow withdrawal if no offers
     const now = new Date();
     return offers.every(o => o.deadline && new Date(o.deadline) < now);
+  };
+
+  // Function to format time slots for user display
+  const formatTimeSlotsForUser = () => {
+    if (!settings.timeSlots || settings.timeSlots.length === 0) {
+      return 'No time restrictions';
+    }
+    
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const formattedSlots = settings.timeSlots.map(slot => {
+      const [day, start, end] = slot.split(':');
+      const startHour = parseInt(start);
+      const endHour = parseInt(end);
+      const startAMPM = startHour >= 12 ? 'PM' : 'AM';
+      const endAMPM = endHour >= 12 ? 'PM' : 'AM';
+      const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
+      const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
+      
+      return `${dayNames[parseInt(day)]} ${start12Hour} ${startAMPM} - ${end12Hour} ${endAMPM}`;
+    });
+    
+    return formattedSlots.join(', ');
   };
 
   // Fetch user info and package on mount
@@ -324,15 +360,6 @@ export default function Withdrawal() {
       });
       return;
     }
-    // Check if after offer deadline
-    if (!isAfterAllDeadlines()) {
-      toast({
-        title: t('withdrawal.error.limit'),
-        description: t('withdrawal.deadlineRestriction'),
-        variant: 'destructive',
-      });
-      return;
-    }
 
     const { data: userData, error: userError } = await supabase.auth.getUser();
     const user = userData?.user;
@@ -474,7 +501,12 @@ export default function Withdrawal() {
                         <Alert className="mb-6 border-yellow-200 bg-yellow-50">
                           <Clock className="h-4 w-4 text-yellow-600" />
                           <AlertDescription className="text-yellow-800">
-                            {t('withdrawal.error.timeSlotMessage')}
+                            <div>
+                              <p className="font-semibold mb-2">{t('withdrawal.error.timeSlotMessage')}</p>
+                              <p className="text-sm">
+                                <strong>Available withdrawal times:</strong> {formatTimeSlotsForUser()}
+                              </p>
+                            </div>
                           </AlertDescription>
                         </Alert>
                       )}
@@ -489,6 +521,9 @@ export default function Withdrawal() {
                               .replace('${max}', `${settings.packageLimits[userPackage].max}`)
                               .replace('${daily}', `${settings.packageLimits[userPackage].daily}`)
                             }
+                            <div className="mt-2 text-xs text-blue-700">
+                              <strong>Note:</strong> Daily withdrawal limit resets at midnight (00:00).
+                            </div>
                           </AlertDescription>
                         </Alert>
                       )}
@@ -560,7 +595,7 @@ export default function Withdrawal() {
                         <Button 
                           type="submit" 
                           className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
-                          disabled={!isWithinTimeSlot() || loading || !isAfterAllDeadlines()}
+                          disabled={!isWithinTimeSlot() || loading}
                         >
                           {loading ? t('common.loading') : t('withdrawal.submit')}
                         </Button>

@@ -74,7 +74,7 @@ export default function DepositRequestsPage() {
       if (updateError) throw updateError;
 
       // Then, add the deposit amount to the user's balance
-      const userUid = req.user_id;
+      const userUid = req.user_uid || req.user_id;
       const { data: userInfo, error: userError } = await supabase
         .from('user_info')
         .select('balance')
