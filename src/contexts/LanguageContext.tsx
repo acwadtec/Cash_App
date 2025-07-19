@@ -1174,7 +1174,6 @@ const translations = {
     'investment.confirmInvestment': 'تأكيد الاستثمار',
     'common.confirm': 'تأكيد',
     'error.invalidAmount': 'يرجى إدخال مبلغ صحيح',
-    'error.failedToUpdateBalance': 'فشل في تحديث الرصيد',
   },
   en: {
     // Navigation
@@ -2253,6 +2252,5 @@ const translations = {
     'investment.confirmInvestment': 'Confirm Investment',
     'common.confirm': 'Confirm',
     'error.invalidAmount': 'Please enter a valid amount',
-    'error.failedToUpdateBalance': 'Failed to update balance',
   }
 };
