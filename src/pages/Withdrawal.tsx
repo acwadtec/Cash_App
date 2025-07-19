@@ -377,7 +377,7 @@ export default function Withdrawal() {
     const selectedType = withdrawalTypes.find(t => t.value === formData.type);
     const amount = parseFloat(formData.amount);
     
-    if (selectedType && amount > selectedType.balance) {
+    if (selectedType && amount > selectedType.amount) {
       toast({
         title: t('withdrawal.error.amount'),
         description: t('withdrawal.error.amountMessage'),
