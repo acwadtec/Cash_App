@@ -132,6 +132,27 @@ export default function Withdrawal() {
     });
   };
 
+  // Check if user has already made a withdrawal request today
+  const hasWithdrawalToday = () => {
+    const today = new Date().toDateString();
+    return withdrawalHistory.some(withdrawal => 
+      new Date(withdrawal.createdAt).toDateString() === today
+    );
+  };
+
+  // Calculate daily withdrawal usage
+  const getDailyWithdrawalUsage = () => {
+    const today = new Date().toDateString();
+    const todayWithdrawals = withdrawalHistory.filter(withdrawal => 
+      new Date(withdrawal.createdAt).toDateString() === today
+    );
+    const used = todayWithdrawals.reduce((sum, w) => sum + w.amount, 0);
+    const daily = settings.packageLimits[userPackage]?.daily || 0;
+    const remaining = Math.max(0, daily - used);
+    
+    return { used, daily, remaining };
+  };
+
   // Check package limits
   const checkPackageLimits = (amount: number) => {
     const packageLimit = settings.packageLimits[userPackage];
@@ -374,6 +395,17 @@ export default function Withdrawal() {
       return;
     }
 
+    // Prevent multiple daily requests
+    if (hasWithdrawalToday()) {
+      toast({
+        title: t('withdrawal.error.dailyLimit'),
+        description: t('withdrawal.error.dailyLimitMessage'),
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
     const selectedType = withdrawalTypes.find(t => t.value === formData.type);
     const amount = parseFloat(formData.amount);
     
@@ -589,6 +621,26 @@ export default function Withdrawal() {
                         </Alert>
                       )}
 
+                      {/* Daily Withdrawal Limit Warning */}
+                      {hasWithdrawalToday() && (
+                        <Alert className="mb-6 border-white/20 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm">
+                          <AlertTriangle className="h-5 w-5 text-white" />
+                          <AlertDescription className="text-white">
+                            <div>
+                              <p className="font-semibold mb-2">{t('withdrawal.error.dailyLimit')}</p>
+                              <p className="text-sm mb-2">
+                                Daily limit: {getDailyWithdrawalUsage().daily.toLocaleString()} EGP, 
+                                Used: {getDailyWithdrawalUsage().used.toLocaleString()} EGP, 
+                                Remaining: {getDailyWithdrawalUsage().remaining.toLocaleString()} EGP
+                              </p>
+                              <p className="text-sm">
+                                You have already made a withdrawal request today. Please wait until tomorrow to make another request.
+                              </p>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {/* Enhanced Package Limits Info */}
                       {settings.packageLimits[userPackage] && (
                         <Alert className="mb-6 border-primary bg-gradient-to-r from-primary/10 to-purple-500/5 backdrop-blur-sm">
@@ -667,7 +719,7 @@ export default function Withdrawal() {
                         <Button 
                           type="submit" 
                           className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl"
-                          disabled={!isWithinTimeSlot() || loading}
+                          disabled={!isWithinTimeSlot() || loading || hasWithdrawalToday()}
                         >
                           {loading ? (
                             <div className="flex items-center gap-2">
@@ -780,6 +832,16 @@ export default function Withdrawal() {
                         <div className="flex justify-between items-center p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20">
                           <span className="font-medium">{t('profile.identityVerification')}</span>
                           <Badge className="bg-green-500 text-white">✓</Badge>
+                        </div>
+                        <div className={`flex justify-between items-center p-3 rounded-xl border ${
+                          hasWithdrawalToday() 
+                            ? 'bg-gradient-to-r from-red-500/10 to-red-600/10 border-red-500/20' 
+                            : 'bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/20'
+                        }`}>
+                          <span className="font-medium">Daily Withdrawal Status</span>
+                          <Badge className={hasWithdrawalToday() ? "bg-red-500 text-white" : "bg-green-500 text-white"}>
+                            {hasWithdrawalToday() ? "Used" : "Available"}
+                          </Badge>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-6 text-center">
