@@ -219,14 +219,11 @@ export default function Offers() {
     });
     // Insert join record
     const now = new Date().toISOString();
-    await supabase.from('offer_joins').insert([{
-      user_id: userId,
-      offer_id: offerId,
-      status: 'pending',
-      joined_at: now,
-      approved_at: now,
-      last_profit_at: now
-    }]);
+    const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: offerId, status: 'pending', approved_at: now, last_profit_at: now }]);
+    if (error) {
+              toast({ title: t('common.error'), description: t('error.failedToJoinOffer'), variant: 'destructive' });
+      return;
+    }
     // Increment join_count for the offer
     await supabase.from('offers').update({ join_count: offer.join_count + 1 }).eq('id', offerId);
             toast({ title: t('common.success'), description: t('success.joinRequestPending') });
@@ -298,14 +295,12 @@ export default function Offers() {
     });
     // Insert join record
     const now = new Date().toISOString();
-    await supabase.from('offer_joins').insert([{
-      user_id: userId,
-      offer_id: pendingOfferId,
-      status: 'pending',
-      joined_at: now,
-      approved_at: now,
-      last_profit_at: now
-    }]);
+    const { error } = await supabase.from('offer_joins').insert([{ user_id: userId, offer_id: pendingOfferId, status: 'pending', approved_at: now, last_profit_at: now }]);
+    if (error) {
+      toast({ title: t('common.error'), description: t('error.failedToJoinOffer'), variant: 'destructive' });
+      setShowBalanceModal(false);
+      return;
+    }
     await supabase.from('offers').update({ join_count: offer.join_count + 1 }).eq('id', pendingOfferId);
     toast({ title: t('common.success'), description: t('success.joinRequestPending') });
     setJoinStatuses(prev => ({ ...prev, [pendingOfferId]: 'pending' }));
