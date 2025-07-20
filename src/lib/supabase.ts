@@ -335,130 +335,13 @@ export const checkAndAwardAllBadges = async (userUid) => {
 }; 
 
 /**
- * Updates expired offer joins to 'inactive' status (30 days from approved_at)
- * This should be called before processing daily profits
- */
-export const updateExpiredOfferJoins = async () => {
-  const now = new Date();
-  
-  // Helper to check if offer is expired (30 days from approved_at)
-  function isOfferExpired(approvedAt: string): boolean {
-    if (!approvedAt) return false;
-    const approvedDate = new Date(approvedAt);
-    const endDate = new Date(approvedDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-    return now.getTime() >= endDate.getTime();
-  }
-  
-  // Get all approved offer joins
-  const { data: allApprovedJoins, error: allJoinsError } = await supabase
-    .from('offer_joins')
-    .select('id, user_id, offer_id, approved_at, status')
-    .eq('status', 'approved');
-  
-  if (allJoinsError) {
-    console.error('Error fetching approved joins for expiration check:', allJoinsError);
-    return;
-  }
-  
-  const updatedJoins = [];
-  
-  if (allApprovedJoins) {
-    for (const join of allApprovedJoins) {
-      if (isOfferExpired(join.approved_at)) {
-        console.log(`Marking expired offer join ${join.id} as inactive - 30-day period completed`);
-        
-        const { error: updateError } = await supabase
-          .from('offer_joins')
-          .update({ status: 'inactive' })
-          .eq('id', join.id);
-        
-        if (updateError) {
-          console.error(`Error updating offer join ${join.id} to inactive:`, updateError);
-        } else {
-          updatedJoins.push(join.id);
-        }
-      }
-    }
-  }
-  
-  console.log(`Updated ${updatedJoins.length} expired offer joins to inactive status`);
-  return updatedJoins;
-};
-
-/**
- * Standalone function to check and update expired offers
- * Can be called independently or from a cron job
- */
-export const checkAndUpdateExpiredOffers = async () => {
-  console.log('=== CHECKING FOR EXPIRED OFFERS ===');
-  const result = await updateExpiredOfferJoins();
-  console.log('=== EXPIRED OFFERS CHECK COMPLETE ===');
-  return result;
-};
-
-/**
- * Test function to manually trigger expiration check
- * Useful for testing the expiration logic
- */
-export const testExpirationCheck = async () => {
-  console.log('=== TESTING EXPIRATION CHECK ===');
-  const now = new Date();
-  
-  // Get all approved offers with their approved_at dates
-  const { data: approvedOffers, error } = await supabase
-    .from('offer_joins')
-    .select('id, user_id, offer_id, approved_at, status')
-    .eq('status', 'approved');
-  
-  if (error) {
-    console.error('Error fetching approved offers:', error);
-    return;
-  }
-  
-  console.log(`Found ${approvedOffers?.length || 0} approved offers`);
-  
-  if (approvedOffers) {
-    for (const offer of approvedOffers) {
-      const approvedDate = new Date(offer.approved_at);
-      const endDate = new Date(approvedDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const isExpired = now.getTime() >= endDate.getTime();
-      const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
-      console.log(`Offer ${offer.id}:`, {
-        approvedAt: offer.approved_at,
-        endDate: endDate.toISOString(),
-        isExpired,
-        daysLeft: isExpired ? 'EXPIRED' : daysLeft,
-        status: offer.status
-      });
-    }
-  }
-  
-  // Now run the actual update
-  const updated = await updateExpiredOfferJoins();
-  console.log('=== EXPIRATION TEST COMPLETE ===');
-  return { testResults: approvedOffers, updatedOffers: updated };
-};
-
-/**
  * Accrues daily profit for all approved offer joins that are due (24h since last profit or approval).
- * First checks for expired offers and updates their status to 'inactive'.
- * Then adds the offer's daily_profit to the user's balance and updates last_profit_at.
+ * Adds the offer's daily_profit to the user's balance and updates last_profit_at.
  * Returns a summary of processed joins for testing.
  */
 export const accrueDailyOfferProfits = async () => {
   const now = new Date();
-  // Helper to convert a date to Egypt time
-  function toEgyptTime(date: Date) {
-    // Returns a Date object in Egypt time (Africa/Cairo)
-    const egypt = new Date(date.toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
-    return egypt;
-  }
-  
-  // Step 1: Update expired offers to 'inactive' status
-  await updateExpiredOfferJoins();
-  
-  // Step 2: Get all approved offer joins (after updating expired ones)
+  // 1. Get all approved offer joins
   const { data: joins, error: joinsError } = await supabase
     .from('offer_joins')
     .select('id, user_id, offer_id, approved_at, last_profit_at, status')
@@ -475,10 +358,8 @@ export const accrueDailyOfferProfits = async () => {
   for (const join of joins) {
     const last = join.last_profit_at || join.approved_at;
     if (!last) continue;
-    // Convert both to Egypt time
-    const nowEgypt = toEgyptTime(now);
-    const lastEgypt = toEgyptTime(new Date(last));
-    if ((nowEgypt.getTime() - lastEgypt.getTime()) < 24 * 60 * 60 * 1000) continue; // Not due yet (24 hours in Egypt time)
+    const lastDate = new Date(last);
+    if ((now.getTime() - lastDate.getTime()) < 24 * 60 * 60 * 1000) continue; // Not due yet (24 hours)
     // 2. Get offer's daily profit
     const { data: offer, error: offerError } = await supabase
       .from('offers')
@@ -498,8 +379,9 @@ export const accrueDailyOfferProfits = async () => {
       .from('user_info')
       .update({ balance: newBalance })
       .eq('user_uid', join.user_id);
+    
     // 3.5. Log the daily profit transaction
-    const { data: txn, error: txnError } = await supabase
+    await supabase
       .from('transactions')
       .insert({
         user_id: join.user_id,
@@ -508,25 +390,7 @@ export const accrueDailyOfferProfits = async () => {
         status: 'completed',
         description: `Daily profit from offer ${join.offer_id}`,
         created_at: now.toISOString(),
-      })
-      .select('id')
-      .single();
-    if (!txnError && txn && txn.id) {
-      const { error: dailyProfitError } = await supabase
-        .from('daily_profits')
-        .insert({
-          user_id: join.user_id,
-          offer_id: join.offer_id,
-          offer_join_id: join.id,
-          amount: offer.daily_profit,
-          profit_date: now.toISOString(),
-          transaction_id: txn.id,
-          created_at: now.toISOString(),
-        });
-      if (dailyProfitError) {
-        console.error('Failed to insert into daily_profits:', dailyProfitError);
-      }
-    }
+      });
     // 4. Referral team earnings logic
     let referralEarnings = [];
     let profit = Number(offer.daily_profit || 0);
@@ -571,31 +435,13 @@ export const accrueDailyOfferProfits = async () => {
 
 /**
  * Accrues both daily and monthly profits for all approved offer joins that are due.
- * Also checks and updates expired offers to inactive status.
  * Intended to be called from a backend job or scheduled function.
  * Returns a summary of both daily and monthly processed joins.
  */
 export const accrueAllOfferProfits = async () => {
-  // First, check and update expired offers
-  console.log('=== STARTING COMPLETE OFFER PROFIT ACCRUAL ===');
-  console.log('Step 1: Checking for expired offers...');
-  const expiredUpdates = await updateExpiredOfferJoins();
-  console.log(`Updated ${expiredUpdates?.length || 0} expired offers to inactive`);
-  
-  // Then process daily profits
-  console.log('Step 2: Processing daily profits...');
   const daily = await accrueDailyOfferProfits();
-  
-  // Then process monthly profits
-  console.log('Step 3: Processing monthly profits...');
   const monthly = await accrueMonthlyOfferProfits();
-  
-  console.log('=== COMPLETE OFFER PROFIT ACCRUAL FINISHED ===');
-  return { 
-    expiredUpdates, 
-    daily, 
-    monthly 
-  };
+  return { daily, monthly };
 };
 
 /**
@@ -750,87 +596,4 @@ export const robustQuery = async <T = any>(
   }
   
   return { data: null, error: new Error('Max retries exceeded') };
-}; 
-
-/**
- * Updated SQL function for accrue_daily_profits with expiration check
- * This function should be used in your Supabase SQL editor
- */
-export const getUpdatedAccrueDailyProfitsSQL = () => {
-  return `
-CREATE OR REPLACE FUNCTION public.accrue_daily_profits()
-RETURNS void
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  join_rec RECORD;
-  offer_rec RECORD;
-  user_balance numeric;
-  transaction_id uuid;
-BEGIN
-  -- First, update expired offers to 'inactive' status
-  UPDATE offer_joins
-  SET status = 'inactive'
-  WHERE status = 'approved'
-    AND approved_at IS NOT NULL
-    AND approved_at <= NOW() - INTERVAL '30 days';
-  
-  -- Then process daily profits for approved offers (excluding newly expired ones)
-  FOR join_rec IN
-    SELECT oj.id AS offer_join_id, oj.user_id, oj.offer_id, oj.last_profit_at, oj.approved_at, o.daily_profit
-    FROM offer_joins oj
-    JOIN offers o ON oj.offer_id = o.id
-    WHERE oj.status = 'approved'
-      AND o.daily_profit > 0
-      AND (
-        (oj.last_profit_at IS NOT NULL AND oj.last_profit_at <= NOW() - INTERVAL '24 hours')
-        OR (oj.last_profit_at IS NULL AND oj.approved_at <= NOW() - INTERVAL '24 hours')
-      )
-      -- Additional check: ensure offer is not expired (less than 30 days from approved_at)
-      AND oj.approved_at > NOW() - INTERVAL '30 days'
-  LOOP
-    -- 1. Credit user balance
-    UPDATE user_info
-    SET balance = COALESCE(balance, 0) + join_rec.daily_profit
-    WHERE user_uid = join_rec.user_id;
-
-    -- 2. Insert transaction and get its id
-    INSERT INTO transactions (user_id, type, amount, status, description, created_at)
-    VALUES (
-      join_rec.user_id,
-      'daily_profit',
-      join_rec.daily_profit,
-      'completed',
-      'Daily profit from offer ' || join_rec.offer_id,
-      NOW()
-    )
-    RETURNING id INTO transaction_id;
-
-    -- 3. Insert into daily_profits
-    INSERT INTO daily_profits (
-      user_id,
-      offer_id,
-      offer_join_id,
-      amount,
-      profit_date,
-      transaction_id,
-      created_at
-    ) VALUES (
-      join_rec.user_id,
-      join_rec.offer_id,
-      join_rec.offer_join_id,
-      join_rec.daily_profit,
-      NOW(),
-      transaction_id,
-      NOW()
-    );
-
-    -- 4. Update last_profit_at
-    UPDATE offer_joins
-    SET last_profit_at = NOW()
-    WHERE id = join_rec.offer_join_id;
-  END LOOP;
-END;
-$$;
-  `;
 }; 
