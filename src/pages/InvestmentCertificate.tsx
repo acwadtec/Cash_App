@@ -427,7 +427,7 @@ export default function InvestmentCertificate() {
       
       {/* Enhanced Balance Selection Modal */}
       <Dialog open={showBalanceModal} onOpenChange={setShowBalanceModal}>
-        <DialogContent className="bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 shadow-2xl">
+        <DialogContent className="bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 shadow-2xl dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-lg"></div>
           <DialogHeader className="relative">
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
@@ -444,7 +444,7 @@ export default function InvestmentCertificate() {
                   setJoinAmount(e.target.value);
                   checkAmountWarning(e.target.value);
                 }}
-                className="w-full h-14 border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent text-foreground rounded-xl px-4 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-300"
+                className="w-full h-14 border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent text-foreground rounded-xl px-4 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus-visible:ring-blue-500 dark:focus-visible:border-blue-400 dark:focus-visible:bg-gray-700"
                 min={pendingCertificate?.invested_amount || 1}
                 step="0.01"
               />
@@ -462,7 +462,7 @@ export default function InvestmentCertificate() {
                 className={`flex items-center gap-4 p-6 rounded-xl border transition-all duration-300 hover:scale-105 ${
                   !userBalances || userBalances.balance < Number(joinAmount)
                     ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
-                    : 'border-green-400 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 dark:bg-gradient-to-r dark:from-green-950/20 dark:to-green-900/20 dark:border-green-400/50 dark:hover:from-green-950/40 dark:hover:to-green-900/40 dark:text-green-400 shadow-lg hover:shadow-green-500/30'
+                    : 'border-green-400 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 dark:bg-gradient-to-r dark:from-green-950/30 dark:to-green-900/30 dark:border-green-400/50 dark:hover:from-green-950/50 dark:hover:to-green-900/50 dark:text-green-400 dark:hover:text-green-300 shadow-lg hover:shadow-green-500/30 dark:hover:shadow-green-500/20'
                 }`}
                 onClick={() => handleSelectBalanceType('balance')}
                 disabled={!userBalances || userBalances.balance < Number(joinAmount)}
@@ -494,7 +494,7 @@ export default function InvestmentCertificate() {
                 className={`flex items-center gap-4 p-6 rounded-xl border transition-all duration-300 hover:scale-105 ${
                   !userBalances || userBalances.total_points < Number(joinAmount)
                     ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
-                    : 'border-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:bg-gradient-to-r dark:from-blue-950/20 dark:to-blue-900/20 dark:border-blue-400/50 dark:hover:from-blue-950/40 dark:hover:to-blue-900/40 dark:text-blue-400 shadow-lg hover:shadow-blue-500/30'
+                    : 'border-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:bg-gradient-to-r dark:from-blue-950/30 dark:to-blue-900/30 dark:border-blue-400/50 dark:hover:from-blue-950/50 dark:hover:to-blue-900/50 dark:text-blue-400 dark:hover:text-blue-300 shadow-lg hover:shadow-blue-500/30 dark:hover:shadow-blue-500/20'
                 }`}
                 onClick={() => handleSelectBalanceType('total_points')}
                 disabled={!userBalances || userBalances.total_points < Number(joinAmount)}
@@ -526,7 +526,7 @@ export default function InvestmentCertificate() {
                 className={`flex items-center gap-4 p-6 rounded-xl border transition-all duration-300 hover:scale-105 ${
                   !userBalances || userBalances.bonuses < Number(joinAmount)
                     ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
-                    : 'border-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 dark:bg-gradient-to-r dark:from-yellow-950/20 dark:to-yellow-900/20 dark:border-yellow-400/50 dark:hover:from-yellow-950/40 dark:hover:to-yellow-900/40 dark:text-yellow-400 shadow-lg hover:shadow-yellow-500/30'
+                    : 'border-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 dark:bg-gradient-to-r dark:from-yellow-950/30 dark:to-yellow-900/30 dark:border-yellow-400/50 dark:hover:from-yellow-950/50 dark:hover:to-yellow-900/50 dark:text-yellow-400 dark:hover:text-yellow-300 shadow-lg hover:shadow-yellow-500/30 dark:hover:shadow-yellow-500/20'
                 }`}
                 onClick={() => handleSelectBalanceType('bonuses')}
                 disabled={!userBalances || userBalances.bonuses < Number(joinAmount)}
@@ -558,7 +558,7 @@ export default function InvestmentCertificate() {
                 className={`flex items-center gap-4 p-6 rounded-xl border transition-all duration-300 hover:scale-105 ${
                   !userBalances || userBalances.team_earnings < Number(joinAmount)
                     ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
-                    : 'border-purple-400 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 dark:bg-gradient-to-r dark:from-purple-950/20 dark:to-purple-900/20 dark:border-purple-400/50 dark:hover:from-purple-950/40 dark:hover:to-purple-900/40 dark:text-purple-400 shadow-lg hover:shadow-purple-500/30'
+                    : 'border-purple-400 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 dark:bg-gradient-to-r dark:from-purple-950/30 dark:to-purple-900/30 dark:border-purple-400/50 dark:hover:from-purple-950/50 dark:hover:to-purple-900/50 dark:text-purple-400 dark:hover:text-purple-300 shadow-lg hover:shadow-purple-500/30 dark:hover:shadow-purple-500/20'
                 }`}
                 onClick={() => handleSelectBalanceType('team_earnings')}
                 disabled={!userBalances || userBalances.team_earnings < Number(joinAmount)}

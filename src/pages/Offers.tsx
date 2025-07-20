@@ -488,7 +488,7 @@ export default function Offers() {
         </div>
       </div>
       <Dialog open={showBalanceModal} onOpenChange={setShowBalanceModal}>
-        <DialogContent className="max-w-md bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0">
+        <DialogContent className="max-w-md bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               {t('offers.selectBalanceType')}
@@ -496,7 +496,11 @@ export default function Offers() {
           </DialogHeader>
           <div className="flex flex-col gap-4 mt-6">
             <button
-              className="flex items-center gap-4 p-5 rounded-xl border-2 border-green-500/20 bg-gradient-to-r from-green-500/5 to-green-600/5 hover:from-green-500/10 hover:to-green-600/10 hover:border-green-500/40 transition-all duration-300 hover:scale-105 shadow-lg group"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.balance <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-green-500/20 bg-gradient-to-r from-green-500/5 to-green-600/5 hover:from-green-500/10 hover:to-green-600/10 hover:border-green-500/40 dark:border-green-400/30 dark:bg-gradient-to-r dark:from-green-950/20 dark:to-green-900/20 dark:hover:from-green-950/40 dark:hover:to-green-900/40 dark:hover:border-green-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('balance')}
               disabled={!userBalances || userBalances.balance <= 0}
             >
@@ -506,13 +510,23 @@ export default function Offers() {
                 </div>
               </div>
               <div className="flex-1 text-left">
-                <span className="font-bold text-green-700 text-lg">{t('profile.balance')}</span>
-                <div className="text-sm text-green-600/70">Available balance</div>
+                <span className={`font-bold text-lg ${!userBalances || userBalances.balance <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-green-700 dark:text-green-400'}`}>
+                  {t('profile.balance')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.balance <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-green-600/70 dark:text-green-400/70'}`}>
+                  Available balance
+                </div>
               </div>
-              <span className="font-bold text-green-700 text-xl">{userBalances?.balance ?? 0} EGP</span>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.balance <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-green-700 dark:text-green-400'}`}>
+                {userBalances?.balance ?? 0} EGP
+              </span>
             </button>
             <button
-              className="flex items-center gap-4 p-5 rounded-xl border-2 border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:from-blue-500/10 hover:to-blue-600/10 hover:border-blue-500/40 transition-all duration-300 hover:scale-105 shadow-lg group"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.total_points <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:from-blue-500/10 hover:to-blue-600/10 hover:border-blue-500/40 dark:border-blue-400/30 dark:bg-gradient-to-r dark:from-blue-950/20 dark:to-blue-900/20 dark:hover:from-blue-950/40 dark:hover:to-blue-900/40 dark:hover:border-blue-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('total_points')}
               disabled={!userBalances || userBalances.total_points <= 0}
             >
@@ -522,13 +536,23 @@ export default function Offers() {
                 </div>
               </div>
               <div className="flex-1 text-left">
-                <span className="font-bold text-blue-700 text-lg">{t('profile.totalPoints')}</span>
-                <div className="text-sm text-blue-600/70">Total points earned</div>
+                <span className={`font-bold text-lg ${!userBalances || userBalances.total_points <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-blue-700 dark:text-blue-400'}`}>
+                  {t('profile.totalPoints')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.total_points <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-blue-600/70 dark:text-blue-400/70'}`}>
+                  Total points earned
+                </div>
               </div>
-              <span className="font-bold text-blue-700 text-xl">{userBalances?.total_points ?? 0}</span>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.total_points <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-blue-700 dark:text-blue-400'}`}>
+                {userBalances?.total_points ?? 0}
+              </span>
             </button>
             <button
-              className="flex items-center gap-4 p-5 rounded-xl border-2 border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-yellow-600/5 hover:from-yellow-500/10 hover:to-yellow-600/10 hover:border-yellow-500/40 transition-all duration-300 hover:scale-105 shadow-lg group"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.bonuses <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-yellow-600/5 hover:from-yellow-500/10 hover:to-yellow-600/10 hover:border-yellow-500/40 dark:border-yellow-400/30 dark:bg-gradient-to-r dark:from-yellow-950/20 dark:to-yellow-900/20 dark:hover:from-yellow-950/40 dark:hover:to-yellow-900/40 dark:hover:border-yellow-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('bonuses')}
               disabled={!userBalances || userBalances.bonuses <= 0}
             >
@@ -538,13 +562,23 @@ export default function Offers() {
                 </div>
               </div>
               <div className="flex-1 text-left">
-                <span className="font-bold text-yellow-700 text-lg">{t('profile.bonuses')}</span>
-                <div className="text-sm text-yellow-600/70">Bonus rewards</div>
+                <span className={`font-bold text-lg ${!userBalances || userBalances.bonuses <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                  {t('profile.bonuses')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.bonuses <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-600/70 dark:text-yellow-400/70'}`}>
+                  Bonus rewards
+                </div>
               </div>
-              <span className="font-bold text-yellow-700 text-xl">{userBalances?.bonuses ?? 0} EGP</span>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.bonuses <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                {userBalances?.bonuses ?? 0} EGP
+              </span>
             </button>
             <button
-              className="flex items-center gap-4 p-5 rounded-xl border-2 border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-purple-600/5 hover:from-purple-500/10 hover:to-purple-600/10 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 shadow-lg group"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.team_earnings <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-purple-600/5 hover:from-purple-500/10 hover:to-purple-600/10 hover:border-purple-500/40 dark:border-purple-400/30 dark:bg-gradient-to-r dark:from-purple-950/20 dark:to-purple-900/20 dark:hover:from-purple-950/40 dark:hover:to-purple-900/40 dark:hover:border-purple-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('team_earnings')}
               disabled={!userBalances || userBalances.team_earnings <= 0}
             >
@@ -554,10 +588,16 @@ export default function Offers() {
                 </div>
               </div>
               <div className="flex-1 text-left">
-                <span className="font-bold text-purple-700 text-lg">{t('profile.teamEarnings')}</span>
-                <div className="text-sm text-purple-600/70">Team commission</div>
+                <span className={`font-bold text-lg ${!userBalances || userBalances.team_earnings <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-purple-700 dark:text-purple-400'}`}>
+                  {t('profile.teamEarnings')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.team_earnings <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-purple-600/70 dark:text-purple-400/70'}`}>
+                  Team commission
+                </div>
               </div>
-              <span className="font-bold text-purple-700 text-xl">{userBalances?.team_earnings ?? 0} EGP</span>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.team_earnings <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-purple-700 dark:text-purple-400'}`}>
+                {userBalances?.team_earnings ?? 0} EGP
+              </span>
             </button>
           </div>
         </DialogContent>

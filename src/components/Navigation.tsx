@@ -166,12 +166,13 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="w-9 h-9 p-0 hover:bg-muted/50 transition-all duration-200 rounded-lg"
+              className="w-10 h-10 p-0 hover:bg-muted/50 transition-all duration-300 rounded-lg border border-border/50 hover:border-primary/50 hover:scale-105 active:scale-95"
+              title={theme === 'dark' ? t('theme.light') || 'Switch to Light Mode' : t('theme.dark') || 'Switch to Dark Mode'}
             >
               {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-5 w-5 text-yellow-400" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-5 w-5 text-blue-400" />
               )}
             </Button>
 
@@ -281,12 +282,13 @@ export function Navigation() {
                     variant="ghost"
                     size="sm"
                     onClick={toggleTheme}
-                    className="w-10 h-10 p-0"
+                    className="w-12 h-12 p-0 hover:bg-muted/50 transition-all duration-300 rounded-lg border border-border/50 hover:border-primary/50 hover:scale-105 active:scale-95"
+                    title={theme === 'dark' ? t('theme.light') || 'Switch to Light Mode' : t('theme.dark') || 'Switch to Dark Mode'}
                   >
                     {theme === 'dark' ? (
-                      <Sun className="h-5 w-5" />
+                      <Sun className="h-6 w-6 text-yellow-400" />
                     ) : (
-                      <Moon className="h-5 w-5" />
+                      <Moon className="h-6 w-6 text-blue-400" />
                     )}
                   </Button>
                   <Button
