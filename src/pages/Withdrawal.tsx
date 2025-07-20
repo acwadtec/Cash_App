@@ -132,6 +132,14 @@ export default function Withdrawal() {
     });
   };
 
+  // Check if user has already made a withdrawal request today
+  const hasWithdrawalToday = () => {
+    const today = new Date().toDateString();
+    return withdrawalHistory.some(withdrawal => 
+      new Date(withdrawal.createdAt).toDateString() === today
+    );
+  };
+
   // Check package limits
   const checkPackageLimits = (amount: number) => {
     const packageLimit = settings.packageLimits[userPackage];
@@ -166,7 +174,7 @@ export default function Withdrawal() {
       });
     }
     const todayTotal = todayWithdrawals.reduce((sum, w) => sum + w.amount, 0);
-    const remaining = packageLimit.daily - todayTotal;
+      const remaining = packageLimit.daily - todayTotal;
     // Block if the user has already reached the daily limit
     if (todayTotal >= packageLimit.daily) {
       return {
@@ -179,9 +187,9 @@ export default function Withdrawal() {
     }
     // Block if this withdrawal would cause the total to exceed the daily limit
     if (amount > remaining) {
-      return {
-        valid: false,
-        message: t('withdrawal.error.dailyLimit')
+      return { 
+        valid: false, 
+        message: t('withdrawal.error.dailyLimit') 
           .replace('${daily}', `${packageLimit.daily}`)
           .replace('${used}', `${todayTotal}`)
           .replace('${remaining}', `${remaining}`)
@@ -368,6 +376,17 @@ export default function Withdrawal() {
       toast({
         title: t('withdrawal.error.timeSlot'),
         description: t('withdrawal.error.timeSlotMessage'),
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Prevent multiple daily requests
+    if (hasWithdrawalToday()) {
+      toast({
+        title: t('withdrawal.error.dailyLimit'),
+        description: t('withdrawal.error.dailyLimitMessage'),
         variant: 'destructive',
       });
       setLoading(false);
@@ -589,6 +608,21 @@ export default function Withdrawal() {
                         </Alert>
                       )}
 
+                      {/* Daily Withdrawal Limit Warning */}
+                      {hasWithdrawalToday() && (
+                        <Alert className="mb-6 border-white/20 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm">
+                          <AlertTriangle className="h-5 w-5 text-white" />
+                          <AlertDescription className="text-white">
+                            <div>
+                              <p className="font-semibold mb-2">{t('withdrawal.error.dailyLimit')}</p>
+                              <p className="text-sm">
+                                You have already made a withdrawal request today. Please wait until tomorrow to make another request.
+                              </p>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {/* Enhanced Package Limits Info */}
                       {settings.packageLimits[userPackage] && (
                         <Alert className="mb-6 border-primary bg-gradient-to-r from-primary/10 to-purple-500/5 backdrop-blur-sm">
@@ -667,7 +701,7 @@ export default function Withdrawal() {
                         <Button 
                           type="submit" 
                           className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl"
-                          disabled={!isWithinTimeSlot() || loading}
+                          disabled={!isWithinTimeSlot() || loading || hasWithdrawalToday()}
                         >
                           {loading ? (
                             <div className="flex items-center gap-2">
@@ -753,8 +787,8 @@ export default function Withdrawal() {
                               <div>
                                 <div className="text-3xl font-extrabold text-purple-600 drop-shadow animate-pulse">{teamEarningsCount} EGP</div>
                                 <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.teamEarnings')}</div>
-                              </div>
-                            </div>
+                        </div>
+                          </div>
                           </TooltipTrigger>
                           <TooltipContent>Team earnings from your referral network.</TooltipContent>
                         </Tooltip>
@@ -780,6 +814,16 @@ export default function Withdrawal() {
                         <div className="flex justify-between items-center p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20">
                           <span className="font-medium">{t('profile.identityVerification')}</span>
                           <Badge className="bg-green-500 text-white">✓</Badge>
+                        </div>
+                        <div className={`flex justify-between items-center p-3 rounded-xl border ${
+                          hasWithdrawalToday() 
+                            ? 'bg-gradient-to-r from-red-500/10 to-red-600/10 border-red-500/20' 
+                            : 'bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/20'
+                        }`}>
+                          <span className="font-medium">Daily Withdrawal Status</span>
+                          <Badge className={hasWithdrawalToday() ? "bg-red-500 text-white" : "bg-green-500 text-white"}>
+                            {hasWithdrawalToday() ? "Used" : "Available"}
+                          </Badge>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-6 text-center">
@@ -820,7 +864,7 @@ export default function Withdrawal() {
                         <div className="text-3xl">📋</div>
                       </div>
                       <p className="text-xl text-muted-foreground font-medium mb-2">
-                        {t('withdrawal.noHistory')}
+                      {t('withdrawal.noHistory')}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Your withdrawal history will appear here
@@ -828,8 +872,8 @@ export default function Withdrawal() {
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
+                    <Table>
+                      <TableHeader>
                           <TableRow className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20">
                             <TableHead className="text-primary font-bold">{t('withdrawal.history.id')}</TableHead>
                             <TableHead className="text-primary font-bold">{t('withdrawal.history.type')}</TableHead>
@@ -838,63 +882,63 @@ export default function Withdrawal() {
                             <TableHead className="text-primary font-bold">{t('withdrawal.history.status')}</TableHead>
                             <TableHead className="text-primary font-bold">{t('withdrawal.history.date')}</TableHead>
                             <TableHead className="text-primary font-bold">{t('withdrawal.history.details')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {withdrawalHistory.map((withdrawal) => (
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {withdrawalHistory.map((withdrawal) => (
                             <TableRow key={withdrawal.id} className="hover:bg-gradient-to-r hover:from-primary/5 hover:to-purple-500/5 transition-all duration-300">
                               <TableCell className="font-mono text-sm font-medium">
-                                #{withdrawal.id}
-                              </TableCell>
+                              #{withdrawal.id}
+                            </TableCell>
                               <TableCell className="font-medium">
-                                {withdrawalTypes.find(t => t.value === withdrawal.type)?.label || withdrawal.type}
-                              </TableCell>
+                              {withdrawalTypes.find(t => t.value === withdrawal.type)?.label || withdrawal.type}
+                            </TableCell>
                               <TableCell className="font-bold text-lg">
                                 {withdrawal.amount.toLocaleString()} EGP
-                              </TableCell>
-                              <TableCell>
-                                {withdrawalMethods.find(m => m.value === withdrawal.method)?.label || withdrawal.method}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {getStatusIcon(withdrawal.status)}
+                            </TableCell>
+                            <TableCell>
+                              {withdrawalMethods.find(m => m.value === withdrawal.method)?.label || withdrawal.method}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(withdrawal.status)}
                                   <Badge className={`${getStatusColor(withdrawal.status)} shadow-lg`}>
-                                    {t(`withdrawal.status.${withdrawal.status}`)}
-                                  </Badge>
-                                </div>
-                              </TableCell>
+                                  {t(`withdrawal.status.${withdrawal.status}`)}
+                                </Badge>
+                              </div>
+                            </TableCell>
                               <TableCell className="font-medium">
-                                {new Date(withdrawal.createdAt).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                {withdrawal.rejectionReason && (
+                              {new Date(withdrawal.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {withdrawal.rejectionReason && (
                                   <div className="text-sm text-red-600 mb-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                                    <strong>{t('withdrawal.rejectionReason')}:</strong> {withdrawal.rejectionReason}
-                                  </div>
-                                )}
-                                {withdrawal.adminNote && (
+                                  <strong>{t('withdrawal.rejectionReason')}:</strong> {withdrawal.rejectionReason}
+                                </div>
+                              )}
+                              {withdrawal.adminNote && (
                                   <div className="text-sm text-green-600 mb-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                                    <strong>{t('withdrawal.adminNote')}:</strong> {withdrawal.adminNote}
-                                  </div>
-                                )}
-                                {withdrawal.status === 'paid' && withdrawal.proofImageUrl && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
+                                  <strong>{t('withdrawal.adminNote')}:</strong> {withdrawal.adminNote}
+                                </div>
+                              )}
+                              {withdrawal.status === 'paid' && withdrawal.proofImageUrl && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                     className="mt-1 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 hover:scale-105 transition-all duration-300"
-                                    onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
-                                  >
+                                  onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
+                                >
                                     {t('withdrawal.viewProof')}
-                                  </Button>
-                                )}
-                                {!withdrawal.rejectionReason && !withdrawal.adminNote && !(withdrawal.status === 'paid' && withdrawal.proofImageUrl) && (
+                                </Button>
+                              )}
+                              {!withdrawal.rejectionReason && !withdrawal.adminNote && !(withdrawal.status === 'paid' && withdrawal.proofImageUrl) && (
                                   <span className="text-muted-foreground">{t('withdrawal.noDetails')}</span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                     </div>
                   )}
                 </CardContent>
