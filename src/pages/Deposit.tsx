@@ -57,7 +57,7 @@ export default function Deposit() {
         if (!isAdmin) {
           const { data: userInfo } = await supabase
             .from('user_info')
-            .select('user_uid, wallet, phone, email_verified, phone_verified, identity_verified')
+            .select('user_uid, wallet, phone, verified')
             .eq('user_uid', userData.user.id)
             .single();
           if (!userInfo) {
@@ -70,9 +70,8 @@ export default function Deposit() {
           }
           setUserInfo({ wallet: userInfo.wallet, phone: userInfo.phone });
           
-          // Check if user is verified (all verification fields should be true)
-          const verified = userInfo.email_verified && userInfo.phone_verified && userInfo.identity_verified;
-          setIsVerified(verified);
+          // Check if user is verified using the single verified field
+          setIsVerified(userInfo.verified || false);
         } else {
           // Admin users are considered verified
           setIsVerified(true);

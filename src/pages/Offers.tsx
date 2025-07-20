@@ -8,6 +8,9 @@ import React, { useEffect, useState } from 'react';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useUserBalances } from '@/hooks/useUserBalance';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { checkAndAwardAllBadges } from '@/lib/supabase';
 import { AlertTriangle } from 'lucide-react';
 import { useVerificationGuard } from '@/components/VerificationGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -57,6 +60,7 @@ export default function Offers() {
   const [showUserConfirm, setShowUserConfirm] = useState(false);
   const [pendingUserJoin, setPendingUserJoin] = useState<null | (() => void)>(null);
   const [pendingBalanceType, setPendingBalanceType] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Check if user has user_info data
   useEffect(() => {
@@ -71,7 +75,7 @@ export default function Offers() {
         if (!isAdmin) {
           const { data: userInfo } = await supabase
             .from('user_info')
-            .select('user_uid')
+            .select('user_uid, verified')
             .eq('user_uid', user.id)
             .single();
           
@@ -83,6 +87,12 @@ export default function Offers() {
             }, 3000); // Redirect after 3 seconds
             return;
           }
+          
+          // Check if user is verified using the single verified field
+          setIsVerified(userInfo.verified || false);
+        } else {
+          // Admin users are considered verified
+          setIsVerified(true);
         }
       }
     };
@@ -313,6 +323,13 @@ export default function Offers() {
     setShowBalanceModal(false);
     setPendingOfferId(null);
     setSelectedBalanceType(null);
+    
+    // Check and award badges after successful offer join
+    try {
+      await checkAndAwardAllBadges(userId);
+    } catch (error) {
+      console.error('Error checking badges after offer join:', error);
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -348,6 +365,23 @@ export default function Offers() {
             {t('offers.subtitle')}
           </p>
         </div>
+
+        {/* Verification Alert */}
+        {!isVerified && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <AlertDescription className="text-warning-foreground">
+                <div>
+                  <p className="font-semibold mb-2">{t('offers.error.verificationRequired') || 'Account Verification Required'}</p>
+                  <p className="text-sm">
+                    You must complete your account verification before joining offers. Please verify your email, phone, and identity.
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20">
@@ -447,10 +481,12 @@ export default function Offers() {
                       joinStatuses[offer.id] === 'approved' ||
                       joinStatuses[offer.id] === 'pending' ||
                       (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit) ||
-                      (offer.join_limit !== null && offer.join_count >= offer.join_limit)
+                      (offer.join_limit !== null && offer.join_count >= offer.join_limit) ||
+                      !isVerified // Disable for unverified users
                     }
                   >
-                    {joinStatuses[offer.id] === 'rejected' ? t('offers.notJoined') :
+                    {!isVerified ? 'Verification Required' :
+                     joinStatuses[offer.id] === 'rejected' ? t('offers.notJoined') :
                      joinStatuses[offer.id] === 'approved' ? t('offers.joined') :
                      joinStatuses[offer.id] === 'pending' ? t('offers.pendingApproval') :
                      (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit)

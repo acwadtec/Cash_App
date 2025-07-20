@@ -17,6 +17,7 @@ import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUserBalances } from '@/hooks/useUserBalance';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { checkAndAwardAllBadges } from '@/lib/supabase';
 
 interface WithdrawalSettings {
   timeSlots: string[];
@@ -77,6 +78,7 @@ export default function Withdrawal() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [userPackage, setUserPackage] = useState('basic'); // This should come from user profile
   const [showAlert, setShowAlert] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const { balances, loading: loadingBalances } = useUserBalances();
   // Calculate balance as the sum of personal_earnings, team_earnings, and bonuses
   const balance = balances
@@ -277,7 +279,7 @@ export default function Withdrawal() {
             // Fetch wallet and phone as well
             const { data: userInfo } = await supabase
               .from('user_info')
-              .select('user_uid, package, wallet, phone')
+              .select('user_uid, package, wallet, phone, verified')
               .eq('user_uid', user.id)
               .single();
             if (!userInfo) {
@@ -296,6 +298,12 @@ export default function Withdrawal() {
               method: userInfo.wallet || '',
               accountDetails: userInfo.phone || '',
             }));
+            
+            // Check if user is verified using the single verified field
+            setIsVerified(userInfo.verified || false);
+          } else {
+            // Admin users are considered verified
+            setIsVerified(true);
           }
         }
         // Load withdrawal settings
@@ -523,6 +531,13 @@ export default function Withdrawal() {
       amount: '',
     }));
     setLoading(false);
+    
+    // Check and award badges after successful withdrawal
+    try {
+      await checkAndAwardAllBadges(user.id);
+    } catch (error) {
+      console.error('Error checking badges after withdrawal:', error);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -606,6 +621,21 @@ export default function Withdrawal() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="relative">
+                      {/* Verification Status Alert */}
+                      {!isVerified && (
+                        <Alert className="mb-6 border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm">
+                          <AlertTriangle className="h-5 w-5 text-warning" />
+                          <AlertDescription className="text-warning-foreground">
+                            <div>
+                              <p className="font-semibold mb-2">{t('withdrawal.error.verificationRequired') || 'Account Verification Required'}</p>
+                              <p className="text-sm">
+                                You must complete your account verification before making withdrawals. Please verify your email, phone, and identity.
+                              </p>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {/* Enhanced Time Slot Warning */}
                       {!isWithinTimeSlot() && (
                         <Alert className="mb-6 border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm">
@@ -687,6 +717,7 @@ export default function Withdrawal() {
                             className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl"
                             min="1"
                             step="0.01"
+                            disabled={!isVerified}
                           />
                           {formData.type && (
                             <p className="text-sm text-muted-foreground mt-2">
@@ -719,7 +750,7 @@ export default function Withdrawal() {
                         <Button 
                           type="submit" 
                           className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl"
-                          disabled={!isWithinTimeSlot() || loading || hasWithdrawalToday()}
+                          disabled={!isWithinTimeSlot() || loading || hasWithdrawalToday() || !isVerified}
                         >
                           {loading ? (
                             <div className="flex items-center gap-2">

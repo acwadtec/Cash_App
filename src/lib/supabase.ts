@@ -274,63 +274,239 @@ export const checkAndAwardReferralBadges = async (userUid: string) => {
   }
 }; 
 
-// Helper to check and award all badge types
+// Enhanced automatic badge awarding system
 export const checkAndAwardAllBadges = async (userUid) => {
-  // 1. Get user info
-  const { data: user, error: userError } = await supabase
-    .from('user_info')
-    .select('*')
-    .eq('user_uid', userUid)
-    .single();
-  if (userError || !user) return;
-
-  // 2. Get all active badges
-  const { data: badges } = await supabase.from('badges').select('*').eq('is_active', true);
-  if (!badges) return;
-
-  for (const badge of badges) {
-    let meetsRequirement = false;
-
-    if (badge.type === 'referral' && user.referral_count >= badge.requirement) meetsRequirement = true;
-
-    if (badge.type === 'deposit') {
-      const { count } = await supabase
-        .from('deposit_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_uid', userUid)
-        .eq('status', 'approved');
-      if (count >= badge.requirement) meetsRequirement = true;
+  try {
+    console.log(`🔍 Starting badge check for user: ${userUid}`);
+    
+    // 1. Get user info
+    const { data: user, error: userError } = await supabase
+      .from('user_info')
+      .select('*')
+      .eq('user_uid', userUid)
+      .single();
+    if (userError || !user) {
+      console.error('❌ Error fetching user info for badge check:', userError);
+      return;
     }
 
-    if (badge.type === 'withdrawal') {
-      const { count } = await supabase
-        .from('withdrawal_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_uid', userUid)
-        .eq('status', 'approved');
-      if (count >= badge.requirement) meetsRequirement = true;
+    console.log('✅ User info fetched:', {
+      userUid,
+      referralCount: user.referral_count,
+      verified: user.verified,
+      balance: user.balance,
+      bonuses: user.bonuses,
+      teamEarnings: user.team_earnings
+    });
+
+    // 2. Get all active badges
+    const { data: badges, error: badgesError } = await supabase.from('badges').select('*').eq('is_active', true);
+    if (badgesError) {
+      console.error('❌ Error fetching badges:', badgesError);
+      return;
+    }
+    if (!badges || badges.length === 0) {
+      console.log('⚠️ No active badges found in database');
+      return;
     }
 
-    if (badge.type === 'profile' && user.verified) meetsRequirement = true;
+    console.log(`✅ Found ${badges.length} active badges to check:`, badges.map(b => `${b.name} (${b.type})`));
 
-    // Add more types as needed
+    for (const badge of badges) {
+      console.log(`\n🔍 Checking badge: "${badge.name}" (${badge.type}) - Requirement: ${badge.requirement}`);
+      
+      let meetsRequirement = false;
+      let requirementValue = 0;
 
-    if (meetsRequirement) {
-      // Check if user already has badge
-      const { data: existing } = await supabase
-        .from('user_badges')
-        .select('id')
-        .eq('user_uid', userUid)
-        .eq('badge_id', badge.id)
-        .maybeSingle();
-      if (!existing) {
-        await supabase.from('user_badges').insert({
-          user_uid: userUid,
-          badge_id: badge.id,
-          earned_at: new Date().toISOString(),
-        });
+      // Check different badge types
+      switch (badge.type) {
+        case 'referral':
+          requirementValue = user.referral_count || 0;
+          meetsRequirement = requirementValue >= badge.requirement;
+          console.log(`📊 Referral: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'deposit':
+          const { count: depositCount, error: depositError } = await supabase
+            .from('deposit_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_uid', userUid)
+            .eq('status', 'approved');
+          if (depositError) {
+            console.error('❌ Error checking deposits:', depositError);
+            continue;
+          }
+          requirementValue = depositCount || 0;
+          meetsRequirement = requirementValue >= badge.requirement;
+          console.log(`📊 Deposits: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'withdrawal':
+          const { count: withdrawalCount, error: withdrawalError } = await supabase
+            .from('withdrawal_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_uid', userUid)
+            .eq('status', 'approved');
+          if (withdrawalError) {
+            console.error('❌ Error checking withdrawals:', withdrawalError);
+            continue;
+          }
+          requirementValue = withdrawalCount || 0;
+          meetsRequirement = requirementValue >= badge.requirement;
+          console.log(`📊 Withdrawals: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'profile':
+          meetsRequirement = user.verified === true;
+          requirementValue = user.verified ? 1 : 0;
+          console.log(`📊 Profile Verified: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'balance':
+          const totalBalance = (user.balance || 0) + (user.bonuses || 0) + (user.team_earnings || 0);
+          requirementValue = totalBalance;
+          meetsRequirement = totalBalance >= badge.requirement;
+          console.log(`📊 Total Balance: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'offers_joined':
+          const { count: offersCount, error: offersError } = await supabase
+            .from('offer_joins')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userUid)
+            .eq('status', 'approved');
+          if (offersError) {
+            console.error('❌ Error checking offers:', offersError);
+            continue;
+          }
+          requirementValue = offersCount || 0;
+          meetsRequirement = requirementValue >= badge.requirement;
+          console.log(`📊 Offers Joined: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'daily_profits':
+          const { count: profitsCount, error: profitsError } = await supabase
+            .from('daily_profits')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userUid);
+          if (profitsError) {
+            console.error('❌ Error checking daily profits:', profitsError);
+            continue;
+          }
+          requirementValue = profitsCount || 0;
+          meetsRequirement = requirementValue >= badge.requirement;
+          console.log(`📊 Daily Profits: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'investment':
+          const { count: investmentCount, error: investmentError } = await supabase
+            .from('investment_certificate_joins')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userUid)
+            .eq('status', 'approved');
+          if (investmentError) {
+            console.error('❌ Error checking investments:', investmentError);
+            continue;
+          }
+          requirementValue = investmentCount || 0;
+          meetsRequirement = requirementValue >= badge.requirement;
+          console.log(`📊 Investments: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'first_deposit':
+          const { data: firstDeposit, error: firstDepositError } = await supabase
+            .from('deposit_requests')
+            .select('id')
+            .eq('user_uid', userUid)
+            .eq('status', 'approved')
+            .limit(1)
+            .single();
+          if (firstDepositError && firstDepositError.code !== 'PGRST116') {
+            console.error('❌ Error checking first deposit:', firstDepositError);
+            continue;
+          }
+          meetsRequirement = !!firstDeposit;
+          requirementValue = firstDeposit ? 1 : 0;
+          console.log(`📊 First Deposit: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'first_withdrawal':
+          const { data: firstWithdrawal, error: firstWithdrawalError } = await supabase
+            .from('withdrawal_requests')
+            .select('id')
+            .eq('user_uid', userUid)
+            .eq('status', 'approved')
+            .limit(1)
+            .single();
+          if (firstWithdrawalError && firstWithdrawalError.code !== 'PGRST116') {
+            console.error('❌ Error checking first withdrawal:', firstWithdrawalError);
+            continue;
+          }
+          meetsRequirement = !!firstWithdrawal;
+          requirementValue = firstWithdrawal ? 1 : 0;
+          console.log(`📊 First Withdrawal: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        case 'first_offer':
+          const { data: firstOffer, error: firstOfferError } = await supabase
+            .from('offer_joins')
+            .select('id')
+            .eq('user_id', userUid)
+            .eq('status', 'approved')
+            .limit(1)
+            .single();
+          if (firstOfferError && firstOfferError.code !== 'PGRST116') {
+            console.error('❌ Error checking first offer:', firstOfferError);
+            continue;
+          }
+          meetsRequirement = !!firstOffer;
+          requirementValue = firstOffer ? 1 : 0;
+          console.log(`📊 First Offer: ${requirementValue}/${badge.requirement} - Meets: ${meetsRequirement}`);
+          break;
+
+        default:
+          console.log(`⚠️ Unknown badge type: ${badge.type}`);
+          continue;
+      }
+
+      if (meetsRequirement) {
+        // Check if user already has this badge
+        const { data: existing, error: existingError } = await supabase
+          .from('user_badges')
+          .select('id')
+          .eq('user_uid', userUid)
+          .eq('badge_id', badge.id)
+          .maybeSingle();
+
+        if (existingError) {
+          console.error('❌ Error checking existing badge:', existingError);
+          continue;
+        }
+
+        if (!existing) {
+          // Award the badge
+          const { error: insertError } = await supabase.from('user_badges').insert({
+            user_uid: userUid,
+            badge_id: badge.id,
+            earned_at: new Date().toISOString(),
+          });
+
+          if (insertError) {
+            console.error(`❌ Error awarding badge ${badge.id} to user ${userUid}:`, insertError);
+          } else {
+            console.log(`🎉 SUCCESS: Awarded badge "${badge.name}" to user ${userUid} (${badge.type}: ${requirementValue}/${badge.requirement})`);
+          }
+        } else {
+          console.log(`ℹ️ User ${userUid} already has badge "${badge.name}"`);
+        }
+      } else {
+        console.log(`❌ User ${userUid} doesn't meet requirement for badge "${badge.name}" (${badge.type}: ${requirementValue}/${badge.requirement})`);
       }
     }
+    
+    console.log(`✅ Badge check completed for user: ${userUid}`);
+  } catch (error) {
+    console.error('❌ Error in checkAndAwardAllBadges:', error);
   }
 }; 
 
@@ -833,4 +1009,310 @@ BEGIN
 END;
 $$;
   `;
+}; 
+
+// Function to check badges when user verification status changes
+export const checkBadgesOnVerification = async (userUid: string) => {
+  try {
+    console.log(`Checking badges for verification change: ${userUid}`);
+    
+    // Get user's verification status
+    const { data: user, error: userError } = await supabase
+      .from('user_info')
+      .select('verified')
+      .eq('user_uid', userUid)
+      .single();
+    
+    if (userError || !user) {
+      console.error('Error fetching user verification status:', userError);
+      return;
+    }
+    
+    // If user is verified, check for profile-related badges
+    if (user.verified) {
+      await checkAndAwardAllBadges(userUid);
+    }
+  } catch (error) {
+    console.error('Error checking badges on verification:', error);
+  }
+};
+
+// Function to check badges when user balance changes
+export const checkBadgesOnBalanceChange = async (userUid: string) => {
+  try {
+    console.log(`Checking badges for balance change: ${userUid}`);
+    await checkAndAwardAllBadges(userUid);
+  } catch (error) {
+    console.error('Error checking badges on balance change:', error);
+  }
+};
+
+// Function to check badges when referral count changes
+export const checkBadgesOnReferralChange = async (userUid: string) => {
+  try {
+    console.log(`Checking badges for referral change: ${userUid}`);
+    await checkAndAwardAllBadges(userUid);
+  } catch (error) {
+    console.error('Error checking badges on referral change:', error);
+  }
+}; 
+
+/**
+ * BADGE SYSTEM DOCUMENTATION
+ * 
+ * Supported Badge Types:
+ * 
+ * 1. 'referral' - Based on referral_count
+ *    - Example: "Referral Master" (10 referrals)
+ * 
+ * 2. 'deposit' - Based on approved deposit count
+ *    - Example: "Deposit Pro" (5 deposits)
+ * 
+ * 3. 'withdrawal' - Based on approved withdrawal count
+ *    - Example: "Withdrawal Expert" (3 withdrawals)
+ * 
+ * 4. 'profile' - Based on verification status
+ *    - Example: "Verified User" (verified = true)
+ * 
+ * 5. 'balance' - Based on total balance (balance + bonuses + team_earnings)
+ *    - Example: "High Roller" (10,000 EGP total)
+ * 
+ * 6. 'offers_joined' - Based on approved offer joins
+ *    - Example: "Offer Hunter" (5 offers joined)
+ * 
+ * 7. 'daily_profits' - Based on daily profit count
+ *    - Example: "Profit Collector" (30 daily profits)
+ * 
+ * 8. 'investment' - Based on approved investment joins
+ *    - Example: "Investor" (3 investments)
+ * 
+ * 9. 'first_deposit' - Awarded for first approved deposit
+ *    - Example: "First Deposit" (one-time)
+ * 
+ * 10. 'first_withdrawal' - Awarded for first approved withdrawal
+ *    - Example: "First Withdrawal" (one-time)
+ * 
+ * 11. 'first_offer' - Awarded for first approved offer join
+ *    - Example: "First Offer" (one-time)
+ * 
+ * Automatic Triggers:
+ * - After successful offer join
+ * - After successful withdrawal request
+ * - After successful investment join
+ * - After successful deposit request
+ * - When user verification status changes
+ * - When user balance changes
+ * - When referral count changes
+ * 
+ * Example Badge Setup in Database:
+ * 
+ * INSERT INTO badges (name, description, type, requirement, is_active, icon, color) VALUES
+ * ('First Steps', 'Complete your first deposit', 'first_deposit', 1, true, '🎯', 'green'),
+ * ('Verified User', 'Complete account verification', 'profile', 1, true, '✅', 'blue'),
+ * ('Referral Master', 'Invite 10 friends', 'referral', 10, true, '👥', 'purple'),
+ * ('High Roller', 'Reach 10,000 EGP total balance', 'balance', 10000, true, '💰', 'gold'),
+ * ('Offer Hunter', 'Join 5 offers', 'offers_joined', 5, true, '🎯', 'orange'),
+ * ('Profit Collector', 'Collect 30 daily profits', 'daily_profits', 30, true, '📈', 'green'),
+ * ('Investor', 'Join 3 investment certificates', 'investment', 3, true, '📊', 'blue'),
+ * ('Deposit Pro', 'Make 5 deposits', 'deposit', 5, true, '💳', 'green'),
+ * ('Withdrawal Expert', 'Make 3 withdrawals', 'withdrawal', 3, true, '💸', 'red');
+ */ 
+
+// Manual badge check function for testing
+export const manualBadgeCheck = async (userUid: string) => {
+  console.log('🧪 MANUAL BADGE CHECK STARTED');
+  console.log('User ID:', userUid);
+  
+  // Check if user exists
+  const { data: user, error: userError } = await supabase
+    .from('user_info')
+    .select('*')
+    .eq('user_uid', userUid)
+    .single();
+  
+  if (userError || !user) {
+    console.error('❌ User not found:', userError);
+    return;
+  }
+  
+  console.log('✅ User found:', {
+    userUid,
+    verified: user.verified,
+    referralCount: user.referral_count,
+    balance: user.balance
+  });
+  
+  // Check deposits
+  const { count: depositCount, error: depositError } = await supabase
+    .from('deposit_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_uid', userUid)
+    .eq('status', 'approved');
+  
+  console.log('📊 Deposits:', {
+    count: depositCount || 0,
+    error: depositError
+  });
+  
+  // Check withdrawals
+  const { count: withdrawalCount, error: withdrawalError } = await supabase
+    .from('withdrawal_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_uid', userUid)
+    .eq('status', 'approved');
+  
+  console.log('📊 Withdrawals:', {
+    count: withdrawalCount || 0,
+    error: withdrawalError
+  });
+  
+  // Check badges
+  const { data: badges, error: badgesError } = await supabase
+    .from('badges')
+    .select('*')
+    .eq('is_active', true);
+  
+  console.log('📊 Badges:', {
+    count: badges?.length || 0,
+    badges: badges?.map(b => `${b.name} (${b.type})`),
+    error: badgesError
+  });
+  
+  // Check user badges
+  const { data: userBadges, error: userBadgesError } = await supabase
+    .from('user_badges')
+    .select('*, badge:badge_id(*)')
+    .eq('user_uid', userUid);
+  
+  console.log('📊 User Badges:', {
+    count: userBadges?.length || 0,
+    badges: userBadges?.map(ub => ub.badge?.name),
+    error: userBadgesError
+  });
+  
+  // Run the full badge check
+  await checkAndAwardAllBadges(userUid);
+  
+  console.log('🧪 MANUAL BADGE CHECK COMPLETED');
+}; 
+
+// Function to check and create example badges if none exist
+export const checkAndCreateExampleBadges = async () => {
+  try {
+    console.log('🔍 Checking for existing badges...');
+    
+    // Check if badges table has any active badges
+    const { data: existingBadges, error: badgesError } = await supabase
+      .from('badges')
+      .select('*')
+      .eq('is_active', true);
+    
+    if (badgesError) {
+      console.error('❌ Error checking badges table:', badgesError);
+      return;
+    }
+    
+    if (!existingBadges || existingBadges.length === 0) {
+      console.log('⚠️ No active badges found. Creating example badges...');
+      
+      // Create example badges
+      const exampleBadges = [
+        {
+          name: 'First Steps',
+          description: 'Complete your first deposit',
+          type: 'first_deposit',
+          requirement: 1,
+          is_active: true,
+          icon: '🎯',
+          color: 'green'
+        },
+        {
+          name: 'Verified User',
+          description: 'Complete account verification',
+          type: 'profile',
+          requirement: 1,
+          is_active: true,
+          icon: '✅',
+          color: 'blue'
+        },
+        {
+          name: 'Referral Master',
+          description: 'Invite 10 friends',
+          type: 'referral',
+          requirement: 10,
+          is_active: true,
+          icon: '👥',
+          color: 'purple'
+        },
+        {
+          name: 'High Roller',
+          description: 'Reach 10,000 EGP total balance',
+          type: 'balance',
+          requirement: 10000,
+          is_active: true,
+          icon: '💰',
+          color: 'gold'
+        },
+        {
+          name: 'Offer Hunter',
+          description: 'Join 5 offers',
+          type: 'offers_joined',
+          requirement: 5,
+          is_active: true,
+          icon: '🎯',
+          color: 'orange'
+        },
+        {
+          name: 'Profit Collector',
+          description: 'Collect 30 daily profits',
+          type: 'daily_profits',
+          requirement: 30,
+          is_active: true,
+          icon: '📈',
+          color: 'green'
+        },
+        {
+          name: 'Investor',
+          description: 'Join 3 investment certificates',
+          type: 'investment',
+          requirement: 3,
+          is_active: true,
+          icon: '📊',
+          color: 'blue'
+        },
+        {
+          name: 'Deposit Pro',
+          description: 'Make 5 deposits',
+          type: 'deposit',
+          requirement: 5,
+          is_active: true,
+          icon: '💳',
+          color: 'green'
+        },
+        {
+          name: 'Withdrawal Expert',
+          description: 'Make 3 withdrawals',
+          type: 'withdrawal',
+          requirement: 3,
+          is_active: true,
+          icon: '💸',
+          color: 'red'
+        }
+      ];
+      
+      const { error: insertError } = await supabase
+        .from('badges')
+        .insert(exampleBadges);
+      
+      if (insertError) {
+        console.error('❌ Error creating example badges:', insertError);
+      } else {
+        console.log('✅ Created example badges successfully');
+      }
+    } else {
+      console.log(`✅ Found ${existingBadges.length} existing badges`);
+    }
+  } catch (error) {
+    console.error('❌ Error in checkAndCreateExampleBadges:', error);
+  }
 }; 

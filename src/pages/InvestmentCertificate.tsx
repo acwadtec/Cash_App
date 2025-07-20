@@ -12,6 +12,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DollarSign, Gift, Users, Star } from 'lucide-react';
 import { Dialog as ConfirmDialog, DialogContent as ConfirmDialogContent, DialogHeader as ConfirmDialogHeader, DialogTitle as ConfirmDialogTitle } from '@/components/ui/dialog';
+import { checkAndAwardAllBadges } from '@/lib/supabase';
 
 interface InvestmentCertificate {
   id: string;
@@ -66,12 +67,27 @@ export default function InvestmentCertificate() {
   const [pendingUserJoin, setPendingUserJoin] = useState<null | (() => void)>(null);
   const [pendingBalanceType, setPendingBalanceType] = useState<string | null>(null);
   const [amountWarning, setAmountWarning] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
-      if (user) setUserId(user.id);
+      if (user) {
+        setUserId(user.id);
+        
+        // Check verification status
+        const { data: userInfo } = await supabase
+          .from('user_info')
+          .select('verified')
+          .eq('user_uid', user.id)
+          .single();
+        
+        if (userInfo) {
+          // Check if user is verified using the single verified field
+          setIsVerified(userInfo.verified || false);
+        }
+      }
     };
     fetchUser();
   }, []);
@@ -239,6 +255,8 @@ export default function InvestmentCertificate() {
       }}));
       // Update local balances
       setUserBalances(newBalances);
+      // Check and award badges
+      checkAndAwardAllBadges(userId);
     } else {
       toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
     }
@@ -269,6 +287,8 @@ export default function InvestmentCertificate() {
       setUserJoins((prev) => ({ ...prev, [pendingCertificate.id]: {
         id: '', user_id: userId, certificate_id: pendingCertificate.id, invested_amount: Number(joinAmount), join_date: joinDate, next_profit_date: nextProfitDate, status: 'pending'
       }}));
+      // Check and award badges
+      checkAndAwardAllBadges(userId);
     } else {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -319,6 +339,23 @@ export default function InvestmentCertificate() {
               Grow your wealth with our exclusive investment opportunities
             </p>
           </div>
+          
+          {/* Verification Alert */}
+          {!isVerified && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                <AlertDescription className="text-warning-foreground">
+                  <div>
+                    <p className="font-semibold mb-2">{t('investment.error.verificationRequired') || 'Account Verification Required'}</p>
+                    <p className="text-sm">
+                      You must complete your account verification before joining investment certificates. Please verify your email, phone, and identity.
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           
           {loading ? (
             <div className="text-center py-16">
@@ -394,8 +431,9 @@ export default function InvestmentCertificate() {
                         <Button 
                           className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl" 
                           onClick={() => handleJoin(cert)}
+                          disabled={!isVerified}
                         >
-                          {t('investment.join') || 'Join'}
+                          {!isVerified ? 'Verification Required' : (t('investment.join') || 'Join')}
                         </Button>
                       ) : join.status === 'pending' ? (
                         <Button 

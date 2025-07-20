@@ -10,6 +10,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import ReferralCode from '@/components/ReferralCode';
 import { Camera, Edit } from 'lucide-react';
+import { manualBadgeCheck } from '@/lib/supabase';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -506,17 +507,15 @@ export default function Profile() {
                 </div>
 
                 {/* Enhanced Badges */}
-                <div>
+                <div className="space-y-6">
                   <h3 className="text-xl font-semibold mb-6 text-foreground text-center md:text-left">{t('profile.badges')}</h3>
                   {userBadges.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="flex flex-wrap gap-3">
                       {userBadges.map((badge: any, index: number) => (
-                        <div key={index} className="group relative">
-                          <Badge 
-                            variant="secondary" 
-                            className="w-full text-center py-3 px-4 text-sm font-medium bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 hover:border-primary/40 transition-all duration-300 group-hover:scale-105"
+                        <div key={index} className="flex items-center">
+                          <Badge
+                            className="bg-gradient-to-r from-primary to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-all duration-300"
                           >
-                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
                             {badge.name}
                           </Badge>
                         </div>
@@ -524,17 +523,26 @@ export default function Profile() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                        <div className="text-2xl text-muted-foreground">🏆</div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {t('profile.noBadges')}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Complete tasks to earn badges
-                      </p>
+                      <p className="text-muted-foreground mb-4">{t('profile.noBadges')}</p>
+                      <p className="text-sm text-muted-foreground">Complete tasks to earn badges</p>
                     </div>
                   )}
+                  
+                  {/* Test Badge Check Button */}
+                  <div className="text-center">
+                    <button
+                      onClick={async () => {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          console.log('🧪 Testing badge check for user:', user.id);
+                          await manualBadgeCheck(user.id);
+                        }
+                      }}
+                      className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                    >
+                      🧪 Test Badge Check
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardContent>

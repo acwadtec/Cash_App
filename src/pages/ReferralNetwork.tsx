@@ -344,7 +344,7 @@ export default function ReferralNetwork() {
                     </div>
                     <CardTitle className="text-2xl font-bold text-foreground">{t('referral.networkTitle')}</CardTitle>
                   </div>
-                </CardHeader>
+              </CardHeader>
                 <CardContent className="relative">
                   {/* Enhanced Team Earnings Breakdown */}
                   <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -606,7 +606,7 @@ export default function ReferralNetwork() {
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg">
                       <CheckCircle className="w-6 h-6 text-white" />
-                    </div>
+                </div>
                     <CardTitle className="text-2xl font-bold text-foreground">Active Offers in Your Team</CardTitle>
                   </div>
                 </CardHeader>
@@ -706,7 +706,7 @@ export default function ReferralNetwork() {
                               {i + 1}
                             </div>
                             <p className="text-sm text-muted-foreground leading-relaxed">{benefit}</p>
-                          </div>
+                </div>
                         ))}
                       </div>
                     </div>
@@ -787,8 +787,8 @@ export default function ReferralNetwork() {
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </CardContent>
+            </Card>
             </>
           )}
         </div>
