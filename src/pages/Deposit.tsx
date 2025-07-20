@@ -132,16 +132,7 @@ export default function Deposit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Check verification first
-    const canProceed = requireVerification(() => {
-      // This will only run if user is verified
-      submitDepositRequest();
-    });
-    
-    if (!canProceed) {
-      return; // User is not verified, alert already shown
-    }
+    submitDepositRequest();
   };
 
   const submitDepositRequest = async () => {

@@ -347,16 +347,7 @@ export default function Withdrawal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Check verification first
-    const canProceed = requireVerification(() => {
-      // This will only run if user is verified
-      submitWithdrawalRequest();
-    });
-    
-    if (!canProceed) {
-      return; // User is not verified, alert already shown
-    }
+    submitWithdrawalRequest();
   };
 
   const submitWithdrawalRequest = async () => {
@@ -609,19 +600,41 @@ export default function Withdrawal() {
                       )}
 
                       {/* Daily Withdrawal Limit Warning */}
-                      {hasWithdrawalToday() && (
-                        <Alert className="mb-6 border-white/20 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm">
-                          <AlertTriangle className="h-5 w-5 text-white" />
-                          <AlertDescription className="text-white">
-                            <div>
-                              <p className="font-semibold mb-2">{t('withdrawal.error.dailyLimit')}</p>
-                              <p className="text-sm">
-                                You have already made a withdrawal request today. Please wait until tomorrow to make another request.
-                              </p>
-                            </div>
-                          </AlertDescription>
-                        </Alert>
-                      )}
+                      {hasWithdrawalToday() && (() => {
+                        // Compute daily, used, remaining for the alert
+                        const packageLimit = settings.packageLimits[userPackage];
+                        let todayWithdrawals = withdrawalHistory.filter(w => 
+                          (w.status === 'pending' || w.status === 'approved' || w.status === 'paid') &&
+                          new Date(w.createdAt).toDateString() === new Date().toDateString()
+                        );
+                        if (packageLimit && packageLimit.limit_activated_at) {
+                          const activatedAt = new Date(packageLimit.limit_activated_at).getTime();
+                          todayWithdrawals = todayWithdrawals.filter(w => {
+                            const withdrawalTime = new Date(w.createdAt).getTime();
+                            return withdrawalTime >= activatedAt;
+                          });
+                        }
+                        const todayTotal = todayWithdrawals.reduce((sum, w) => sum + w.amount, 0);
+                        const daily = packageLimit?.daily ?? 0;
+                        const used = todayTotal;
+                        const remaining = Math.max(0, daily - used);
+                        return (
+                          <Alert className="mb-6 border-white/20 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm">
+                            <AlertTriangle className="h-5 w-5 text-white" />
+                            <AlertDescription className="text-white">
+                              <div>
+                                <p className="font-semibold mb-2">{t('withdrawal.error.dailyLimit')}</p>
+                                <p className="text-sm">
+                                  {t('withdrawal.error.dailyLimit')
+                                    .replace('${daily}', `${daily}`)
+                                    .replace('${used}', `${used}`)
+                                    .replace('${remaining}', `${remaining}`)}
+                                </p>
+                              </div>
+                            </AlertDescription>
+                          </Alert>
+                        );
+                      })()}
 
                       {/* Enhanced Package Limits Info */}
                       {settings.packageLimits[userPackage] && (
