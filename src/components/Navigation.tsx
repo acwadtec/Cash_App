@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Moon, Sun, Menu, X, Settings, Home, Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy } from 'lucide-react';
+import { Moon, Sun, Menu, X, Settings, Home, Users, Package, Gift, DollarSign, BarChart3, Bell, Phone, Trophy, Wallet } from 'lucide-react';
 import { NotificationInbox } from './NotificationInbox';
 import { supabase, checkIfUserIsAdmin } from '@/lib/supabase';
 import DarkLogo from '/Dark_mode.png';
@@ -33,7 +33,7 @@ export function Navigation() {
         // Fetch user info for profile photo
         const { data: userInfoData } = await supabase
           .from('user_info')
-          .select('first_name, last_name, email, profile_photo_url')
+          .select('first_name, last_name, email, profile_photo_url, wallet')
           .eq('user_uid', user.id)
           .single();
         setUserInfo(userInfoData);
@@ -44,8 +44,10 @@ export function Navigation() {
 
   const navItems = [
     { href: '/offers', label: t('nav.offers') },
-    { href: '/my-offers', label: 'My Offers' }, // Added My Offers link
+    { href: '/investment-certificates', label: t('nav.investmentCertificates') || 'Investment Certificates' },
+    { href: '/my-offers', label: 'My Offers' },
     { href: '/profile', label: t('nav.profile') },
+    { href: '/wallet', label: t('profile.wallet'), icon: <Wallet /> },
     { href: '/transactions', label: t('nav.transactions') },
     { href: '/deposit', label: t('nav.deposit') },
     { href: '/withdrawal', label: t('nav.withdrawal') },
@@ -110,8 +112,9 @@ export function Navigation() {
                     to={item.href}
                     className={`text-sm font-medium transition-colors hover:text-primary ${
                       isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
-                    }`}
+                    } flex items-center`}
                   >
+                    {item.icon && <span className="mr-1">{item.icon}</span>}
                     {item.label}
                   </Link>
                 ))}
@@ -163,12 +166,13 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="w-9 h-9 p-0 hover:bg-muted/50 transition-all duration-200 rounded-lg"
+              className="w-10 h-10 p-0 hover:bg-muted/50 transition-all duration-300 rounded-lg border border-border/50 hover:border-primary/50 hover:scale-105 active:scale-95"
+              title={theme === 'dark' ? t('theme.light') || 'Switch to Light Mode' : t('theme.dark') || 'Switch to Dark Mode'}
             >
               {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-5 w-5 text-yellow-400" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-5 w-5 text-blue-400" />
               )}
             </Button>
 
@@ -235,9 +239,10 @@ export function Navigation() {
                     to={item.href}
                     className={`block px-3 py-3 text-base font-medium transition-colors hover:bg-muted/50 rounded-lg mx-2 border border-transparent hover:border-border ${
                       isActive(item.href) ? 'text-primary bg-primary/10 border-primary/20' : 'text-foreground'
-                    }`}
+                    } flex items-center`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
+                    {item.icon && <span className="mr-2">{item.icon}</span>}
                     {item.label}
                   </Link>
                 ))}
@@ -277,12 +282,13 @@ export function Navigation() {
                     variant="ghost"
                     size="sm"
                     onClick={toggleTheme}
-                    className="w-10 h-10 p-0"
+                    className="w-12 h-12 p-0 hover:bg-muted/50 transition-all duration-300 rounded-lg border border-border/50 hover:border-primary/50 hover:scale-105 active:scale-95"
+                    title={theme === 'dark' ? t('theme.light') || 'Switch to Light Mode' : t('theme.dark') || 'Switch to Dark Mode'}
                   >
                     {theme === 'dark' ? (
-                      <Sun className="h-5 w-5" />
+                      <Sun className="h-6 w-6 text-yellow-400" />
                     ) : (
-                      <Moon className="h-5 w-5" />
+                      <Moon className="h-6 w-6 text-blue-400" />
                     )}
                   </Button>
                   <Button

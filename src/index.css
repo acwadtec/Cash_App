@@ -59,50 +59,50 @@
   }
 
   .dark {
-    /* Dark Mode - Green with dark backgrounds */
-    --background: 210 11% 8%;
-    --foreground: 150 15% 95%;
+    /* Dark Mode - Enhanced Green with dark backgrounds */
+    --background: 210 11% 6%;
+    --foreground: 150 15% 98%;
 
-    --card: 210 11% 12%;
-    --card-foreground: 150 15% 95%;
+    --card: 210 11% 10%;
+    --card-foreground: 150 15% 98%;
 
-    --popover: 210 11% 10%;
-    --popover-foreground: 150 15% 95%;
+    --popover: 210 11% 8%;
+    --popover-foreground: 150 15% 98%;
 
-    --primary: 150 70% 45%;
+    --primary: 150 70% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 150 80% 55%;
-    --primary-light: 150 40% 20%;
+    --primary-glow: 150 80% 60%;
+    --primary-light: 150 40% 25%;
 
-    --secondary: 150 20% 15%;
-    --secondary-foreground: 150 60% 85%;
+    --secondary: 150 20% 18%;
+    --secondary-foreground: 150 60% 90%;
 
-    --muted: 210 15% 15%;
-    --muted-foreground: 210 10% 60%;
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 10% 70%;
 
-    --accent: 150 30% 18%;
-    --accent-foreground: 150 70% 80%;
+    --accent: 150 30% 22%;
+    --accent-foreground: 150 70% 85%;
 
-    --success: 140 60% 50%;
+    --success: 140 60% 55%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 85% 65%;
+    --warning: 45 85% 70%;
     --warning-foreground: 0 0% 10%;
 
-    --destructive: 0 70% 60%;
+    --destructive: 0 70% 65%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 20%;
-    --input: 210 15% 18%;
-    --ring: 150 70% 45%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 210 15% 25%;
+    --input: 210 15% 22%;
+    --ring: 150 70% 50%;
+    --sidebar-background: 240 5.9% 8%;
+    --sidebar-foreground: 240 4.8% 98%;
+    --sidebar-primary: 224.3 76.3% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 3.7% 18%;
+    --sidebar-accent-foreground: 240 4.8% 98%;
+    --sidebar-border: 240 3.7% 18%;
+    --sidebar-ring: 217.2 91.2% 62%;
   }
 }
 
@@ -148,6 +148,86 @@
 
   .shadow-card {
     box-shadow: 0 4px 20px hsl(var(--primary) / 0.08);
+  }
+
+  /* Dark mode specific enhancements */
+  .dark .shadow-glow {
+    box-shadow: 0 0 25px hsl(var(--primary) / 0.25);
+  }
+
+  .dark .shadow-card {
+    box-shadow: 0 4px 25px hsl(var(--primary) / 0.15);
+  }
+
+  /* Enhanced input focus states for dark mode */
+  .dark input:focus,
+  .dark textarea:focus,
+  .dark select:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  /* Enhanced input styling for dark mode */
+  .dark input[type="text"],
+  .dark input[type="number"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="search"],
+  .dark input[type="tel"],
+  .dark input[type="url"] {
+    background-color: hsl(220 13% 18%);
+    border-color: hsl(220 13% 25%);
+    color: hsl(220 14% 96%);
+  }
+
+  .dark input::placeholder {
+    color: hsl(220 9% 46%);
+  }
+
+  .dark input:focus {
+    background-color: hsl(220 13% 22%);
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  /* Enhanced textarea styling for dark mode */
+  .dark textarea {
+    background-color: hsl(220 13% 18%);
+    border-color: hsl(220 13% 25%);
+    color: hsl(220 14% 96%);
+  }
+
+  .dark textarea::placeholder {
+    color: hsl(220 9% 46%);
+  }
+
+  .dark textarea:focus {
+    background-color: hsl(220 13% 22%);
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  /* Better contrast for dark mode text */
+  .dark .text-muted-foreground {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Enhanced card backgrounds for dark mode */
+  .dark .bg-card {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Improved button states for dark mode */
+  .dark .btn-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    border: 1px solid hsl(var(--primary));
+  }
+
+  .dark .btn-primary:hover {
+    background: linear-gradient(135deg, hsl(var(--primary-glow)), hsl(var(--primary)));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
   }
 
   /* Cash brand animations */

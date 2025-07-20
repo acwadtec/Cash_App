@@ -70,44 +70,45 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Alert for incomplete account information */}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 text-foreground">
+      {/* Enhanced Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-          <Alert className="border-warning bg-warning/10">
-            <AlertTriangle className="h-4 w-4 text-warning" />
-            <AlertDescription className="text-warning-foreground">
+          <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm shadow-2xl">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertDescription className="text-warning-foreground font-medium">
               {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className="py-20 px-2 sm:px-4 bg-gradient-to-b from-background to-primary-light/10">
-        <div className="container mx-auto text-center">
+      {/* Enhanced Hero Section */}
+      <section className="py-24 px-2 sm:px-4 bg-gradient-to-b from-background via-background to-primary/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+        <div className="container mx-auto text-center relative">
           <h1
-            className="text-4xl md:text-6xl font-extrabold font-arabic mb-6 text-primary drop-shadow-md tracking-tight leading-tight text-center"
+            className="text-5xl md:text-7xl font-extrabold font-arabic mb-8 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent drop-shadow-lg tracking-tight leading-tight text-center"
             style={{
               letterSpacing: '0.01em',
-              lineHeight: '1.15',
+              lineHeight: '1.1',
             }}
           >
             {t('home.hero.title')}
           </h1>
           <p
-            className="text-lg md:text-2xl font-arabic font-light mb-8 max-w-2xl mx-auto text-muted-foreground text-center"
+            className="text-xl md:text-3xl font-arabic font-light mb-12 max-w-3xl mx-auto text-muted-foreground text-center leading-relaxed"
             style={{
-              lineHeight: '1.7',
+              lineHeight: '1.6',
             }}
           >
             {t('home.hero.subtitle')}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Button
               asChild
               size="lg"
-              className="text-lg px-8 py-3 shadow-glow font-arabic font-bold transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 bg-primary text-primary-foreground hover:bg-primary-glow"
+              className="text-lg px-10 py-4 shadow-2xl font-arabic font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-110 hover:shadow-2xl active:scale-95 bg-gradient-to-r from-primary to-purple-600 text-white border-0"
             >
               <Link to="/register">{t('home.hero.cta')}</Link>
             </Button>
@@ -115,7 +116,7 @@ export default function Home() {
               asChild
               variant="secondary"
               size="lg"
-              className="text-lg px-8 py-3 font-arabic font-bold border-2 border-primary text-primary bg-secondary hover:bg-primary/10 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary focus:outline-none transition-all duration-150 hover:scale-105 hover:shadow-lg active:scale-95 shadow-sm"
+              className="text-lg px-10 py-4 font-arabic font-bold border-2 border-primary/30 text-primary bg-gradient-to-r from-primary/5 to-purple-500/5 hover:from-primary/10 hover:to-purple-500/10 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary focus:outline-none transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 shadow-lg backdrop-blur-sm"
             >
               <Link to="/read-more">{t('home.hero.readMore')}</Link>
             </Button>
@@ -123,19 +124,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 px-2 sm:px-4 bg-muted/50">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
+      {/* Enhanced Features Section */}
+      <section className="py-20 px-2 sm:px-4 bg-gradient-to-b from-muted/30 to-background relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+        <div className="container mx-auto relative">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
             {t('home.features.title')}
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center shadow-glow bg-card">
-                <CardContent className="pt-6">
-                  <feature.icon className="h-12 w-12 mx-auto mb-4 text-primary" />
-                  <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+              <Card key={index} className="text-center shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden group hover:scale-105 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardContent className="pt-8 pb-8 relative">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
+                      <feature.icon className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-semibold mb-4 text-foreground">{feature.title}</h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -143,14 +150,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 px-2 sm:px-4 bg-gradient-to-t from-background to-primary-light/10">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4 text-foreground">{t('home.cta.title')}</h2>
-          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+      {/* Enhanced CTA Section */}
+      <section className="py-20 px-2 sm:px-4 bg-gradient-to-t from-background via-background to-primary/5 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+        <div className="container mx-auto text-center relative">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            {t('home.cta.title')}
+          </h2>
+          <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
             {t('home.cta.subtitle')}
           </p>
-          <Button asChild size="lg" className="text-lg px-8 py-3 shadow-glow bg-primary text-primary-foreground transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
+          <Button 
+            asChild 
+            size="lg" 
+            className="text-xl px-12 py-5 shadow-2xl bg-gradient-to-r from-primary to-purple-600 text-white border-0 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-110 hover:shadow-2xl active:scale-95 font-bold"
+          >
             <Link to="/register">{t('home.cta.button')}</Link>
           </Button>
         </div>

@@ -312,11 +312,15 @@ export default function Profile() {
 
   if (loadingUserInfo) {
     return (
-      <div className="min-h-screen py-20">
+      <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">{t('common.loading')}</p>
+            <div className="relative">
+              <div className="animate-spin rounded-full h-32 w-32 border-4 border-primary/20 mx-auto"></div>
+              <div className="absolute inset-0 animate-spin rounded-full h-32 w-32 border-4 border-transparent border-t-primary mx-auto"></div>
+            </div>
+            <p className="mt-6 text-lg text-muted-foreground font-medium">{t('common.loading')}</p>
+            <p className="mt-2 text-sm text-muted-foreground">Loading your profile...</p>
           </div>
         </div>
       </div>
@@ -325,20 +329,29 @@ export default function Profile() {
 
   if (!hasUserInfo) {
     return (
-      <div className="min-h-screen py-20">
+      <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center">
-            <Card className="shadow-glow">
-              <CardContent className="pt-6">
-                <h2 className="text-2xl font-bold mb-4">{t('profile.noData')}</h2>
-                <p className="text-muted-foreground mb-6">
+            <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+              <CardContent className="pt-8 pb-8 relative">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 flex items-center justify-center">
+                  <div className="text-3xl">👤</div>
+                </div>
+                <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                  {t('profile.noData')}
+                </h2>
+                <p className="text-muted-foreground mb-8 text-lg">
                   {t('profile.noDataDesc')}
                 </p>
-                <Button onClick={handleUpdateAccount} className="w-full">
+                <Button 
+                  onClick={handleUpdateAccount} 
+                  className="w-full bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-lg py-3 text-lg font-medium"
+                >
                   {t('profile.updateAccount')}
                 </Button>
-      </CardContent>
-    </Card>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -346,167 +359,267 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen py-20 bg-background text-foreground">
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20 text-foreground">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* User Info Card */}
-          <Card className="shadow-glow bg-card">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                <div className="relative">
-                <Avatar className="w-24 h-24">
-                    {getProfilePhotoUrl() ? (
-                      <img 
-                        src={getProfilePhotoUrl()!} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    ) : (
-                      <AvatarFallback className="text-2xl">
-                        {getAvatarFallback()}
-                  </AvatarFallback>
-                    )}
-                </Avatar>
-                  <Button
-                    onClick={handleUpdateAccount}
-                    variant="outline"
-                    size="sm"
-                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </div>
-                
-                <div className="flex-1 text-center md:text-right">
-                  <h1 className="text-3xl font-bold mb-2 text-foreground">
-                        {userInfo?.first_name && userInfo?.last_name 
-                          ? `${userInfo.first_name} ${userInfo.last_name}`
-                      : userInfo?.email || t('profile.noData')}
-                      </h1>
-                      <p className="text-muted-foreground mb-2">{userInfo?.email}</p>
-                      <p className="text-muted-foreground">{userInfo?.phone || ''}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {userInfo && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6">
-              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.balance ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.balance')}</div>
-              </div>
-              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.total_points ?? 0}</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.totalPoints')}</div>
-              </div>
-              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.bonuses ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.bonuses')}</div>
-              </div>
-              <div className="bg-zinc-900 rounded-lg p-4 md:p-6 flex flex-col items-center justify-center border border-zinc-800">
-                <div className="text-lg md:text-2xl font-bold text-green-500">{userInfo.team_earnings ?? 0} EGP</div>
-                <div className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm font-medium">{t('profile.teamEarnings')}</div>
-              </div>
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Enhanced Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {t('profile.title') || 'Profile'}
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Manage your account and view your achievements
+            </p>
           </div>
-          )}
 
-          
-
-          {/* Gamification: Level and Badges */}
-          <Card className="shadow-glow bg-card">
-              <CardHeader>
-                              <CardTitle className="text-foreground">{t('profile.achievements')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Level */}
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">{t('profile.level')}</h3>
-                  <div className="text-3xl font-bold text-primary mb-2">
-                    {userInfo?.level || 1}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('profile.levelDesc')}
-                  </p>
-                </div>
-
-                {/* Badges */}
-                    <div>
-                  <h3 className="text-lg font-semibold mb-4 text-foreground">{t('profile.badges')}</h3>
-                  {userBadges.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {userBadges.map((badge: any, index: number) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {badge.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {t('profile.noBadges')}
-                    </p>
-                  )}
-                    </div>
-                  </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Information */}
-          <Card className="shadow-glow bg-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground">{t('profile.accountInfo')}</CardTitle>
-                <Button onClick={handleUpdateAccount} variant="outline" size="sm">
-                  {t('profile.edit')}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t('profile.firstName')}
-                    </label>
-                    <p className="text-sm text-foreground">{userInfo?.first_name || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t('profile.lastName')}
-                    </label>
-                    <p className="text-sm text-foreground">{userInfo?.last_name || '-'}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    {t('profile.phone')}
-                  </label>
-                  <p className="text-sm text-foreground">{userInfo?.phone || '-'}</p>
-                </div>
-                
-                    <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    {t('profile.wallet')}
-                  </label>
-                  <p className="text-sm text-foreground">{userInfo?.wallet || '-'}</p>
-                    </div>
-
-                {/* Profile Photo */}
-                {userInfo?.profile_photo_url && (
-                    <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                      {t('profile.profilePhoto')}
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-16 h-16">
+          {/* Enhanced User Info Card */}
+          <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardContent className="p-8 relative">
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                <div className="relative group">
+                  <div className="relative">
+                    <Avatar className="w-32 h-32 border-4 border-white/20 shadow-2xl">
+                      {getProfilePhotoUrl() ? (
                         <img 
                           src={getProfilePhotoUrl()!} 
                           alt="Profile" 
                           className="w-full h-full object-cover rounded-full"
                         />
-                      </Avatar>
+                      ) : (
+                        <AvatarFallback className="text-3xl bg-gradient-to-r from-primary to-purple-600">
+                          {getAvatarFallback()}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
+                  <Button
+                    onClick={handleUpdateAccount}
+                    variant="outline"
+                    size="sm"
+                    className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full p-0 bg-gradient-to-r from-primary to-purple-600 border-0 hover:scale-110 transition-all duration-300 shadow-lg"
+                  >
+                    <Edit className="w-5 h-5 text-white" />
+                  </Button>
+                </div>
+                
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="text-4xl font-bold mb-3 text-foreground bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    {userInfo?.first_name && userInfo?.last_name 
+                      ? `${userInfo.first_name} ${userInfo.last_name}`
+                      : userInfo?.email || t('profile.noData')}
+                  </h2>
+                  <div className="space-y-2">
+                    <p className="text-lg text-muted-foreground flex items-center justify-center md:justify-start gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      {userInfo?.email}
+                    </p>
+                    {userInfo?.phone && (
+                      <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        {userInfo.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enhanced Balance Cards */}
+          {userInfo && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 p-6 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:scale-105">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative text-center">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {userInfo.balance ?? 0} <span className="text-lg">EGP</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('profile.balance')}</div>
+                  <div className="mt-2 text-xs text-green-600/70">Available balance</div>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 p-6 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative text-center">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {userInfo.total_points ?? 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('profile.totalPoints')}</div>
+                  <div className="mt-2 text-xs text-blue-600/70">Total points earned</div>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 p-6 border border-yellow-500/20 hover:border-yellow-500/40 transition-all duration-300 hover:scale-105">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative text-center">
+                  <div className="text-3xl font-bold text-yellow-600 mb-2">
+                    {userInfo.bonuses ?? 0} <span className="text-lg">EGP</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('profile.bonuses')}</div>
+                  <div className="mt-2 text-xs text-yellow-600/70">Bonus rewards</div>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative text-center">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">
+                    {userInfo.team_earnings ?? 0} <span className="text-lg">EGP</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">{t('profile.teamEarnings')}</div>
+                  <div className="mt-2 text-xs text-purple-600/70">Team commission</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          
+
+          {/* Enhanced Achievements Section */}
+          <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardHeader className="relative">
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                {t('profile.achievements')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Enhanced Level */}
+                <div className="text-center group">
+                  <div className="relative inline-block">
+                    <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                      <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
+                        <div className="text-4xl font-bold text-primary">
+                          {userInfo?.level || 1}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      ★
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3 text-foreground">{t('profile.level')}</h3>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    {t('profile.levelDesc')}
+                  </p>
+                </div>
+
+                {/* Enhanced Badges */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-6 text-foreground text-center md:text-left">{t('profile.badges')}</h3>
+                  {userBadges.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {userBadges.map((badge: any, index: number) => (
+                        <div key={index} className="group relative">
+                          <Badge 
+                            variant="secondary" 
+                            className="w-full text-center py-3 px-4 text-sm font-medium bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 hover:border-primary/40 transition-all duration-300 group-hover:scale-105"
+                          >
+                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                            {badge.name}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                        <div className="text-2xl text-muted-foreground">🏆</div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {t('profile.noBadges')}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Complete tasks to earn badges
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enhanced Account Information */}
+          <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardHeader className="relative">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                  {t('profile.accountInfo')}
+                </CardTitle>
+                <Button 
+                  onClick={handleUpdateAccount} 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-lg"
+                >
+                  {t('profile.edit')}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="group">
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      {t('profile.firstName')}
+                    </label>
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10 group-hover:border-primary/30 transition-all duration-300">
+                      <p className="text-foreground font-medium">{userInfo?.first_name || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      {t('profile.lastName')}
+                    </label>
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10 group-hover:border-primary/30 transition-all duration-300">
+                      <p className="text-foreground font-medium">{userInfo?.last_name || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="group">
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    {t('profile.phone')}
+                  </label>
+                  <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/5 to-transparent border border-blue-500/10 group-hover:border-blue-500/30 transition-all duration-300">
+                    <p className="text-foreground font-medium flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      {userInfo?.phone || '-'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="group">
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    {t('profile.wallet')}
+                  </label>
+                  <div className="p-4 rounded-lg bg-gradient-to-r from-green-500/5 to-transparent border border-green-500/10 group-hover:border-green-500/30 transition-all duration-300">
+                    <p className="text-foreground font-medium flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      {userInfo?.wallet || '-'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Enhanced Profile Photo */}
+                {userInfo?.profile_photo_url && (
+                  <div className="group">
+                    <label className="text-sm font-medium text-muted-foreground mb-3 block">
+                      {t('profile.profilePhoto')}
+                    </label>
+                    <div className="flex items-center gap-6">
+                      <div className="relative group">
+                        <Avatar className="w-20 h-20 border-4 border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <img 
+                            src={getProfilePhotoUrl()!} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        </Avatar>
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -514,7 +627,7 @@ export default function Profile() {
                           setModalImageUrl(getProfilePhotoUrl()!);
                           setShowImageModal(true);
                         }}
-                        className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
+                        className="bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-lg"
                       >
                         {t('profile.view')}
                       </Button>
@@ -522,47 +635,53 @@ export default function Profile() {
                   </div>
                 )}
 
-                {/* ID Photos */}
+                {/* Enhanced ID Photos */}
                 {(userInfo?.id_front_url || userInfo?.id_back_url) && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  <div className="space-y-4">
+                    <label className="text-sm font-medium text-muted-foreground mb-3 block">
                       {t('profile.idPhotos')}
                     </label>
-                    <div className="flex gap-4">
+                    <div className="grid md:grid-cols-2 gap-6">
                       {userInfo?.id_front_url && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">
-                            {t('profile.idFront')}
-                          </p>
-                                                      <Button
+                        <div className="group">
+                          <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/5 to-transparent border border-blue-500/10 group-hover:border-blue-500/30 transition-all duration-300">
+                            <p className="text-sm font-medium text-blue-600 mb-3 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              {t('profile.idFront')}
+                            </p>
+                            <Button
                               variant="outline"
                               size="sm"
                               onClick={() => {
                                 setModalImageUrl(getImageUrl('front'));
                                 setShowImageModal(true);
                               }}
-                              className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
+                              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-lg"
                             >
                               {t('profile.view')}
                             </Button>
-                  </div>
+                          </div>
+                        </div>
                       )}
                       {userInfo?.id_back_url && (
-                                          <div>
-                          <p className="text-xs text-muted-foreground mb-1">
-                            {t('profile.idBack')}
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setModalImageUrl(getImageUrl('back'));
-                              setShowImageModal(true);
-                            }}
-                            className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
-                          >
-                            {t('profile.view')}
-                          </Button>
+                        <div className="group">
+                          <div className="p-4 rounded-lg bg-gradient-to-r from-green-500/5 to-transparent border border-green-500/10 group-hover:border-green-500/30 transition-all duration-300">
+                            <p className="text-sm font-medium text-green-600 mb-3 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              {t('profile.idBack')}
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setModalImageUrl(getImageUrl('back'));
+                                setShowImageModal(true);
+                              }}
+                              className="w-full bg-gradient-to-r from-green-500 to-green-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-lg"
+                            >
+                              {t('profile.view')}
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -572,24 +691,36 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-          {/* Image Modal */}
+          {/* Enhanced Image Modal */}
           <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-            <DialogContent>
-              <img src={modalImageUrl} alt="Photo" className="max-w-full max-h-[80vh] mx-auto" />
+            <DialogContent className="max-w-4xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0">
+              <div className="relative">
+                <img 
+                  src={modalImageUrl} 
+                  alt="Photo" 
+                  className="max-w-full max-h-[80vh] mx-auto rounded-lg shadow-2xl" 
+                />
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+              </div>
             </DialogContent>
           </Dialog>
 
-          {/* Referral Code Section */}
+          {/* Enhanced Referral Code Section */}
           {userUid && (
             <div className="mb-8">
-              <ReferralCode
-                userUid={userUid}
-                isVerified={userInfo?.verified || false}
-                level1Count={level1Referrals.length}
-                level2Count={level2Referrals.length}
-                level3Count={level3Referrals.length}
-              />
-                      </div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-xl"></div>
+                <div className="relative">
+                  <ReferralCode
+                    userUid={userUid}
+                    isVerified={userInfo?.verified || false}
+                    level1Count={level1Referrals.length}
+                    level2Count={level2Referrals.length}
+                    level3Count={level3Referrals.length}
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
         </div>

@@ -281,29 +281,43 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen py-20">
-      <div className="container mx-auto px-4">
-        <Card className="max-w-2xl mx-auto shadow-glow">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl md:text-3xl font-bold gradient-primary bg-clip-text text-transparent">
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+      <div className="container mx-auto px-4 relative">
+        <Card className="max-w-2xl mx-auto shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+          <CardHeader className="relative text-center pb-8">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1">
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                <div className="text-3xl">👤</div>
+              </div>
+            </div>
+            <CardTitle className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               {t('register.title')}
             </CardTitle>
+            <p className="text-muted-foreground mt-2">
+              Join our community and start earning today
+            </p>
           </CardHeader>
-          <CardContent className="px-4 md:px-6">
+          <CardContent className="relative px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="displayName">{t('register.displayName')}</Label>
+                <Label htmlFor="displayName" className="text-sm font-medium text-muted-foreground">
+                  {t('register.displayName')}
+                </Label>
                 <Input
                   id="displayName"
                   name="displayName"
                   value={formData.displayName}
                   onChange={handleInputChange}
                   required
-                  className="h-12"
+                  className="h-12 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">{t('register.email')}</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
+                  {t('register.email')}
+                </Label>
                 <Input
                   id="email"
                   name="email"
@@ -311,11 +325,13 @@ export default function Register() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="h-12"
+                  className="h-12 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t('register.password')}</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-muted-foreground">
+                  {t('register.password')}
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -324,11 +340,11 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
-                    className="h-12 pr-10"
+                    className="h-12 pr-10 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-primary transition-colors duration-300"
                     tabIndex={-1}
                     onClick={() => setShowPassword((v) => !v)}
                   >
@@ -337,7 +353,9 @@ export default function Register() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="passwordConfirm">{t('register.passwordConfirm')}</Label>
+                <Label htmlFor="passwordConfirm" className="text-sm font-medium text-muted-foreground">
+                  {t('register.passwordConfirm')}
+                </Label>
                 <div className="relative">
                   <Input
                     id="passwordConfirm"
@@ -346,11 +364,11 @@ export default function Register() {
                     value={formData.passwordConfirm}
                     onChange={handleInputChange}
                     required
-                    className="h-12 pr-10"
+                    className="h-12 pr-10 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-primary transition-colors duration-300"
                     tabIndex={-1}
                     onClick={() => setShowPasswordConfirm((v) => !v)}
                   >
@@ -359,9 +377,11 @@ export default function Register() {
                 </div>
               </div>
               
-              {/* Referral Code Field */}
+              {/* Enhanced Referral Code Field */}
               <div className="space-y-2">
-                <Label htmlFor="referralCode">{t('register.referralCode')}</Label>
+                <Label htmlFor="referralCode" className="text-sm font-medium text-muted-foreground">
+                  {t('register.referralCode')} <span className="text-xs text-muted-foreground">(Optional)</span>
+                </Label>
                 <Input
                   id="referralCode"
                   name="referralCode"
@@ -369,29 +389,43 @@ export default function Register() {
                   value={formData.referralCode}
                   onChange={handleReferralCodeChange}
                   placeholder={t('register.referralCode')}
-                  className="h-12 uppercase"
+                  className="h-12 uppercase bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                   maxLength={8}
                 />
                 {loadingReferrer && (
-                  <p className="text-sm text-muted-foreground">{t('register.checkingReferral')}</p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                    {t('register.checkingReferral')}
+                  </div>
                 )}
                 {referrerInfo && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800">
-                      ✓ {t('register.referredBy')}: <strong>{referrerInfo.first_name} {referrerInfo.last_name}</strong>
-                    </p>
+                  <div className="p-4 rounded-lg bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                        <div className="text-white text-xs">✓</div>
+                      </div>
+                      <p className="text-sm text-green-700 font-medium">
+                        {t('register.referredBy')}: <strong>{referrerInfo.first_name} {referrerInfo.last_name}</strong>
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
               
-              <Button type="submit" className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold"
+              >
                 {t('register.submit')}
               </Button>
             </form>
-            <div className="mt-6 text-center">
+            <div className="mt-8 text-center">
               <p className="text-muted-foreground">
                 {t('register.hasAccount')}{' '}
-                <a href="/login" className="text-primary hover:underline font-medium">
+                <a 
+                  href="/login" 
+                  className="text-primary hover:text-primary/80 font-medium transition-colors duration-300 hover:scale-105 inline-block"
+                >
                   {t('register.login')}
                 </a>
               </p>

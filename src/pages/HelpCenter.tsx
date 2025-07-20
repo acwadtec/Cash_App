@@ -151,58 +151,66 @@ export default function HelpCenter() {
   ];
 
   return (
-    <div className="min-h-screen py-20">
-      {/* Alert for incomplete account information */}
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+      {/* Enhanced Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm shadow-2xl">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertDescription className="text-warning-foreground font-medium">
               {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
       )}
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 relative">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8 md:mb-12">
-            <div className="flex justify-center mb-4 md:mb-6">
-              <div className="w-16 h-16 md:w-20 md:h-20 gradient-primary rounded-full flex items-center justify-center">
-                <HelpCircle className="w-8 h-8 md:w-10 md:h-10 text-primary-foreground" />
+          {/* Enhanced Header */}
+          <div className="text-center mb-12 md:mb-16">
+            <div className="flex justify-center mb-6 md:mb-8">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <HelpCircle className="w-10 h-10 md:w-12 md:h-12 text-primary" />
+                </div>
               </div>
             </div>
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               {t('help.title')}
             </h1>
-            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto px-4 leading-relaxed">
               {t('help.subtitle')}
             </p>
           </div>
 
-          {/* Help Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8 md:mb-12">
+          {/* Enhanced Help Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 mb-12 md:mb-16">
             {helpSections.map((section, index) => (
-              <Card key={index} className="shadow-card hover:shadow-glow transition-all duration-300">
-                <CardHeader>
+              <Card key={index} className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden group hover:scale-105 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardHeader className="relative">
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 ${section.bgColor} rounded-lg flex items-center justify-center`}>
-                      <section.icon className={`w-6 h-6 ${section.color}`} />
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                        <section.icon className="w-8 h-8 text-primary" />
+                      </div>
                     </div>
                     <div>
-                      <CardTitle className="text-xl">{section.title}</CardTitle>
+                      <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        {section.title}
+                      </CardTitle>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="relative">
+                  <div className="space-y-6">
                     {section.steps.map((step, stepIndex) => (
-                      <div key={stepIndex} className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
+                      <div key={stepIndex} className="flex items-start gap-4">
+                        <div className="w-8 h-8 bg-gradient-to-r from-primary to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold mt-0.5 group-hover:scale-110 transition-transform duration-300">
                           {stepIndex + 1}
                         </div>
-                        <p className="text-muted-foreground leading-relaxed">{step}</p>
+                        <p className="text-muted-foreground leading-relaxed text-lg">{step}</p>
                       </div>
                     ))}
                   </div>
@@ -211,33 +219,40 @@ export default function HelpCenter() {
             ))}
           </div>
 
-          {/* FAQ Section */}
-          <Card className="shadow-card">
-            <CardHeader>
+          {/* Enhanced FAQ Section */}
+          <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden mb-12">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardHeader className="relative">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-blue-600" />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 p-1">
+                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                    <MessageCircle className="w-8 h-8 text-blue-600" />
+                  </div>
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">{t('help.faq.title')}</CardTitle>
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    {t('help.faq.title')}
+                  </CardTitle>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+            <CardContent className="relative">
+              <div className="space-y-8">
                 {faqs.map((faq, index) => (
-                  <div key={index} className="border-b border-border pb-6 last:border-b-0">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
+                  <div key={index} className="border-b border-primary/10 pb-8 last:border-b-0">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-8 h-8 bg-gradient-to-r from-primary to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
                         Q
                       </div>
-                      <h3 className="font-semibold text-lg">{faq.question}</h3>
+                      <h3 className="font-bold text-xl bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        {faq.question}
+                      </h3>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
                         A
                       </div>
-                      <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+                      <p className="text-muted-foreground leading-relaxed text-lg">{faq.answer}</p>
                     </div>
                   </div>
                 ))}
@@ -245,38 +260,33 @@ export default function HelpCenter() {
             </CardContent>
           </Card>
 
-          {/* Contact Support */}
-          <Card className="mt-8 gradient-card shadow-glow">
-            <CardContent className="pt-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Info className="w-8 h-8 text-primary" />
+          {/* Enhanced Contact Support */}
+          <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardContent className="pt-12 pb-12 relative text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <Info className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-primary">
-                  {t('help.needMoreHelp')}
-                </h3>
-                <p className="text-foreground mb-6">
-                  {t('help.supportMessage')}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  {supportOptions.map((option, idx) => (
-                    <Button
-                      key={option.label}
-                      variant={option.variant as any}
-                      size="lg"
-                      className={`px-6 py-2 text-base font-bold transition-all duration-150
-                        focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
-                        hover:scale-105 hover:shadow-lg active:scale-95
-                        ${option.variant === 'default'
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/80'
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80 dark:bg-secondary dark:text-secondary-foreground dark:hover:bg-secondary/60'}
-                      `}
-                      onClick={option.onClick}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
+              </div>
+              <h3 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                {t('help.needMoreHelp')}
+              </h3>
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+                {t('help.supportMessage')}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                {supportOptions.map((option, idx) => (
+                  <Button
+                    key={option.label}
+                    variant={option.variant as any}
+                    size="lg"
+                    className="bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-2xl px-8 py-4 text-lg font-bold"
+                    onClick={option.onClick}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
             </CardContent>
           </Card>

@@ -325,14 +325,13 @@ export default function Offers() {
   };
 
   return (
-    <div className="min-h-screen py-20">
-      {/* Removed test buttons for profit accrual */}
-      {/* Alert for incomplete account information */}
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Enhanced Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm shadow-2xl">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertDescription className="text-warning-foreground font-medium">
               {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
@@ -340,93 +339,107 @@ export default function Offers() {
       )}
 
       <div className="container mx-auto px-4">
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('offers.title')}</h1>
-          <p className="text-base md:text-xl text-muted-foreground px-4">
+        {/* Enhanced Header */}
+        <div className="text-center mb-12 md:mb-16">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            {t('offers.title')}
+          </h1>
+          <p className="text-xl md:text-2xl text-muted-foreground px-4 max-w-3xl mx-auto leading-relaxed">
             {t('offers.subtitle')}
           </p>
         </div>
 
         {loading ? (
-          <div className="text-center">{t('offers.loading')}</div>
+          <div className="text-center py-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 mx-auto"></div>
+              <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-primary mx-auto"></div>
+            </div>
+            <p className="mt-6 text-lg text-muted-foreground font-medium">{t('offers.loading')}</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {offers.map((offer) => (
-              <Card key={offer.id} className="shadow-card hover:shadow-glow transition-all duration-300" dir={isRTL ? 'rtl' : 'ltr'}>
-                <CardHeader>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2">
+              <Card key={offer.id} className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden group hover:scale-105 transition-all duration-300" dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardHeader className="relative">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
                       {offer.type && (
-                        <Badge className={getTypeColor(offer.type)}>
+                        <Badge className={`${getTypeColor(offer.type)} shadow-lg font-medium`}>
                           {t(`offers.${offer.type}`) || offer.type}
                         </Badge>
                       )}
-                      <CardTitle className="text-xl font-bold">
+                      <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                         {language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
                       </CardTitle>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-2xl font-bold text-primary">{offer.amount}</span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="text-3xl font-bold text-primary">{offer.amount}</span>
                       {offer.join_limit !== null && (
                         offer.join_count >= (offer.join_limit || 0) ? (
-                          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200 mt-1">{t('offers.fullyBooked')}</Badge>
+                          <Badge variant="destructive" className="bg-red-500/10 text-red-600 border-red-500/20 shadow-lg">{t('offers.fullyBooked')}</Badge>
                         ) : (
-                                                      <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 mt-1">
-                              {Math.max(0, (offer.join_limit || 0) - (offer.join_count || 0))} / {offer.join_limit} {t('offers.slots')}
-                            </Badge>
+                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 shadow-lg">
+                            {Math.max(0, (offer.join_limit || 0) - (offer.join_count || 0))} / {offer.join_limit} {t('offers.slots')}
+                          </Badge>
                         )
                       )}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <img
-                    src={offer.image_url || '/placeholder.svg'}
-                    alt={language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
-                    className="w-full h-40 object-contain rounded mb-4 bg-white p-2 border"
-                    onError={e => e.currentTarget.src = '/placeholder.svg'}
-                  />
-                  <p className="text-muted-foreground mb-4 leading-relaxed">
+                <CardContent className="relative">
+                  <div className="relative mb-6 overflow-hidden rounded-lg">
+                    <img
+                      src={offer.image_url || '/placeholder.svg'}
+                      alt={language === 'ar' ? (offer.title_ar || offer.title_en) : (offer.title_en || offer.title_ar)}
+                      className="w-full h-48 object-contain bg-gradient-to-br from-white to-gray-50 p-4 border border-gray-200 group-hover:scale-105 transition-transform duration-300"
+                      onError={e => e.currentTarget.src = '/placeholder.svg'}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
+                  <p className="text-muted-foreground mb-6 leading-relaxed text-lg">
                     {language === 'ar' ? (offer.description_ar || offer.description_en) : (offer.description_en || offer.description_ar)}
                   </p>
-                  <div className="space-y-2 mb-6 text-sm">
+                  <div className="space-y-3 mb-8 text-sm">
                     {offer.cost !== undefined && offer.cost !== 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.cost')}:</span>
-                        <span>{offer.cost} EGP</span>
+                      <div className="flex justify-between p-3 rounded-lg bg-gradient-to-r from-green-500/5 to-transparent border border-green-500/10">
+                        <span className="text-muted-foreground font-medium">{t('offers.cost')}:</span>
+                        <span className="font-bold text-green-600">{offer.cost} EGP</span>
                       </div>
                     )}
                     {offer.daily_profit !== undefined && offer.daily_profit !== 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.dailyProfit')}:</span>
-                        <span>{offer.daily_profit} EGP</span>
+                      <div className="flex justify-between p-3 rounded-lg bg-gradient-to-r from-blue-500/5 to-transparent border border-blue-500/10">
+                        <span className="text-muted-foreground font-medium">{t('offers.dailyProfit')}:</span>
+                        <span className="font-bold text-blue-600">{offer.daily_profit} EGP</span>
                       </div>
                     )}
                     {offer.monthly_profit !== undefined && offer.monthly_profit !== 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.monthlyProfit')}:</span>
-                        <span>{offer.monthly_profit} EGP</span>
+                      <div className="flex justify-between p-3 rounded-lg bg-gradient-to-r from-purple-500/5 to-transparent border border-purple-500/10">
+                        <span className="text-muted-foreground font-medium">{t('offers.monthlyProfit')}:</span>
+                        <span className="font-bold text-purple-600">{offer.monthly_profit} EGP</span>
                       </div>
                     )}
                     {offer.deadline && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.deadline')}:</span>
-                        <span>{offer.deadline}</span>
+                      <div className="flex justify-between p-3 rounded-lg bg-gradient-to-r from-yellow-500/5 to-transparent border border-yellow-500/10">
+                        <span className="text-muted-foreground font-medium">{t('offers.deadline')}:</span>
+                        <span className="font-bold text-yellow-600">{offer.deadline}</span>
                       </div>
                     )}
                     {offer.minAmount && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('offers.minAmount')}:</span>
-                        <span>{offer.minAmount} EGP</span>
+                      <div className="flex justify-between p-3 rounded-lg bg-gradient-to-r from-orange-500/5 to-transparent border border-orange-500/10">
+                        <span className="text-muted-foreground font-medium">{t('offers.minAmount')}:</span>
+                        <span className="font-bold text-orange-600">{offer.minAmount} EGP</span>
                       </div>
                     )}
                   </div>
                   <Button
-                    className={`w-full shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95 ${
-                      joinStatuses[offer.id] === 'rejected' ? 'bg-red-500 hover:bg-red-600 text-white' :
-                      joinStatuses[offer.id] === 'approved' ? 'bg-green-500 hover:bg-green-600 text-white' :
-                      joinStatuses[offer.id] === 'pending' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' :
-                      (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : ''
+                    className={`w-full shadow-2xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-2xl active:scale-95 py-4 text-lg font-bold ${
+                      joinStatuses[offer.id] === 'rejected' ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
+                      joinStatuses[offer.id] === 'approved' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                      joinStatuses[offer.id] === 'pending' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white' :
+                      (offer.user_join_limit && (userJoinCounts[offer.id] || 0) >= offer.user_join_limit) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' :
+                      'bg-gradient-to-r from-primary to-purple-600 text-white'
                     }`}
                     onClick={() => handleJoinOffer(offer.id)}
                     disabled={
@@ -447,7 +460,7 @@ export default function Offers() {
                          : t('offers.join')}
                   </Button>
                   {offer.user_join_limit && (
-                    <div className="text-xs text-muted-foreground mt-1 text-center">
+                    <div className="text-sm text-muted-foreground mt-3 text-center font-medium">
                       {t('offers.joined')} {userJoinCounts[offer.id] || 0} / {offer.user_join_limit} {t('offers.times')}
                     </div>
                   )}
@@ -457,75 +470,164 @@ export default function Offers() {
           </div>
         )}
 
-        <div className="mt-8 md:mt-12 text-center px-4">
-          <Card className="max-w-2xl mx-auto gradient-card shadow-glow">
-            <CardContent className="pt-8">
-              <h3 className="text-2xl font-bold mb-4">{t('offers.notification.title')}</h3>
-              <p className="text-muted-foreground mb-6">
+        {/* Enhanced Notification Section */}
+        <div className="mt-12 md:mt-16 text-center px-4">
+          <Card className="max-w-3xl mx-auto shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+            <CardContent className="pt-10 pb-10 relative">
+              <h3 className="text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                {t('offers.notification.title')}
+              </h3>
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
                 {t('offers.notification.subtitle')}
               </p>
-                              <Button variant="outline" size="lg" className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
-                  {t('offers.notification.button')}
-                </Button>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-2xl px-8 py-4 text-lg font-bold"
+              >
+                {t('offers.notification.button')}
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
       <Dialog open={showBalanceModal} onOpenChange={setShowBalanceModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800">
           <DialogHeader>
-            <DialogTitle>{t('offers.selectBalanceType')}</DialogTitle>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {t('offers.selectBalanceType')}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-col gap-4 mt-6">
             <button
-              className="flex items-center gap-3 p-4 rounded-lg border border-green-400 bg-green-50 hover:bg-green-100 transition"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.balance <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-green-500/20 bg-gradient-to-r from-green-500/5 to-green-600/5 hover:from-green-500/10 hover:to-green-600/10 hover:border-green-500/40 dark:border-green-400/30 dark:bg-gradient-to-r dark:from-green-950/20 dark:to-green-900/20 dark:hover:from-green-950/40 dark:hover:to-green-900/40 dark:hover:border-green-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('balance')}
               disabled={!userBalances || userBalances.balance <= 0}
             >
-              <DollarSign className="w-6 h-6 text-green-500" />
-              <span className="font-bold text-green-700">{t('profile.balance')}</span>
-              <span className="ml-auto text-green-700">{userBalances?.balance ?? 0} EGP</span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`font-bold text-lg ${!userBalances || userBalances.balance <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-green-700 dark:text-green-400'}`}>
+                  {t('profile.balance')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.balance <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-green-600/70 dark:text-green-400/70'}`}>
+                  Available balance
+                </div>
+              </div>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.balance <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-green-700 dark:text-green-400'}`}>
+                {userBalances?.balance ?? 0} EGP
+              </span>
             </button>
             <button
-              className="flex items-center gap-3 p-4 rounded-lg border border-blue-400 bg-blue-50 hover:bg-blue-100 transition"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.total_points <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:from-blue-500/10 hover:to-blue-600/10 hover:border-blue-500/40 dark:border-blue-400/30 dark:bg-gradient-to-r dark:from-blue-950/20 dark:to-blue-900/20 dark:hover:from-blue-950/40 dark:hover:to-blue-900/40 dark:hover:border-blue-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('total_points')}
               disabled={!userBalances || userBalances.total_points <= 0}
             >
-              <Star className="w-6 h-6 text-blue-500" />
-              <span className="font-bold text-blue-700">{t('profile.totalPoints')}</span>
-              <span className="ml-auto text-blue-700">{userBalances?.total_points ?? 0}</span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <Star className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`font-bold text-lg ${!userBalances || userBalances.total_points <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-blue-700 dark:text-blue-400'}`}>
+                  {t('profile.totalPoints')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.total_points <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-blue-600/70 dark:text-blue-400/70'}`}>
+                  Total points earned
+                </div>
+              </div>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.total_points <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-blue-700 dark:text-blue-400'}`}>
+                {userBalances?.total_points ?? 0}
+              </span>
             </button>
             <button
-              className="flex items-center gap-3 p-4 rounded-lg border border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.bonuses <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-yellow-600/5 hover:from-yellow-500/10 hover:to-yellow-600/10 hover:border-yellow-500/40 dark:border-yellow-400/30 dark:bg-gradient-to-r dark:from-yellow-950/20 dark:to-yellow-900/20 dark:hover:from-yellow-950/40 dark:hover:to-yellow-900/40 dark:hover:border-yellow-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('bonuses')}
               disabled={!userBalances || userBalances.bonuses <= 0}
             >
-              <Gift className="w-6 h-6 text-yellow-500" />
-              <span className="font-bold text-yellow-700">{t('profile.bonuses')}</span>
-              <span className="ml-auto text-yellow-700">{userBalances?.bonuses ?? 0} EGP</span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <Gift className="w-6 h-6 text-yellow-600" />
+                </div>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`font-bold text-lg ${!userBalances || userBalances.bonuses <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                  {t('profile.bonuses')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.bonuses <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-600/70 dark:text-yellow-400/70'}`}>
+                  Bonus rewards
+                </div>
+              </div>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.bonuses <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                {userBalances?.bonuses ?? 0} EGP
+              </span>
             </button>
             <button
-              className="flex items-center gap-3 p-4 rounded-lg border border-purple-400 bg-purple-50 hover:bg-purple-100 transition"
+              className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 hover:scale-105 shadow-lg group ${
+                !userBalances || userBalances.team_earnings <= 0
+                  ? 'border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 cursor-not-allowed'
+                  : 'border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-purple-600/5 hover:from-purple-500/10 hover:to-purple-600/10 hover:border-purple-500/40 dark:border-purple-400/30 dark:bg-gradient-to-r dark:from-purple-950/20 dark:to-purple-900/20 dark:hover:from-purple-950/40 dark:hover:to-purple-900/40 dark:hover:border-purple-400/50'
+              }`}
               onClick={() => handleSelectBalanceType('team_earnings')}
               disabled={!userBalances || userBalances.team_earnings <= 0}
             >
-              <Users className="w-6 h-6 text-purple-500" />
-              <span className="font-bold text-purple-700">{t('profile.teamEarnings')}</span>
-              <span className="ml-auto text-purple-700">{userBalances?.team_earnings ?? 0} EGP</span>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`font-bold text-lg ${!userBalances || userBalances.team_earnings <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-purple-700 dark:text-purple-400'}`}>
+                  {t('profile.teamEarnings')}
+                </span>
+                <div className={`text-sm ${!userBalances || userBalances.team_earnings <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-purple-600/70 dark:text-purple-400/70'}`}>
+                  Team commission
+                </div>
+              </div>
+              <span className={`font-bold text-xl ${!userBalances || userBalances.team_earnings <= 0 ? 'text-gray-400 dark:text-gray-500' : 'text-purple-700 dark:text-purple-400'}`}>
+                {userBalances?.team_earnings ?? 0} EGP
+              </span>
             </button>
           </div>
         </DialogContent>
       </Dialog>
       <ConfirmDialog open={showUserConfirm} onOpenChange={setShowUserConfirm}>
-        <ConfirmDialogContent>
+        <ConfirmDialogContent className="max-w-md bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0">
           <ConfirmDialogHeader>
-            <ConfirmDialogTitle>
+            <ConfirmDialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               Are you sure you want to join this offer using {pendingBalanceType === 'balance' ? t('profile.balance') : pendingBalanceType === 'bonuses' ? t('profile.bonuses') : pendingBalanceType === 'team_earnings' ? t('profile.teamEarnings') : t('profile.totalPoints')}?
             </ConfirmDialogTitle>
           </ConfirmDialogHeader>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setShowUserConfirm(false)}>Cancel</Button>
-            <Button onClick={() => { setShowUserConfirm(false); if (pendingUserJoin) pendingUserJoin(); }}>Confirm</Button>
+          <div className="flex justify-end gap-4 mt-8">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowUserConfirm(false)}
+              className="border-2 border-primary/30 text-primary bg-gradient-to-r from-primary/5 to-purple-500/5 hover:from-primary/10 hover:to-purple-500/10 hover:scale-105 transition-all duration-300 shadow-lg"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => { setShowUserConfirm(false); if (pendingUserJoin) pendingUserJoin(); }}
+              className="bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-2xl font-bold"
+            >
+              Confirm
+            </Button>
           </div>
         </ConfirmDialogContent>
       </ConfirmDialog>

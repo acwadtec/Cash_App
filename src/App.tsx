@@ -24,6 +24,8 @@ import NotFound from "./pages/NotFound";
 import ReferralNetwork from './pages/ReferralNetwork';
 import ReadMore from "./pages/ReadMore";
 import MyOffers from "./pages/MyOffers";
+import InvestmentCertificate from './pages/InvestmentCertificate';
+import Wallet from './pages/Wallet';
 
 // Admin Pages
 import UsersPage from './pages/admin/UsersPage';
@@ -38,6 +40,7 @@ import DepositRequestsPage from './pages/admin/DepositRequestsPage';
 import SupportPage from './pages/admin/SupportPage';
 import GamificationPage from './pages/admin/GamificationPage';
 import ManageWallet from './pages/admin/ManageWallet';
+import ManageInvestmentCertificatesPage from './pages/admin/ManageInvestmentCertificatesPage';
 
 const queryClient = new QueryClient();
 
@@ -59,6 +62,7 @@ function App() {
                         <Route path="register" element={<Register />} />
                         <Route path="login" element={<Login />} />
                         <Route path="offers" element={<Offers />} />
+                        <Route path="investment-certificates" element={<InvestmentCertificate />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="update-account" element={<UpdateAccount />} />
                         <Route path="transactions" element={<Transactions />} />
@@ -69,6 +73,7 @@ function App() {
                         <Route path="referral-network" element={<ReferralNetwork />} />
                         <Route path="read-more" element={<ReadMore />} />
                         <Route path="my-offers" element={<MyOffers />} />
+                        <Route path="wallet" element={<Wallet />} />
                       </Route>
 
                       {/* Admin Routes */}
@@ -86,6 +91,7 @@ function App() {
                         <Route path="deposit-requests" element={<DepositRequestsPage />} />
                         <Route path="support" element={<SupportPage />} />
                         <Route path="gamification" element={<GamificationPage />} />
+                        <Route path="investment-certificates" element={<ManageInvestmentCertificatesPage />} />
                       </Route>
 
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -293,93 +293,94 @@ export default function Deposit() {
   }
 
   return (
-    <div className="min-h-screen py-20">
-      {/* Alert for incomplete account information */}
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+      {/* Enhanced Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm shadow-2xl">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertDescription className="text-warning-foreground font-medium">
               {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
       )}
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 relative">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('deposit.title')}</h1>
-            <p className="text-base md:text-xl text-muted-foreground px-4">
+          {/* Enhanced Header */}
+          <div className="text-center mb-12 md:mb-16">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {t('deposit.title')}
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground px-4 max-w-3xl mx-auto leading-relaxed">
               {t('deposit.subtitle')}
             </p>
           </div>
 
-          <Tabs defaultValue="request" value={activeTab} onValueChange={setActiveTab} className="space-y-6 mb-8 max-w-4xl mx-auto">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="request" className="flex items-center gap-2">
-                <Shield className="w-4 h-4" />
+          <Tabs defaultValue="request" value={activeTab} onValueChange={setActiveTab} className="space-y-8 mb-12 max-w-4xl mx-auto">
+            <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-primary/10 to-purple-500/10 p-1 rounded-xl">
+              <TabsTrigger value="request" className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300">
+                <Shield className="w-5 h-5" />
                 {t('deposit.newRequest')}
               </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <History className="w-4 h-4" />
+              <TabsTrigger value="history" className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300">
+                <History className="w-5 h-5" />
                 {t('deposit.history')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="request">
-              {/* Deposit Form */}
+              {/* Enhanced Deposit Form */}
               <div className="w-full">
-                <Card className="shadow-glow w-full">
-                  <CardHeader>
-                    <CardTitle>{t('deposit.title')}</CardTitle>
+                <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+                  <CardHeader className="relative">
+                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                      {t('deposit.title')}
+                    </CardTitle>
                     <p className="text-muted-foreground mt-2">{t('deposit.subtitle')}</p>
                   </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      {/* Withdrawal Method and Account Details (copied from Withdrawal page, replaces userNumber input) */}
+                  <CardContent className="relative">
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                      {/* Enhanced Withdrawal Method and Account Details */}
                       {userInfo && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>{t('withdrawal.method')}</Label>
-                            <div
-                              className="h-12 flex items-center px-3 rounded-md bg-muted border border-input text-base text-foreground"
-                              style={{ minHeight: '3rem' }}
-                            >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium text-muted-foreground">{t('withdrawal.method')}</Label>
+                            <div className="h-14 flex items-center px-4 rounded-xl bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 text-base text-foreground">
                               {userInfo.wallet || <span className="text-muted-foreground">{t('withdrawal.methodPlaceholder') || '-'}</span>}
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label>{t('deposit.mobileNumber')}</Label>
-                            <div
-                              className="h-12 flex items-center px-3 rounded-md bg-muted border border-input text-base text-foreground"
-                              style={{ minHeight: '3rem' }}
-                            >
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium text-muted-foreground">{t('deposit.mobileNumber')}</Label>
+                            <div className="h-14 flex items-center px-4 rounded-xl bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 text-base text-foreground">
                               {userInfo.phone || <span className="text-muted-foreground">{t('deposit.mobilePlaceholder')}</span>}
                             </div>
                           </div>
                         </div>
                       )}
-                      <div>
-                        <Label>{t('deposit.targetNumber')}</Label>
-                        <div className="flex gap-2 items-center w-full">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-muted-foreground">{t('deposit.targetNumber')}</Label>
+                        <div className="flex gap-3 items-center w-full">
                           <Input 
                             value={selectedNumber || ''} 
                             readOnly 
-                            className="h-12 font-bold text-lg bg-muted flex-1" 
+                            className="h-14 font-bold text-xl bg-gradient-to-r from-primary/5 to-transparent border-primary/20 flex-1 rounded-xl" 
                             placeholder={t('deposit.loadingNumber')}
                           />
                           {selectedNumber && (
-                            <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber')} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-110 hover:shadow-lg active:scale-95">
-                              <Copy className="h-4 w-4" />
+                            <Button onClick={copyDepositNumber} variant="outline" size="icon" type="button" aria-label={t('deposit.copyNumber')} className="h-14 w-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 hover:scale-110 transition-all duration-300">
+                              <Copy className="h-5 w-5" />
                             </Button>
                           )}
                         </div>
                         {!selectedNumber && (
-                          <p className="text-sm text-muted-foreground mt-1">{t('deposit.noNumbersAvailable')}</p>
+                          <p className="text-sm text-muted-foreground mt-2">{t('deposit.noNumbersAvailable')}</p>
                         )}
                       </div>
-                      <div>
-                        <Label htmlFor="amount">{t('deposit.amount')}</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="amount" className="text-sm font-medium text-muted-foreground">{t('deposit.amount')}</Label>
                         <Input 
                           id="amount" 
                           type="text" 
@@ -387,32 +388,38 @@ export default function Deposit() {
                           pattern="[0-9.]*" 
                           value={amount} 
                           onChange={e => setAmount(e.target.value)} 
-                          className="h-12" 
+                          className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl" 
                           placeholder={t('deposit.amount')}
                           required
                         />
                       </div>
-                      {/* REMOVE userNumber input field */}
-                      <div>
-                        <Label htmlFor="screenshot">{t('deposit.upload')}</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="screenshot" className="text-sm font-medium text-muted-foreground">{t('deposit.upload')}</Label>
                         <Input 
                           id="screenshot" 
                           type="file" 
                           accept="image/jpeg,image/png" 
                           onChange={handleFileChange} 
-                          className="h-12" 
+                          className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl" 
                           required
                         />
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-muted-foreground mt-2">
                           {t('deposit.acceptedFormats')}
                         </p>
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95" 
+                        className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl" 
                         disabled={submitting || !selectedNumber}
                       >
-                        {submitting ? t('deposit.submitting') : t('deposit.submit')}
+                        {submitting ? (
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                            {t('deposit.submitting')}
+                          </div>
+                        ) : (
+                          t('deposit.submit')
+                        )}
                       </Button>
                     </form>
                   </CardContent>
@@ -420,21 +427,34 @@ export default function Deposit() {
               </div>
             </TabsContent>
             <TabsContent value="history">
-              {/* Deposit History Table or List */}
+              {/* Enhanced Deposit History */}
               <div className="w-full">
-                <Card className="shadow-glow w-full">
-                  <CardHeader>
-                    <CardTitle>{t('deposit.history')}</CardTitle>
+                <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+                  <CardHeader className="relative">
+                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                      {t('deposit.history')}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative">
                     {history.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">{t('deposit.noHistory')}</p>
+                      <div className="text-center py-16">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 flex items-center justify-center">
+                          <div className="text-3xl">📋</div>
+                        </div>
+                        <p className="text-xl text-muted-foreground font-medium mb-2">
+                          {t('deposit.noHistory')}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Your deposit history will appear here
+                        </p>
+                      </div>
                     ) : (
                       <>
-                        <ul className="divide-y divide-border">
+                        <ul className="space-y-6">
                           {paginatedHistory.map((item, idx) => (
-                            <li key={item.id || idx} className="py-6">
-                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <li key={item.id || idx} className="p-6 rounded-xl bg-gradient-to-r from-primary/5 to-transparent border border-primary/10 hover:scale-105 transition-all duration-300">
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                                 {/* Left: Image thumbnail */}
                                 <div className="flex-shrink-0 flex items-center justify-center">
                                   {item.screenshot_url ? (
@@ -442,41 +462,41 @@ export default function Deposit() {
                                       <img
                                         src={item.screenshot_url}
                                         alt={t('deposit.screenshot')}
-                                        className="w-20 h-20 object-cover rounded-lg border border-border shadow hover:scale-105 transition-transform cursor-pointer"
+                                        className="w-24 h-24 object-cover rounded-xl border border-primary/20 shadow-lg hover:scale-110 transition-transform cursor-pointer"
                                       />
                                     </a>
                                   ) : (
-                                    <div className="w-20 h-20 flex items-center justify-center bg-muted rounded-lg border border-border text-muted-foreground text-xs">
-                                      {t('deposit.noScreenshot')}
+                                    <div className="w-24 h-24 flex items-center justify-center bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-xl border border-primary/20 text-muted-foreground">
+                                      <div className="text-2xl">📷</div>
                                     </div>
                                   )}
                                 </div>
                                 {/* Center: Info */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex flex-col md:flex-row md:items-center md:gap-6">
-                                    <div className="font-bold text-lg text-foreground">
+                                  <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-3">
+                                    <div className="font-bold text-2xl text-foreground">
                                       {item.amount} {t('deposit.amountUnit') || ''}
                                     </div>
-                                    <div className="mt-1 md:mt-0">
-                                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold
-                                        ${item.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                          item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                          item.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                    <div className="mt-2 md:mt-0">
+                                      <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold shadow-lg
+                                        ${item.status === 'approved' ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
+                                          item.status === 'pending' ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20' :
+                                          item.status === 'rejected' ? 'bg-red-500/10 text-red-600 border border-red-500/20' :
                                           'bg-muted text-muted-foreground'}
                                       `}>
                                         {t(`deposit.status.${item.status}`) || item.status}
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-sm text-muted-foreground mt-2">
-                                    {t('deposit.targetNumber')}: <span className="font-mono">{item.target_number}</span>
+                                  <div className="text-sm text-muted-foreground">
+                                    {t('deposit.targetNumber')}: <span className="font-mono font-medium">{item.target_number}</span>
                                   </div>
                                 </div>
                                 {/* Right: Date/Time */}
-                                <div className="text-right min-w-[120px]">
+                                <div className="text-right min-w-[140px]">
                                   <div className="text-sm text-muted-foreground">
                                     {t('deposit.date')}:<br />
-                                    <span className="font-mono">
+                                    <span className="font-mono font-medium">
                                       {item.created_at ? new Date(item.created_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : '-'}
                                     </span>
                                   </div>
@@ -485,12 +505,28 @@ export default function Deposit() {
                             </li>
                           ))}
                         </ul>
-                        {/* Pagination Controls */}
+                        {/* Enhanced Pagination Controls */}
                         {totalPages > 1 && (
-                          <div className="flex justify-center items-center gap-2 mt-6">
-                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>&lt;</Button>
-                            <span className="mx-2 text-sm">{t('common.page')} {currentPage} {t('common.of')} {totalPages}</span>
-                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>&gt;</Button>
+                          <div className="flex justify-center items-center gap-4 mt-8">
+                            <Button 
+                              variant="outline" 
+                              size="lg" 
+                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                              disabled={currentPage === 1}
+                              className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20 hover:scale-105 transition-all duration-300"
+                            >
+                              &lt;
+                            </Button>
+                            <span className="mx-4 text-lg font-medium">{t('common.page')} {currentPage} {t('common.of')} {totalPages}</span>
+                            <Button 
+                              variant="outline" 
+                              size="lg" 
+                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                              disabled={currentPage === totalPages}
+                              className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20 hover:scale-105 transition-all duration-300"
+                            >
+                              &gt;
+                            </Button>
                           </div>
                         )}
                       </>

@@ -352,12 +352,14 @@ export default function Withdrawal() {
   };
 
   const submitWithdrawalRequest = async () => {
+    setLoading(true);
     if (!formData.type || !formData.amount || !formData.method) {
       toast({
         title: t('common.error'),
         description: t('register.required'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
@@ -368,6 +370,7 @@ export default function Withdrawal() {
         description: t('withdrawal.error.timeSlotMessage'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
@@ -380,19 +383,24 @@ export default function Withdrawal() {
         description: t('withdrawal.error.amountMessage'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
     // Check package limits (use correct userPackage)
     const limitCheck = checkPackageLimits(amount);
+    console.log('User wants to withdraw:', amount);
     if (!limitCheck.valid) {
+      console.log('Withdrawal result: ERROR:', limitCheck.message);
       toast({
         title: t('withdrawal.error.limit'),
         description: limitCheck.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
+    console.log('Withdrawal result: SUCCESS');
 
     // Check max withdrawal amount
     if (amount > 6000) {
@@ -401,6 +409,7 @@ export default function Withdrawal() {
         description: t('withdrawal.maxWithdrawalLimit'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
 
@@ -412,6 +421,7 @@ export default function Withdrawal() {
         description: t('withdrawal.userNotAuthenticated'),
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
     // Fetch user info
@@ -448,6 +458,7 @@ export default function Withdrawal() {
         description: insertError.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return;
     }
     toast({
@@ -462,14 +473,24 @@ export default function Withdrawal() {
       .order('created_at', { ascending: false });
     if (!withdrawalError) {
       setWithdrawalHistory((withdrawalData || []).map(mapWithdrawalFields));
+      // Print the created_at time of the most recent withdrawal, the current local time, and the limit_activated_at time
+      if (withdrawalData && withdrawalData.length > 0) {
+        const latest = withdrawalData[0];
+        console.log('Supabase created_at:', latest.created_at);
+        console.log('Local time:', new Date().toISOString());
+        const packageLimit = settings.packageLimits[userPackage];
+        if (packageLimit && packageLimit.limit_activated_at) {
+          console.log('Limit activated at:', packageLimit.limit_activated_at);
+        }
+      }
     }
     // Reset form
-    setFormData({
+    setFormData(prev => ({
+      ...prev,
       type: '',
       amount: '',
-      method: '',
-      accountDetails: '',
-    });
+    }));
+    setLoading(false);
   };
 
   const getStatusIcon = (status: string) => {
@@ -498,57 +519,66 @@ export default function Withdrawal() {
   const teamEarningsCount = useCountUp(balances?.team_earnings ?? 0);
 
   return (
-    <div className="min-h-screen py-20">
-      {/* Alert for incomplete account information */}
+    <div className="min-h-screen py-20 bg-gradient-to-br from-background via-background to-muted/20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+      {/* Enhanced Alert for incomplete account information */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm shadow-2xl">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertDescription className="text-warning-foreground font-medium">
               {t('common.completeProfile')}
             </AlertDescription>
           </Alert>
         </div>
       )}
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 relative">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold mb-4">{t('withdrawal.title')}</h1>
-            <p className="text-base md:text-xl text-muted-foreground px-4">
+          {/* Enhanced Header */}
+          <div className="text-center mb-12 md:mb-16">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {t('withdrawal.title')}
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground px-4 max-w-3xl mx-auto leading-relaxed">
               {t('withdrawal.subtitle')}
             </p>
           </div>
 
-          <Tabs defaultValue="request" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="request" className="flex items-center gap-2">
-                <Shield className="w-4 h-4" />
+          <Tabs defaultValue="request" className="space-y-8">
+            <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-primary/10 to-purple-500/10 p-1 rounded-xl">
+              <TabsTrigger value="request" className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300">
+                <Shield className="w-5 h-5" />
                 {t('withdrawal.newRequest')}
               </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <History className="w-4 h-4" />
+              <TabsTrigger value="history" className="flex items-center gap-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300">
+                <History className="w-5 h-5" />
                 {t('withdrawal.history')}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="request">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Withdrawal Form */}
+                {/* Enhanced Withdrawal Form */}
                 <div className="lg:col-span-2">
-                  <Card className="shadow-glow">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-primary" />
+                  <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+                    <CardHeader className="relative">
+                      <CardTitle className="flex items-center gap-3 text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1">
+                          <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                            <Shield className="w-4 h-4 text-primary" />
+                          </div>
+                        </div>
                         {t('withdrawal.newRequest')}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      {/* Time Slot Warning */}
+                    <CardContent className="relative">
+                      {/* Enhanced Time Slot Warning */}
                       {!isWithinTimeSlot() && (
-                        <Alert className="mb-6 border-yellow-200 bg-yellow-50">
-                          <Clock className="h-4 w-4 text-yellow-600" />
-                          <AlertDescription className="text-yellow-800">
+                        <Alert className="mb-6 border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm">
+                          <Clock className="h-5 w-5 text-warning" />
+                          <AlertDescription className="text-warning-foreground">
                             <div>
                               <p className="font-semibold mb-2">{t('withdrawal.error.timeSlotMessage')}</p>
                               <p className="text-sm">
@@ -559,28 +589,28 @@ export default function Withdrawal() {
                         </Alert>
                       )}
 
-                      {/* Package Limits Info */}
+                      {/* Enhanced Package Limits Info */}
                       {settings.packageLimits[userPackage] && (
-                        <Alert className="mb-6 border-blue-200 bg-blue-50">
-                          <Package className="h-4 w-4 text-blue-600" />
-                          <AlertDescription className="text-blue-800">
+                        <Alert className="mb-6 border-primary bg-gradient-to-r from-primary/10 to-purple-500/5 backdrop-blur-sm">
+                          <Package className="h-5 w-5 text-primary" />
+                          <AlertDescription className="text-primary-foreground">
                             {t('withdrawal.packageLimits')
                               .replace('${min}', `${settings.packageLimits[userPackage].min}`)
                               .replace('${max}', `${settings.packageLimits[userPackage].max}`)
                               .replace('${daily}', `${settings.packageLimits[userPackage].daily}`)
                             }
-                            <div className="mt-2 text-xs text-blue-700">
+                            <div className="mt-2 text-xs text-primary-foreground/80">
                               <strong>Note:</strong> Daily withdrawal limit resets at midnight (00:00).
                             </div>
                           </AlertDescription>
                         </Alert>
                       )}
 
-                      <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                          <Label htmlFor="type">{t('withdrawal.type')}</Label>
+                      <form onSubmit={handleSubmit} className="space-y-8">
+                        <div className="space-y-3">
+                          <Label htmlFor="type" className="text-sm font-medium text-muted-foreground">{t('withdrawal.type')}</Label>
                           <Select value={formData.type} onValueChange={(value) => handleSelectChange('type', value)}>
-                            <SelectTrigger className="h-12">
+                            <SelectTrigger className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl">
                               <SelectValue placeholder={t('withdrawal.selectType')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -593,8 +623,8 @@ export default function Withdrawal() {
                           </Select>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="amount">{t('withdrawal.amount')}</Label>
+                        <div className="space-y-3">
+                          <Label htmlFor="amount" className="text-sm font-medium text-muted-foreground">{t('withdrawal.amount')}</Label>
                           <Input
                             id="amount"
                             name="amount"
@@ -602,70 +632,78 @@ export default function Withdrawal() {
                             placeholder={t('withdrawal.amount')}
                             value={formData.amount}
                             onChange={handleInputChange}
-                            className="h-12"
+                            className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl"
                             min="1"
                             step="0.01"
                           />
                           {formData.type && (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground mt-2">
                               {t('withdrawal.maxAmount')} {withdrawalTypes.find(t => t.value === formData.type)?.amount.toLocaleString()} EGP
                             </p>
                           )}
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="method">{t('withdrawal.method')}</Label>
-                          <div
-                            className="h-12 flex items-center px-3 rounded-md bg-gray-100 border border-input text-base text-gray-900"
-                            style={{ minHeight: '3rem' }}
-                          >
-                            {formData.method || <span className="text-gray-400">{t('withdrawal.placeholder')}</span>}
+                        <div className="space-y-3">
+                          <Label htmlFor="method" className="text-sm font-medium text-muted-foreground">{t('withdrawal.method')}</Label>
+                          <div className="h-14 flex items-center px-4 rounded-xl bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 text-base text-foreground">
+                            {formData.method || <span className="text-muted-foreground">{t('withdrawal.placeholder')}</span>}
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="accountDetails">{t('withdrawal.accountDetails')}</Label>
-                          <div
-                            className="h-12 flex items-center px-3 rounded-md bg-gray-100 border border-input text-base text-gray-900"
-                            style={{ minHeight: '3rem' }}
-                          >
-                            {formData.accountDetails || <span className="text-gray-400">{t('withdrawal.placeholder')}</span>}
+                        <div className="space-y-3">
+                          <Label htmlFor="accountDetails" className="text-sm font-medium text-muted-foreground">{t('withdrawal.accountDetails')}</Label>
+                          <div className="h-14 flex items-center px-4 rounded-xl bg-gradient-to-r from-primary/5 to-transparent border border-primary/20 text-base text-foreground">
+                            {formData.accountDetails || <span className="text-muted-foreground">{t('withdrawal.placeholder')}</span>}
                           </div>
                         </div>
 
-                        <Alert>
-                          <Shield className="h-4 w-4" />
-                          <AlertDescription>
+                        <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 to-purple-500/5 backdrop-blur-sm">
+                          <Shield className="h-5 w-5 text-primary" />
+                          <AlertDescription className="text-primary-foreground">
                             {t('withdrawal.warning')}
                           </AlertDescription>
                         </Alert>
 
                         <Button 
                           type="submit" 
-                          className="w-full h-12 text-lg shadow-glow transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
+                          className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl"
                           disabled={!isWithinTimeSlot() || loading}
                         >
-                          {loading ? t('common.loading') : t('withdrawal.submit')}
+                          {loading ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                              {t('common.loading')}
+                            </div>
+                          ) : (
+                            t('withdrawal.submit')
+                          )}
                         </Button>
                       </form>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Balance Summary */}
-                <div className="space-y-6">
-                  <Card className="shadow-card">
-                    <CardHeader>
-                      <CardTitle>{t('withdrawal.balances')}</CardTitle>
+                {/* Enhanced Balance Summary */}
+                <div className="space-y-8">
+                  <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+                    <CardHeader className="relative">
+                      <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        {t('withdrawal.balances')}
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
                       <div className="flex flex-col gap-6 my-6">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-green-900/40 to-green-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-green-500/40 hover:ring-2 hover:ring-green-400/40 group cursor-pointer relative overflow-hidden">
-                              <DollarSign className="w-10 h-10 text-green-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-primary/20 bg-gradient-to-br from-green-500/10 to-green-600/10 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-green-500/30 hover:ring-2 hover:ring-green-400/40 group cursor-pointer relative overflow-hidden">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-green-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                  <DollarSign className="w-6 h-6 text-green-600" />
+                                </div>
+                              </div>
                               <div>
-                                <div className="text-3xl font-extrabold text-green-400 drop-shadow animate-pulse">{balanceCount} EGP</div>
+                                <div className="text-3xl font-extrabold text-green-600 drop-shadow animate-pulse">{balanceCount} EGP</div>
                                 <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.balance')}</div>
                               </div>
                             </div>
@@ -674,10 +712,14 @@ export default function Withdrawal() {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-blue-900/40 to-blue-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-blue-500/40 hover:ring-2 hover:ring-blue-400/40 group cursor-pointer relative overflow-hidden">
-                              <Star className="w-10 h-10 text-blue-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-primary/20 bg-gradient-to-br from-blue-500/10 to-blue-600/10 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-blue-500/30 hover:ring-2 hover:ring-blue-400/40 group cursor-pointer relative overflow-hidden">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                  <Star className="w-6 h-6 text-blue-600" />
+                                </div>
+                              </div>
                               <div>
-                                <div className="text-3xl font-extrabold text-blue-400 drop-shadow animate-pulse">{pointsCount}</div>
+                                <div className="text-3xl font-extrabold text-blue-600 drop-shadow animate-pulse">{pointsCount}</div>
                                 <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.totalPoints')}</div>
                               </div>
                             </div>
@@ -686,10 +728,14 @@ export default function Withdrawal() {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-yellow-900/40 to-yellow-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-yellow-500/40 hover:ring-2 hover:ring-yellow-400/40 group cursor-pointer relative overflow-hidden">
-                              <Gift className="w-10 h-10 text-yellow-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-primary/20 bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-yellow-500/30 hover:ring-2 hover:ring-yellow-400/40 group cursor-pointer relative overflow-hidden">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                  <Gift className="w-6 h-6 text-yellow-600" />
+                                </div>
+                              </div>
                               <div>
-                                <div className="text-3xl font-extrabold text-yellow-400 drop-shadow animate-pulse">{bonusesCount} EGP</div>
+                                <div className="text-3xl font-extrabold text-yellow-600 drop-shadow animate-pulse">{bonusesCount} EGP</div>
                                 <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.bonuses')}</div>
                               </div>
                             </div>
@@ -698,10 +744,14 @@ export default function Withdrawal() {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-zinc-800 bg-gradient-to-br from-purple-900/40 to-purple-800/10 shadow-lg transition-transform hover:scale-105 hover:shadow-purple-500/40 hover:ring-2 hover:ring-purple-400/40 group cursor-pointer relative overflow-hidden">
-                              <Users className="w-10 h-10 text-purple-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
+                            <div className="rounded-2xl p-6 flex flex-row items-center gap-4 border border-primary/20 bg-gradient-to-br from-purple-500/10 to-purple-600/10 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-purple-500/30 hover:ring-2 hover:ring-purple-400/40 group cursor-pointer relative overflow-hidden">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 p-1 group-hover:scale-110 transition-transform duration-300">
+                                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                  <Users className="w-6 h-6 text-purple-600" />
+                                </div>
+                              </div>
                               <div>
-                                <div className="text-3xl font-extrabold text-purple-400 drop-shadow animate-pulse">{teamEarningsCount} EGP</div>
+                                <div className="text-3xl font-extrabold text-purple-600 drop-shadow animate-pulse">{teamEarningsCount} EGP</div>
                                 <div className="text-muted-foreground mt-1 text-base font-medium tracking-wide">{t('profile.teamEarnings')}</div>
                               </div>
                             </div>
@@ -712,24 +762,27 @@ export default function Withdrawal() {
                     </CardContent>
                   </Card>
 
-                  <Card className="gradient-card shadow-glow">
-                    <CardContent className="pt-6">
-                      <h3 className="font-semibold mb-4">{t('withdrawal.verificationStatus')}</h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span>{t('profile.emailVerification')}</span>
-                          <Badge className="bg-success">✓</Badge>
+                  <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+                    <CardContent className="pt-8 pb-8 relative">
+                      <h3 className="font-bold text-xl mb-6 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        {t('withdrawal.verificationStatus')}
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20">
+                          <span className="font-medium">{t('profile.emailVerification')}</span>
+                          <Badge className="bg-green-500 text-white">✓</Badge>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span>{t('profile.phoneVerification')}</span>
-                          <Badge className="bg-success">✓</Badge>
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20">
+                          <span className="font-medium">{t('profile.phoneVerification')}</span>
+                          <Badge className="bg-green-500 text-white">✓</Badge>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span>{t('profile.identityVerification')}</span>
-                          <Badge className="bg-success">✓</Badge>
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20">
+                          <span className="font-medium">{t('profile.identityVerification')}</span>
+                          <Badge className="bg-green-500 text-white">✓</Badge>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-4">
+                      <p className="text-sm text-muted-foreground mt-6 text-center">
                         {t('withdrawal.eligible')}
                       </p>
                     </CardContent>
@@ -739,88 +792,110 @@ export default function Withdrawal() {
             </TabsContent>
 
             <TabsContent value="history">
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-primary" />
+              <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+                <CardHeader className="relative">
+                  <CardTitle className="flex items-center gap-3 text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1">
+                      <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                        <History className="w-4 h-4 text-primary" />
+                      </div>
+                    </div>
                     {t('withdrawal.history')}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
                   {loading ? (
-                    <div className="text-center py-8">{t('common.loading')}</div>
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+                      </div>
+                      <p className="text-xl text-muted-foreground font-medium">
+                        {t('common.loading')}
+                      </p>
+                    </div>
                   ) : withdrawalHistory.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      {t('withdrawal.noHistory')}
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 flex items-center justify-center">
+                        <div className="text-3xl">📋</div>
+                      </div>
+                      <p className="text-xl text-muted-foreground font-medium mb-2">
+                        {t('withdrawal.noHistory')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Your withdrawal history will appear here
+                      </p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('withdrawal.history.id')}</TableHead>
-                          <TableHead>{t('withdrawal.history.type')}</TableHead>
-                          <TableHead>{t('withdrawal.history.amount')}</TableHead>
-                          <TableHead>{t('withdrawal.history.method')}</TableHead>
-                          <TableHead>{t('withdrawal.history.status')}</TableHead>
-                          <TableHead>{t('withdrawal.history.date')}</TableHead>
-                          <TableHead>{t('withdrawal.history.details')}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {withdrawalHistory.map((withdrawal) => (
-                          <TableRow key={withdrawal.id}>
-                            <TableCell className="font-mono text-sm">
-                              #{withdrawal.id}
-                            </TableCell>
-                            <TableCell>
-                              {withdrawalTypes.find(t => t.value === withdrawal.type)?.label || withdrawal.type}
-                            </TableCell>
-                            <TableCell className="font-bold">
-                              ${withdrawal.amount.toLocaleString()} EGP
-                            </TableCell>
-                            <TableCell>
-                              {withdrawalMethods.find(m => m.value === withdrawal.method)?.label || withdrawal.method}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getStatusIcon(withdrawal.status)}
-                                <Badge className={getStatusColor(withdrawal.status)}>
-                                  {t(`withdrawal.status.${withdrawal.status}`)}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(withdrawal.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              {withdrawal.rejectionReason && (
-                                <div className="text-sm text-red-600 mb-1">
-                                  <strong>{t('withdrawal.rejectionReason')}:</strong> {withdrawal.rejectionReason}
-                                </div>
-                              )}
-                              {withdrawal.adminNote && (
-                                <div className="text-sm text-green-600 mb-1">
-                                  <strong>{t('withdrawal.adminNote')}:</strong> {withdrawal.adminNote}
-                                </div>
-                              )}
-                              {withdrawal.status === 'paid' && withdrawal.proofImageUrl && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="mt-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95"
-                                  onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
-                                >
-                                  {t('withdrawal.viewProof')}
-                                </Button>
-                              )}
-                              {!withdrawal.rejectionReason && !withdrawal.adminNote && !(withdrawal.status === 'paid' && withdrawal.proofImageUrl) && (
-                                <span className="text-muted-foreground">{t('withdrawal.noDetails')}</span>
-                              )}
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20">
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.id')}</TableHead>
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.type')}</TableHead>
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.amount')}</TableHead>
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.method')}</TableHead>
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.status')}</TableHead>
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.date')}</TableHead>
+                            <TableHead className="text-primary font-bold">{t('withdrawal.history.details')}</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {withdrawalHistory.map((withdrawal) => (
+                            <TableRow key={withdrawal.id} className="hover:bg-gradient-to-r hover:from-primary/5 hover:to-purple-500/5 transition-all duration-300">
+                              <TableCell className="font-mono text-sm font-medium">
+                                #{withdrawal.id}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {withdrawalTypes.find(t => t.value === withdrawal.type)?.label || withdrawal.type}
+                              </TableCell>
+                              <TableCell className="font-bold text-lg">
+                                {withdrawal.amount.toLocaleString()} EGP
+                              </TableCell>
+                              <TableCell>
+                                {withdrawalMethods.find(m => m.value === withdrawal.method)?.label || withdrawal.method}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(withdrawal.status)}
+                                  <Badge className={`${getStatusColor(withdrawal.status)} shadow-lg`}>
+                                    {t(`withdrawal.status.${withdrawal.status}`)}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {new Date(withdrawal.createdAt).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                {withdrawal.rejectionReason && (
+                                  <div className="text-sm text-red-600 mb-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                                    <strong>{t('withdrawal.rejectionReason')}:</strong> {withdrawal.rejectionReason}
+                                  </div>
+                                )}
+                                {withdrawal.adminNote && (
+                                  <div className="text-sm text-green-600 mb-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                                    <strong>{t('withdrawal.adminNote')}:</strong> {withdrawal.adminNote}
+                                  </div>
+                                )}
+                                {withdrawal.status === 'paid' && withdrawal.proofImageUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="mt-1 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 hover:scale-105 transition-all duration-300"
+                                    onClick={() => { setModalImageUrl(withdrawal.proofImageUrl); setShowImageModal(true); }}
+                                  >
+                                    {t('withdrawal.viewProof')}
+                                  </Button>
+                                )}
+                                {!withdrawal.rejectionReason && !withdrawal.adminNote && !(withdrawal.status === 'paid' && withdrawal.proofImageUrl) && (
+                                  <span className="text-muted-foreground">{t('withdrawal.noDetails')}</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -829,12 +904,15 @@ export default function Withdrawal() {
         </div>
       </div>
 
-      {/* Modal for proof image */}
+      {/* Enhanced Modal for proof image */}
       {showImageModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-background p-4 rounded shadow-lg max-w-lg w-full flex flex-col items-center">
-            <img src={modalImageUrl} alt="Proof" className="max-h-[70vh] max-w-full mb-4 rounded" />
-            <Button onClick={() => setShowImageModal(false)} className="transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-card to-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col items-center border border-primary/20">
+            <img src={modalImageUrl} alt="Proof" className="max-h-[70vh] max-w-full mb-6 rounded-xl shadow-2xl" />
+            <Button 
+              onClick={() => setShowImageModal(false)} 
+              className="bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 shadow-2xl px-8 py-3 text-lg font-bold rounded-xl"
+            >
               {t('common.close')}
             </Button>
           </div>

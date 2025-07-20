@@ -95,44 +95,74 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle className="text-center text-xl md:text-2xl">{t('login.title')}</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+      <div className="relative w-full max-w-md mx-4">
+        <Card className="shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-sm border-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5"></div>
+          <CardHeader className="relative text-center pb-8">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-primary to-purple-600 p-1">
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                <div className="text-3xl">🔐</div>
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {t('login.title')}
+            </CardTitle>
+            <p className="text-muted-foreground mt-2">
+              {t('login.subtitle')}
+            </p>
           </CardHeader>
-          <CardContent className="px-4 md:px-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+          <CardContent className="relative px-8 pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
                 <Input
-                type="email"
+                  type="email"
                   name="email"
-                placeholder={t('login.email')}
+                  placeholder={t('login.email')}
                   value={formData.email}
                   onChange={handleInputChange}
                   required
+                  className="h-12 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                 />
               </div>
-            <div>
+              <div className="space-y-2">
                 <Input
-                type="password"
+                  type="password"
                   name="password"
-                placeholder={t('login.password')}
+                  placeholder={t('login.password')}
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  className="h-12 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300"
                 />
               </div>
-            <Button type="submit" className="w-full transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:scale-105 hover:shadow-lg active:scale-95" disabled={loading}>
-              {loading ? t('common.loading') : t('login.submit')}
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold text-lg" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    {t('common.loading')}
+                  </div>
+                ) : (
+                  t('login.submit')
+                )}
               </Button>
             </form>
-          <div className="mt-4 text-center">
-            <Link to="/register" className="text-primary hover:underline">
-              {t('login.noAccount')}
-            </Link>
+            <div className="mt-8 text-center">
+              <Link 
+                to="/register" 
+                className="text-primary hover:text-primary/80 font-medium transition-colors duration-300 hover:scale-105 inline-block"
+              >
+                {t('login.noAccount')}
+              </Link>
             </div>
           </CardContent>
         </Card>
+      </div>
     </div>
   );
 }

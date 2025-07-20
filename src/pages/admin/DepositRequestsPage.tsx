@@ -15,7 +15,7 @@ import autoTable from 'jspdf-autotable';
 
 interface DepositRequest {
   id: string;
-  user_id: string;
+  user_uid: string;
   amount: number;
   status: string;
   deposit_number: string;
@@ -65,17 +65,25 @@ export default function DepositRequestsPage() {
   // Approve deposit
   const handleApprove = async (req: DepositRequest) => {
     try {
+      console.log('Approving deposit:', req); // Debug log
+      
       // First, update the deposit request status
       const { error: updateError } = await supabase
         .from('deposit_requests')
         .update({ status: 'approved' })
         .eq('id', req.id);
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating deposit status:', updateError);
+        throw updateError;
+      }
 
       // Then, add the deposit amount to the user's balance
-      const userUid = req.user_id;
-      const { data: userInfo, error: userError } = await supabase
+      const userUid = req.user_uid;
+      console.log('User UID:', userUid); // Debug log
+      
+      // First, check if user_info record exists
+      let { data: userInfo, error: userError } = await supabase
         .from('user_info')
         .select('balance')
         .eq('user_uid', userUid)
@@ -83,16 +91,47 @@ export default function DepositRequestsPage() {
 
       if (userError) {
         console.error('Error fetching user info:', userError);
-        toast({ 
-          title: t('common.error'), 
-          description: t('deposit.error.fetchBalanceFailed'), 
-          variant: 'destructive' 
-        });
-        return;
+        
+        // If user_info doesn't exist, try to create it with default balance
+        if (userError.code === 'PGRST116') { // No rows returned
+          console.log('User info not found, creating default record...');
+          const { data: newUserInfo, error: createError } = await supabase
+            .from('user_info')
+            .insert({
+              user_uid: userUid,
+              balance: 0,
+              bonuses: 0,
+              team_earnings: 0,
+              total_points: 0,
+              personal_earnings: 0,
+            })
+            .select('balance')
+            .single();
+          
+          if (createError) {
+            console.error('Error creating user info:', createError);
+            toast({ 
+              title: t('common.error'), 
+              description: t('deposit.error.fetchBalanceFailed'), 
+              variant: 'destructive' 
+            });
+            return;
+          }
+          userInfo = newUserInfo;
+        } else {
+          toast({ 
+            title: t('common.error'), 
+            description: t('deposit.error.fetchBalanceFailed'), 
+            variant: 'destructive' 
+          });
+          return;
+        }
       }
 
+      console.log('Current user info:', userInfo); // Debug log
       const currentBalance = userInfo?.balance || 0;
       const newBalance = currentBalance + req.amount;
+      console.log(`Balance update: ${currentBalance} + ${req.amount} = ${newBalance}`); // Debug log
 
       const { error: balanceError } = await supabase
         .from('user_info')
@@ -109,6 +148,24 @@ export default function DepositRequestsPage() {
         return;
       }
 
+      // Log the transaction for audit trail
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: userUid,
+          type: 'deposit_approved',
+          amount: req.amount,
+          status: 'completed',
+          description: `Deposit approved - ${req.target_number || 'Mobile Transfer'}`,
+          created_at: new Date().toISOString(),
+        });
+
+      if (transactionError) {
+        console.error('Error logging transaction:', transactionError);
+        // Don't fail the approval if transaction logging fails
+      }
+
+      console.log('Deposit approved successfully'); // Debug log
       toast({ 
         title: t('common.success'), 
         description: t('deposit.success.approvedWithBalance').replace('{amount}', req.amount.toString()) 
@@ -158,7 +215,7 @@ export default function DepositRequestsPage() {
   const handleExportCSV = () => {
     const data = filtered.map(req => ({
       [t('deposit.amount')]: req.amount,
-      [t('deposit.userNumber')]: req.user_number || req.user_id,
+      [t('deposit.userNumber')]: req.user_number || req.user_uid,
       [t('deposit.targetNumber')]: req.target_number || '-',
       [t('deposit.screenshot')]: req.screenshot_url ? req.screenshot_url : '-',
       [t('deposit.status')]: req.status,
@@ -179,7 +236,7 @@ export default function DepositRequestsPage() {
   const handleExportExcel = () => {
     const data = filtered.map(req => ({
       [t('deposit.amount')]: req.amount,
-      [t('deposit.userNumber')]: req.user_number || req.user_id,
+      [t('deposit.userNumber')]: req.user_number || req.user_uid,
       [t('deposit.targetNumber')]: req.target_number || '-',
       [t('deposit.screenshot')]: req.screenshot_url ? req.screenshot_url : '-',
       [t('deposit.status')]: req.status,
@@ -198,7 +255,7 @@ export default function DepositRequestsPage() {
       const tableColumn = [t('deposit.amount'), t('deposit.userNumber'), t('deposit.targetNumber'), t('deposit.screenshot'), t('deposit.status'), t('common.date')];
       const tableRows = filtered.map(req => [
         req.amount,
-        req.user_number || req.user_id,
+        req.user_number || req.user_uid,
         req.target_number || '-',
         req.screenshot_url ? req.screenshot_url : '-',
         req.status,
