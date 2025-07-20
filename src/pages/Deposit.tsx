@@ -29,6 +29,7 @@ export default function Deposit() {
   const [userInfo, setUserInfo] = useState<{ wallet?: string; phone?: string } | null>(null);
   const [activeTab, setActiveTab] = useState('request');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isVerified, setIsVerified] = useState(false);
   const itemsPerPage = 5;
   const paginatedHistory = history.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(history.length / itemsPerPage);
@@ -56,7 +57,7 @@ export default function Deposit() {
         if (!isAdmin) {
           const { data: userInfo } = await supabase
             .from('user_info')
-            .select('user_uid, wallet, phone')
+            .select('user_uid, wallet, phone, email_verified, phone_verified, identity_verified')
             .eq('user_uid', userData.user.id)
             .single();
           if (!userInfo) {
@@ -68,6 +69,13 @@ export default function Deposit() {
             return;
           }
           setUserInfo({ wallet: userInfo.wallet, phone: userInfo.phone });
+          
+          // Check if user is verified (all verification fields should be true)
+          const verified = userInfo.email_verified && userInfo.phone_verified && userInfo.identity_verified;
+          setIsVerified(verified);
+        } else {
+          // Admin users are considered verified
+          setIsVerified(true);
         }
         
         // Fetch deposit numbers
@@ -140,6 +148,12 @@ export default function Deposit() {
     });
     
     if (!canProceed) {
+      // User is not verified, show specific message for deposit
+      toast({ 
+        title: t('common.error'), 
+        description: t('deposit.error.verificationRequired') || 'You must verify your account before making deposits.', 
+        variant: 'destructive' 
+      });
       return; // User is not verified, alert already shown
     }
   };
@@ -340,8 +354,29 @@ export default function Deposit() {
                       {t('deposit.title')}
                     </CardTitle>
                     <p className="text-muted-foreground mt-2">{t('deposit.subtitle')}</p>
+                    {/* Verification Status */}
+                    <div className="mt-4">
+                      <Badge className={`${isVerified ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'} text-sm`}>
+                        {isVerified ? '✓ Verified Account' : '⚠️ Verification Required'}
+                      </Badge>
+                    </div>
                   </CardHeader>
                   <CardContent className="relative">
+                    {/* Verification Status Alert */}
+                    {!isVerified && (
+                      <Alert className="mb-6 border-warning bg-gradient-to-r from-warning/10 to-warning/5 backdrop-blur-sm">
+                        <AlertTriangle className="h-5 w-5 text-warning" />
+                        <AlertDescription className="text-warning-foreground">
+                          <div>
+                            <p className="font-semibold mb-2">{t('deposit.error.verificationRequired') || 'Account Verification Required'}</p>
+                            <p className="text-sm">
+                              You must complete your account verification before making deposits. Please verify your email, phone, and identity.
+                            </p>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
                     <form onSubmit={handleSubmit} className="space-y-8">
                       {/* Enhanced Withdrawal Method and Account Details */}
                       {userInfo && (
@@ -391,6 +426,7 @@ export default function Deposit() {
                           className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl" 
                           placeholder={t('deposit.amount')}
                           required
+                          disabled={!isVerified}
                         />
                       </div>
                       <div className="space-y-3">
@@ -402,6 +438,7 @@ export default function Deposit() {
                           onChange={handleFileChange} 
                           className="h-14 bg-gradient-to-r from-primary/5 to-transparent border-primary/20 focus:border-primary/50 transition-all duration-300 rounded-xl" 
                           required
+                          disabled={!isVerified}
                         />
                         <p className="text-sm text-muted-foreground mt-2">
                           {t('deposit.acceptedFormats')}
@@ -410,7 +447,7 @@ export default function Deposit() {
                       <Button 
                         type="submit" 
                         className="w-full h-14 text-lg bg-gradient-to-r from-primary to-purple-600 border-0 text-white hover:scale-105 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:shadow-2xl active:scale-95 font-bold rounded-xl" 
-                        disabled={submitting || !selectedNumber}
+                        disabled={submitting || !selectedNumber || !isVerified}
                       >
                         {submitting ? (
                           <div className="flex items-center gap-2">
